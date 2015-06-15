@@ -25,7 +25,6 @@ package org.jboss.as.jdr.commands;
 import org.jboss.as.jdr.util.Utils;
 import org.jboss.vfs.VFS;
 import org.jboss.vfs.VirtualFile;
-import org.jboss.vfs.util.automount.Automounter;
 
 import java.math.BigInteger;
 import java.security.MessageDigest;
@@ -79,16 +78,11 @@ public class JarCheck extends JdrCommand {
 
     private String getManifestString(VirtualFile file) throws java.io.IOException {
         try {
-            Automounter.mount(file);
             String result = Utils.toString(file.getChild(Utils.MANIFEST_NAME));
             return result != null? result: "";
         } catch (Exception npe) {
             ROOT_LOGGER.tracef("no MANIFEST present");
             return "";
-        } finally {
-            if(Automounter.isMounted(file)){
-                Automounter.cleanup(file);
-            }
         }
     }
 }
