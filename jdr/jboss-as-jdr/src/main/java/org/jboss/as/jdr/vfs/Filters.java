@@ -24,7 +24,6 @@ package org.jboss.as.jdr.vfs;
 import org.jboss.as.jdr.util.WildcardPattern;
 import org.jboss.vfs.VirtualFile;
 import org.jboss.vfs.VirtualFileFilter;
-import org.jboss.vfs.util.MatchAllVirtualFileFilter;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -37,7 +36,11 @@ import java.util.regex.Pattern;
  */
 public class Filters {
 
-    public static final VirtualFileFilter TRUE = MatchAllVirtualFileFilter.INSTANCE;
+    public static final VirtualFileFilter TRUE = new VirtualFileFilter() {
+        public boolean accepts(VirtualFile file) {
+            return true;
+        }
+    };
 
     public static VirtualFileFilter not(final VirtualFileFilter filter) {
         return new VirtualFileFilter() {
