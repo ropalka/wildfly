@@ -36,7 +36,7 @@ import org.jboss.vfs.VFS;
 import org.jboss.vfs.VFSUtils;
 import org.jboss.vfs.VirtualFile;
 import org.jboss.vfs.VisitorAttributes;
-import org.jboss.vfs.util.SuffixMatchFilter;
+import org.jboss.vfs.SuffixMatchFilter;
 
 import org.junit.After;
 import org.junit.AfterClass;

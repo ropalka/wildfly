@@ -44,7 +44,7 @@ import org.jboss.vfs.VFS;
 import org.jboss.vfs.VFSUtils;
 import org.jboss.vfs.VirtualFile;
 import org.jboss.vfs.VisitorAttributes;
-import org.jboss.vfs.util.SuffixMatchFilter;
+import org.jboss.vfs.SuffixMatchFilter;
 
 /**
  * Deployment processor used to determine the structure of RAR deployments.

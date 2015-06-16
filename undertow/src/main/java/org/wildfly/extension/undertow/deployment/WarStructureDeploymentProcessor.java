@@ -56,7 +56,7 @@ import org.jboss.vfs.VFS;
 import org.jboss.vfs.VirtualFile;
 import org.jboss.vfs.VirtualFileFilter;
 import org.jboss.vfs.VisitorAttributes;
-import org.jboss.vfs.util.SuffixMatchFilter;
+import org.jboss.vfs.SuffixMatchFilter;
 import org.wildfly.extension.undertow.logging.UndertowLogger;
 
 /**

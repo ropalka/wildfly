@@ -47,7 +47,7 @@ import org.jboss.staxmapper.XMLMapper;
 import org.jboss.vfs.VFSUtils;
 import org.jboss.vfs.VirtualFile;
 import org.jboss.vfs.VirtualFileFilter;
-import org.jboss.vfs.util.SuffixMatchFilter;
+import org.jboss.vfs.SuffixMatchFilter;
 
 /**
  * DeploymentUnitProcessor responsible for parsing a jboss-beans.xml

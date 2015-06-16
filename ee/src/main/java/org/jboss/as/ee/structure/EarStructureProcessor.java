@@ -52,7 +52,7 @@ import org.jboss.vfs.VFS;
 import org.jboss.vfs.VFSUtils;
 import org.jboss.vfs.VirtualFile;
 import org.jboss.vfs.VisitorAttributes;
-import org.jboss.vfs.util.SuffixMatchFilter;
+import org.jboss.vfs.SuffixMatchFilter;
 
 /**
  * Deployment processor responsible for detecting EAR deployments and putting setting up the basic structure.
