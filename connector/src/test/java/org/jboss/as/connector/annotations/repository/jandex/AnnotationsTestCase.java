@@ -26,6 +26,7 @@ import org.jboss.jca.common.annotations.Annotations;
 import org.jboss.jca.common.api.validator.ValidateException;
 import org.jboss.jca.common.spi.annotations.repository.AnnotationRepository;
 
+import java.io.Closeable;
 import java.io.InputStream;
 import java.net.URI;
 import java.util.List;
@@ -33,7 +34,6 @@ import java.util.List;
 import org.jboss.jandex.Index;
 import org.jboss.jandex.Indexer;
 import org.jboss.vfs.VFS;
-import org.jboss.vfs.VFSUtils;
 import org.jboss.vfs.VirtualFile;
 import org.jboss.vfs.VisitorAttributes;
 import org.jboss.vfs.SuffixMatchFilter;
@@ -98,7 +98,7 @@ public class AnnotationsTestCase {
                     inputStream = classFile.openStream();
                     indexer.index(inputStream);
                 } finally {
-                    VFSUtils.safeClose(inputStream);
+                    safeClose(inputStream);
                 }
             }
             final Index index = indexer.complete();
@@ -130,7 +130,7 @@ public class AnnotationsTestCase {
                     inputStream = classFile.openStream();
                     indexer.index(inputStream);
                 } finally {
-                    VFSUtils.safeClose(inputStream);
+                    safeClose(inputStream);
                 }
             }
             final Index index = indexer.complete();
@@ -164,7 +164,7 @@ public class AnnotationsTestCase {
                     inputStream = classFile.openStream();
                     indexer.index(inputStream);
                 } finally {
-                    VFSUtils.safeClose(inputStream);
+                    safeClose(inputStream);
                 }
             }
             final Index index = indexer.complete();
@@ -196,7 +196,7 @@ public class AnnotationsTestCase {
                     inputStream = classFile.openStream();
                     indexer.index(inputStream);
                 } finally {
-                    VFSUtils.safeClose(inputStream);
+                    safeClose(inputStream);
                 }
             }
             final Index index = indexer.complete();
@@ -226,7 +226,7 @@ public class AnnotationsTestCase {
                     inputStream = classFile.openStream();
                     indexer.index(inputStream);
                 } finally {
-                    VFSUtils.safeClose(inputStream);
+                    safeClose(inputStream);
                 }
             }
             final Index index = indexer.complete();
@@ -257,7 +257,7 @@ public class AnnotationsTestCase {
                     inputStream = classFile.openStream();
                     indexer.index(inputStream);
                 } finally {
-                    VFSUtils.safeClose(inputStream);
+                    safeClose(inputStream);
                 }
             }
             final Index index = indexer.complete();
@@ -288,7 +288,7 @@ public class AnnotationsTestCase {
                     inputStream = classFile.openStream();
                     indexer.index(inputStream);
                 } finally {
-                    VFSUtils.safeClose(inputStream);
+                    safeClose(inputStream);
                 }
             }
             final Index index = indexer.complete();
@@ -319,7 +319,7 @@ public class AnnotationsTestCase {
                     inputStream = classFile.openStream();
                     indexer.index(inputStream);
                 } finally {
-                    VFSUtils.safeClose(inputStream);
+                    safeClose(inputStream);
                 }
             }
             final Index index = indexer.complete();
@@ -377,11 +377,15 @@ public class AnnotationsTestCase {
      */
     public URI getURI(String archive) throws Throwable {
         return this.getClass().getResource(archive).toURI();
-        // File f = new File(fileName);
-        //
-        // if (!f.exists())
-        // throw new IOException("Archive: " + fileName + " doesn't exists");
-        //
-        // return f.toURI().toURL();
     }
+
+    static void safeClose(final Closeable c) {
+        if (c != null) {
+            try {
+                c.close();
+            } catch (Exception ignore) {
+            }
+        }
+    }
+
 }

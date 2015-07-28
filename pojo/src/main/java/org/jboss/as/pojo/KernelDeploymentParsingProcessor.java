@@ -22,6 +22,7 @@
 
 package org.jboss.as.pojo;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -44,7 +45,6 @@ import org.jboss.as.server.deployment.DeploymentUnitProcessingException;
 import org.jboss.as.server.deployment.DeploymentUnitProcessor;
 import org.jboss.as.server.deployment.module.ResourceRoot;
 import org.jboss.staxmapper.XMLMapper;
-import org.jboss.vfs.VFSUtils;
 import org.jboss.vfs.VirtualFile;
 import org.jboss.vfs.VirtualFileFilter;
 import org.jboss.vfs.SuffixMatchFilter;
@@ -160,7 +160,17 @@ public class KernelDeploymentParsingProcessor implements DeploymentUnitProcessor
         } catch (Exception e) {
             throw PojoLogger.ROOT_LOGGER.parsingException(beansXmlFile, e);
         } finally {
-            VFSUtils.safeClose(xmlStream);
+            safeClose(xmlStream);
+        }
+    }
+
+    static void safeClose(final Closeable c) {
+        if (c != null) {
+            try {
+                c.close();
+            } catch (Exception e) {
+                PojoLogger.ROOT_LOGGER.trace("Failed to close resource", e);
+            }
         }
     }
 

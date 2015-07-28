@@ -22,6 +22,7 @@
 
 package org.jboss.as.connector.deployers.ds.processors;
 
+import java.io.Closeable;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.util.Collections;
@@ -43,7 +44,6 @@ import org.jboss.jca.common.api.metadata.ds.DataSource;
 import org.jboss.jca.common.api.metadata.ds.DataSources;
 import org.jboss.metadata.property.PropertyReplacer;
 import org.jboss.metadata.property.PropertyResolver;
-import org.jboss.vfs.VFSUtils;
 import org.jboss.vfs.VirtualFile;
 
 /**
@@ -104,7 +104,17 @@ public class DsXmlDeploymentParsingProcessor implements DeploymentUnitProcessor 
             } catch (Exception e) {
                 throw new DeploymentUnitProcessingException(e.getMessage(), e);
             } finally {
-                VFSUtils.safeClose(xmlStream);
+                safeClose(xmlStream);
+            }
+        }
+    }
+
+    static void safeClose(final Closeable c) {
+        if (c != null) {
+            try {
+                c.close();
+            } catch (Exception e) {
+                ConnectorLogger.ROOT_LOGGER.trace("Failed to close resource", e);
             }
         }
     }

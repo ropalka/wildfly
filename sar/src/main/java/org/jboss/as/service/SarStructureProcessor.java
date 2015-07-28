@@ -18,7 +18,6 @@ import org.jboss.as.server.deployment.module.ResourceRoot;
 import org.jboss.as.server.deployment.module.TempFileProviderService;
 import org.jboss.as.service.logging.SarLogger;
 import org.jboss.vfs.VFS;
-import org.jboss.vfs.VFSUtils;
 import org.jboss.vfs.VirtualFile;
 import org.jboss.vfs.VisitorAttributes;
 import org.jboss.vfs.SuffixMatchFilter;
@@ -90,7 +89,17 @@ public class SarStructureProcessor implements DeploymentUnitProcessor {
         final List<ResourceRoot> childRoots = context.removeAttachment(Attachments.RESOURCE_ROOTS);
         if (childRoots != null) {
             for (ResourceRoot childRoot : childRoots) {
-                VFSUtils.safeClose(childRoot.getMountHandle());
+                safeClose(childRoot.getMountHandle());
+            }
+        }
+    }
+
+    static void safeClose(final Closeable c) {
+        if (c != null) {
+            try {
+                c.close();
+            } catch (Exception e) {
+                SarLogger.ROOT_LOGGER.trace("Failed to close resource", e);
             }
         }
     }

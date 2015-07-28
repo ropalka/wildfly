@@ -22,6 +22,7 @@
 
 package org.jboss.as.service;
 
+import java.io.Closeable;
 import java.io.InputStream;
 import java.util.Locale;
 
@@ -40,7 +41,6 @@ import org.jboss.as.service.descriptor.JBossServiceXmlDescriptorParser;
 import org.jboss.as.service.descriptor.ParseResult;
 import org.jboss.as.service.logging.SarLogger;
 import org.jboss.staxmapper.XMLMapper;
-import org.jboss.vfs.VFSUtils;
 import org.jboss.vfs.VirtualFile;
 
 /**
@@ -102,10 +102,21 @@ public class ServiceDeploymentParsingProcessor implements DeploymentUnitProcesso
         } catch(Exception e) {
             throw SarLogger.ROOT_LOGGER.failedXmlParsing(e, serviceXmlFile);
         } finally {
-            VFSUtils.safeClose(xmlStream);
+            safeClose(xmlStream);
         }
     }
 
     public void undeploy(final DeploymentUnit context) {
     }
+
+    static void safeClose(final Closeable c) {
+        if (c != null) {
+            try {
+                c.close();
+            } catch (Exception e) {
+                SarLogger.ROOT_LOGGER.trace("Failed to close resource", e);
+            }
+        }
+    }
+
 }

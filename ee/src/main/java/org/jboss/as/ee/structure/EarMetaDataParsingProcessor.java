@@ -22,6 +22,7 @@
 
 package org.jboss.as.ee.structure;
 
+import java.io.Closeable;
 import java.io.InputStream;
 
 import javax.xml.stream.XMLInputFactory;
@@ -41,7 +42,6 @@ import org.jboss.metadata.parser.jboss.JBossAppMetaDataParser;
 import org.jboss.metadata.parser.spec.EarMetaDataParser;
 import org.jboss.metadata.parser.util.NoopXMLResolver;
 import org.jboss.metadata.property.PropertyReplacer;
-import org.jboss.vfs.VFSUtils;
 import org.jboss.vfs.VirtualFile;
 
 /**
@@ -103,7 +103,7 @@ public class EarMetaDataParsingProcessor implements DeploymentUnitProcessor {
         } catch (Exception e) {
             throw EeLogger.ROOT_LOGGER.failedToParse(e, applicationXmlFile);
         } finally {
-            VFSUtils.safeClose(inputStream);
+            safeClose(inputStream);
         }
     }
 
@@ -125,7 +125,7 @@ public class EarMetaDataParsingProcessor implements DeploymentUnitProcessor {
         } catch (Exception e) {
             throw EeLogger.ROOT_LOGGER.failedToParse(e, applicationXmlFile);
         } finally {
-            VFSUtils.safeClose(inputStream);
+            safeClose(inputStream);
         }
     }
 
@@ -133,5 +133,14 @@ public class EarMetaDataParsingProcessor implements DeploymentUnitProcessor {
         deploymentUnit.removeAttachment(Attachments.EAR_METADATA);
     }
 
+    static void safeClose(final Closeable c) {
+        if (c != null) {
+            try {
+                c.close();
+            } catch (Exception e) {
+                EeLogger.ROOT_LOGGER.trace("Failed to close resource", e);
+            }
+        }
+    }
 
 }

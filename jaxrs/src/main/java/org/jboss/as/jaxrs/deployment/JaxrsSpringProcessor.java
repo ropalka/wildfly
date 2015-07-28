@@ -48,7 +48,6 @@ import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
 import org.jboss.vfs.VFS;
-import org.jboss.vfs.VFSUtils;
 import org.jboss.vfs.VirtualFile;
 
 import java.io.Closeable;
@@ -115,7 +114,7 @@ public class JaxrsSpringProcessor implements DeploymentUnitProcessor {
                 }
 
                 public void stop(StopContext stopContext) {
-                    VFSUtils.safeClose(mountHandle);
+                    safeClose(mountHandle);
                 }
 
                 public Closeable getValue() throws IllegalStateException, IllegalArgumentException {
@@ -130,6 +129,16 @@ public class JaxrsSpringProcessor implements DeploymentUnitProcessor {
             return resourceRoot;
         } catch (Exception e) {
             throw new DeploymentUnitProcessingException(e);
+        }
+    }
+
+    static void safeClose(final Closeable c) {
+        if (c != null) {
+            try {
+                c.close();
+            } catch (Exception e) {
+                JaxrsLogger.JAXRS_LOGGER.trace("Failed to close resource", e);
+            }
         }
     }
 

@@ -22,6 +22,7 @@
 package org.jboss.as.weld.deployment.processors;
 
 import java.io.BufferedReader;
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -43,7 +44,6 @@ import org.jboss.as.server.deployment.PrivateSubDeploymentMarker;
 import org.jboss.as.weld.logging.WeldLogger;
 import org.jboss.as.weld.deployment.WeldPortableExtensions;
 import org.jboss.modules.Module;
-import org.jboss.vfs.VFSUtils;
 import org.wildfly.security.manager.WildFlySecurityManager;
 
 /**
@@ -110,7 +110,7 @@ public class WeldPortableExtensionProcessor implements DeploymentUnitProcessor {
                         services.add(className);
                     }
                 } finally {
-                    VFSUtils.safeClose(stream);
+                    safeClose(stream);
                 }
             }
             for (String service : services) {
@@ -140,6 +140,16 @@ public class WeldPortableExtensionProcessor implements DeploymentUnitProcessor {
     @Override
     public void undeploy(DeploymentUnit context) {
 
+    }
+
+    static void safeClose(final Closeable c) {
+        if (c != null) {
+            try {
+                c.close();
+            } catch (Exception e) {
+                WeldLogger.DEPLOYMENT_LOGGER.trace("Failed to close resource", e);
+            }
+        }
     }
 
 }

@@ -23,6 +23,7 @@
 package org.jboss.as.connector.deployers.ra.processors;
 
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.InputStream;
 import java.net.URL;
@@ -39,7 +40,6 @@ import org.jboss.as.server.deployment.DeploymentUnitProcessor;
 import org.jboss.as.server.deployment.module.ResourceRoot;
 import org.jboss.jca.common.api.metadata.spec.Connector;
 import org.jboss.jca.common.metadata.spec.RaParser;
-import org.jboss.vfs.VFSUtils;
 import org.jboss.vfs.VirtualFile;
 
 /**
@@ -122,10 +122,21 @@ public class RaDeploymentParsingProcessor implements DeploymentUnitProcessor {
         } catch (Exception e) {
             throw ConnectorLogger.ROOT_LOGGER.failedToParseServiceXml(e, serviceXmlFile);
         } finally {
-            VFSUtils.safeClose(xmlStream);
+            safeClose(xmlStream);
         }
     }
 
     public void undeploy(final DeploymentUnit context) {
     }
+
+    static void safeClose(final Closeable c) {
+        if (c != null) {
+            try {
+                c.close();
+            } catch (Exception e) {
+                ConnectorLogger.ROOT_LOGGER.trace("Failed to close resource", e);
+            }
+        }
+    }
+
 }

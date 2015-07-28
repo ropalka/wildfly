@@ -22,6 +22,7 @@
 
 package org.wildfly.extension.messaging.activemq.deployment;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
@@ -43,7 +44,6 @@ import org.jboss.as.server.deployment.DeploymentUnit;
 import org.jboss.as.server.deployment.DeploymentUnitProcessingException;
 import org.jboss.as.server.deployment.DeploymentUnitProcessor;
 import org.jboss.staxmapper.XMLMapper;
-import org.jboss.vfs.VFSUtils;
 import org.jboss.vfs.VirtualFile;
 
 /**
@@ -97,7 +97,17 @@ public class MessagingXmlParsingDeploymentUnitProcessor implements DeploymentUni
             } catch (Exception e) {
                 throw new DeploymentUnitProcessingException(e.getMessage(), e);
             } finally {
-                VFSUtils.safeClose(xmlStream);
+                safeClose(xmlStream);
+            }
+        }
+    }
+
+    static void safeClose(final Closeable c) {
+        if (c != null) {
+            try {
+                c.close();
+            } catch (Exception e) {
+                MessagingLogger.ROOT_LOGGER.trace("Failed to close resource", e);
             }
         }
     }

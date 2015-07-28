@@ -22,6 +22,7 @@
 
 package org.jboss.as.ee.metadata.property;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
@@ -32,7 +33,6 @@ import org.jboss.as.server.deployment.DeploymentUnit;
 import org.jboss.as.server.deployment.DeploymentUnitProcessingException;
 import org.jboss.as.server.deployment.DeploymentUnitProcessor;
 import org.jboss.as.server.deployment.module.ResourceRoot;
-import org.jboss.vfs.VFSUtils;
 import org.jboss.vfs.VirtualFile;
 
 /**
@@ -61,7 +61,7 @@ public class DeploymentPropertiesProcessor implements DeploymentUnitProcessor {
         } catch (IOException e) {
             throw EeLogger.ROOT_LOGGER.failedToLoadJbossProperties(e);
         } finally {
-            VFSUtils.safeClose(propertyFileStream);
+            safeClose(propertyFileStream);
         }
 
         deploymentUnit.putAttachment(Attachments.DEPLOYMENT_PROPERTIES, properties);
@@ -69,4 +69,15 @@ public class DeploymentPropertiesProcessor implements DeploymentUnitProcessor {
 
     public void undeploy(DeploymentUnit context) {
     }
+
+    static void safeClose(final Closeable c) {
+        if (c != null) {
+            try {
+                c.close();
+            } catch (Exception e) {
+                EeLogger.ROOT_LOGGER.trace("Failed to close resource", e);
+            }
+        }
+    }
+
 }
