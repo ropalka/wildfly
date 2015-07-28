@@ -49,7 +49,6 @@ import org.jboss.metadata.ear.spec.EarMetaData;
 import org.jboss.metadata.ear.spec.ModuleMetaData;
 import org.jboss.metadata.ear.spec.ModuleMetaData.ModuleType;
 import org.jboss.vfs.VFS;
-import org.jboss.vfs.VFSUtils;
 import org.jboss.vfs.VirtualFile;
 import org.jboss.vfs.VisitorAttributes;
 import org.jboss.vfs.SuffixMatchFilter;
@@ -286,10 +285,19 @@ public class EarStructureProcessor implements DeploymentUnitProcessor {
     private Closeable exportExplodedWar(final boolean war, final VirtualFile file, final DeploymentUnit deploymentUnit) throws IOException {
         if (isExplodedWarInArchiveEar(war, file, deploymentUnit)) {
             File warContent = file.getPhysicalFile();
-            VFSUtils.recursiveCopy(file, warContent.getParentFile());
             return VFS.mountReal(warContent, file);
         }
         return null;
+    }
+
+    public static void safeClose(final Closeable c) {
+        if (c != null) {
+            try {
+                c.close();
+            } catch (Exception e) {
+                EeLogger.ROOT_LOGGER.trace("Failed to close resource", e);
+            }
+        }
     }
 
     private boolean isExplodedWarInArchiveEar(final boolean war, final VirtualFile file, final DeploymentUnit deploymentUnit) {
@@ -301,7 +309,7 @@ public class EarStructureProcessor implements DeploymentUnitProcessor {
         final List<ResourceRoot> children = context.removeAttachment(Attachments.RESOURCE_ROOTS);
         if (children != null) {
             for (ResourceRoot childRoot : children) {
-                VFSUtils.safeClose(childRoot.getMountHandle());
+                safeClose(childRoot.getMountHandle());
             }
         }
     }
