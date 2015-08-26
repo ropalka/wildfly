@@ -47,7 +47,6 @@ import org.jboss.as.server.deployment.module.ModuleRootMarker;
 import org.jboss.as.server.deployment.module.ModuleSpecification;
 import org.jboss.as.server.deployment.module.MountHandle;
 import org.jboss.as.server.deployment.module.ResourceRoot;
-import org.jboss.as.server.deployment.module.TempFileProviderService;
 import org.jboss.as.web.common.SharedTldsMetaDataBuilder;
 import org.jboss.as.web.common.WarMetaData;
 import org.jboss.modules.filter.PathFilters;
@@ -64,6 +63,7 @@ import org.wildfly.extension.undertow.logging.UndertowLogger;
  *
  * @author Emanuel Muckenhuber
  * @author Thomas.Diesler@jboss.com
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public class WarStructureDeploymentProcessor implements DeploymentUnitProcessor {
 
@@ -71,7 +71,6 @@ public class WarStructureDeploymentProcessor implements DeploymentUnitProcessor 
 
     public static final String WEB_INF_LIB = "WEB-INF/lib";
     public static final String WEB_INF_CLASSES = "WEB-INF/classes";
-    public static final String META_INF = "META-INF";
 
     private static final String WEB_INF_EXTERNAL_MOUNTS = "WEB-INF/undertow-external-mounts.conf";
 
@@ -220,9 +219,9 @@ public class WarStructureDeploymentProcessor implements DeploymentUnitProcessor 
                     MountedDeploymentOverlay overlay = overlays.get(relativeName);
                     Closeable closable = null;
                     if(overlay != null) {
-                        overlay.remountAsZip(false);
+                        overlay.remountAsZip();
                     } else if (archive.isFile()) {
-                        closable = VFS.mountZip(archive, archive, TempFileProviderService.provider());
+                        closable = VFS.mountZip(archive, archive);
                     } else {
                         closable = null;
                     }

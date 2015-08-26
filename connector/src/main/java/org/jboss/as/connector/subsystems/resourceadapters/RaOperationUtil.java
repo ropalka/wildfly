@@ -444,7 +444,6 @@ public class RaOperationUtil {
 
                     closable = VFS.mountReal(new File(path.getPath().split("META-INF")[0]), child);
                 }
-                //final Closeable closable = VFS.mountZip((InputStream) new JarInputStream(new FileInputStream(path.getPath().split("!")[0].split(":")[1])), path.getPath().split("!")[0].split(":")[1], child, TempFileProviderService.provider());
 
                 final MountHandle mountHandle = new MountHandle(closable);
                 final ResourceRoot resourceRoot = new ResourceRoot(child, mountHandle);

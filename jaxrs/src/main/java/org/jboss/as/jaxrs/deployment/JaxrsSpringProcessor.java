@@ -31,7 +31,6 @@ import org.jboss.as.server.deployment.DeploymentUnitProcessor;
 import org.jboss.as.server.deployment.module.ModuleRootMarker;
 import org.jboss.as.server.deployment.module.MountHandle;
 import org.jboss.as.server.deployment.module.ResourceRoot;
-import org.jboss.as.server.deployment.module.TempFileProviderService;
 import org.jboss.as.web.common.WarMetaData;
 import org.jboss.metadata.javaee.spec.ParamValueMetaData;
 import org.jboss.metadata.web.jboss.JBossServletMetaData;
@@ -108,7 +107,7 @@ public class JaxrsSpringProcessor implements DeploymentUnitProcessor {
                 throw JaxrsLogger.JAXRS_LOGGER.noSpringIntegrationJar();
             }
             VirtualFile vf = VFS.getChild(file.toURI());
-            final Closeable mountHandle = VFS.mountZip(file, vf, TempFileProviderService.provider());
+            final Closeable mountHandle = VFS.mountZip(file, vf);
             Service<Closeable> mountHandleService = new Service<Closeable>() {
                 public void start(StartContext startContext) throws StartException {
                 }

@@ -34,7 +34,6 @@ import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
 
 import org.jboss.as.jpa.hibernate4.VirtualFileSystemArchiveDescriptorFactory;
 
@@ -64,7 +63,6 @@ import org.jboss.shrinkwrap.api.exporter.ExplodedExporter;
 import org.jboss.shrinkwrap.api.exporter.ZipExporter;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.jboss.shrinkwrap.api.spec.WebArchive;
-import org.jboss.vfs.TempFileProvider;
 import org.jboss.vfs.VFS;
 import org.jboss.vfs.VirtualFile;
 
@@ -91,8 +89,6 @@ public class ScannerTest {
 	protected static ClassLoader originalClassLoader = Thread.currentThread().getContextClassLoader();
 	protected static ClassLoader bundleClassLoader;
 
-	protected static TempFileProvider tempFileProvider;
-
 	protected static File testSrcDirectory;
 
 	/**
@@ -101,13 +97,6 @@ public class ScannerTest {
 	protected static File shrinkwrapArchiveDirectory;
 
 	static {
-		try {
-			tempFileProvider = TempFileProvider.create("test", new ScheduledThreadPoolExecutor(2));
-		}
-		catch (IOException e) {
-			throw new RuntimeException( e );
-		}
-
 		// we make an assumption here that the directory which holds compiled classes (nested) also holds
 		// sources.   We therefore look for our module directory name, and use that to locate bundles
 		final URL scannerTestsClassFileUrl = originalClassLoader.getResource(
@@ -439,7 +428,7 @@ public class ScannerTest {
 		addPackageToClasspath( defaultPar );
 
 		final VirtualFile virtualFile = VFS.getChild( defaultPar.getAbsolutePath() );
-		Closeable closeable = VFS.mountZip( virtualFile, virtualFile, tempFileProvider );
+		Closeable closeable = VFS.mountZip( virtualFile, virtualFile);
 
 		try {
 			ArchiveDescriptor archiveDescriptor = VirtualFileSystemArchiveDescriptorFactory.INSTANCE.buildArchiveDescriptor( defaultPar.toURI().toURL() );
@@ -485,11 +474,11 @@ public class ScannerTest {
 		addPackageToClasspath( nestedEar );
 
 		final VirtualFile nestedEarVirtualFile = VFS.getChild( nestedEar.getAbsolutePath() );
-		Closeable closeable = VFS.mountZip( nestedEarVirtualFile, nestedEarVirtualFile, tempFileProvider );
+		Closeable closeable = VFS.mountZip( nestedEarVirtualFile, nestedEarVirtualFile );
 
 		try {
 			VirtualFile parVirtualFile = nestedEarVirtualFile.getChild( "defaultpar.par" );
-			Closeable closeable2 = VFS.mountZip( parVirtualFile, parVirtualFile, tempFileProvider );
+			Closeable closeable2 = VFS.mountZip( parVirtualFile, parVirtualFile );
 			try {
 				ArchiveDescriptor archiveDescriptor = VirtualFileSystemArchiveDescriptorFactory.INSTANCE.buildArchiveDescriptor( parVirtualFile.toURL() );
 
@@ -517,7 +506,7 @@ public class ScannerTest {
 
 		try {
 			VirtualFile parVirtualFile = nestedEarDirVirtualFile.getChild( "defaultpar.par" );
-			closeable = VFS.mountZip( parVirtualFile, parVirtualFile, tempFileProvider );
+			closeable = VFS.mountZip( parVirtualFile, parVirtualFile );
 			try {
 				ArchiveDescriptor archiveDescriptor = VirtualFileSystemArchiveDescriptorFactory.INSTANCE.buildArchiveDescriptor( parVirtualFile.toURL() );
 				AbstractScannerImpl.ResultCollector resultCollector = new AbstractScannerImpl.ResultCollector( new StandardScanOptions() );
@@ -546,7 +535,7 @@ public class ScannerTest {
 		addPackageToClasspath( war );
 
 		final VirtualFile warVirtualFile = VFS.getChild( war.getAbsolutePath() );
-		Closeable closeable = VFS.mountZip( warVirtualFile, warVirtualFile, tempFileProvider );
+		Closeable closeable = VFS.mountZip( warVirtualFile, warVirtualFile );
 
 		try {
 			ArchiveDescriptor archiveDescriptor = VirtualFileSystemArchiveDescriptorFactory.INSTANCE.buildArchiveDescriptor(
@@ -579,7 +568,7 @@ public class ScannerTest {
 		addPackageToClasspath( defaultPar );
 
 		final VirtualFile virtualFile = VFS.getChild( defaultPar.getAbsolutePath() );
-		Closeable closeable = VFS.mountZip( virtualFile, virtualFile, tempFileProvider );
+		Closeable closeable = VFS.mountZip( virtualFile, virtualFile );
 
 		try {
 			ArchiveDescriptor archiveDescriptor = VirtualFileSystemArchiveDescriptorFactory.INSTANCE.buildArchiveDescriptor(

@@ -15,7 +15,6 @@ import org.jboss.as.server.deployment.MountedDeploymentOverlay;
 import org.jboss.as.server.deployment.module.ModuleRootMarker;
 import org.jboss.as.server.deployment.module.MountHandle;
 import org.jboss.as.server.deployment.module.ResourceRoot;
-import org.jboss.as.server.deployment.module.TempFileProviderService;
 import org.jboss.as.service.logging.SarLogger;
 import org.jboss.vfs.VFS;
 import org.jboss.vfs.VirtualFile;
@@ -24,8 +23,8 @@ import org.jboss.vfs.SuffixMatchFilter;
 
 /**
  * @author Tomasz Adamski
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
-
 public class SarStructureProcessor implements DeploymentUnitProcessor {
 
     private static final String SAR_EXTENSION = ".sar";
@@ -68,9 +67,9 @@ public class SarStructureProcessor implements DeploymentUnitProcessor {
                 MountedDeploymentOverlay overlay = overlays.get(relativeName);
                 Closeable closable = NO_OP_CLOSEABLE;
                 if(overlay != null) {
-                    overlay.remountAsZip(false);
-                } else if(child.isFile()) {
-                    closable = VFS.mountZip(child, child, TempFileProviderService.provider());
+                    overlay.remountAsZip();
+                } else if (child.isFile()) {
+                    closable = VFS.mountZip(child, child);
                 }
                 final MountHandle mountHandle = new MountHandle(closable);
                 final ResourceRoot childResource = new ResourceRoot(child, mountHandle);

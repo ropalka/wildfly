@@ -39,7 +39,6 @@ import org.jboss.as.server.deployment.SubDeploymentMarker;
 import org.jboss.as.server.deployment.module.ModuleRootMarker;
 import org.jboss.as.server.deployment.module.MountHandle;
 import org.jboss.as.server.deployment.module.ResourceRoot;
-import org.jboss.as.server.deployment.module.TempFileProviderService;
 import org.jboss.vfs.VFS;
 import org.jboss.vfs.VirtualFile;
 
@@ -47,6 +46,7 @@ import org.jboss.vfs.VirtualFile;
  * Processor that marks a sub-deployment as an application client based on the parameters passed on the command line
  *
  * @author Stuart Douglas
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public class ApplicationClientStructureProcessor implements DeploymentUnitProcessor {
 
@@ -74,7 +74,7 @@ public class ApplicationClientStructureProcessor implements DeploymentUnitProces
                     SubDeploymentMarker.mark(existingRoot);
                     ModuleRootMarker.mark(existingRoot);
                 } else {
-                    final Closeable closable = appClientRoot.isFile() ? mount(appClientRoot, false) : null;
+                    final Closeable closable = appClientRoot.isFile() ? mount(appClientRoot) : null;
                     final MountHandle mountHandle = new MountHandle(closable);
                     final ResourceRoot childResource = new ResourceRoot(appClientRoot, mountHandle);
                     ModuleRootMarker.mark(childResource);
@@ -96,10 +96,9 @@ public class ApplicationClientStructureProcessor implements DeploymentUnitProces
         }
     }
 
-    private static Closeable mount(VirtualFile moduleFile, boolean explode) throws DeploymentUnitProcessingException {
+    private static Closeable mount(VirtualFile moduleFile) throws DeploymentUnitProcessingException {
         try {
-            return explode ? VFS.mountZipExpanded(moduleFile, moduleFile, TempFileProviderService.provider())
-                    : VFS.mountZip(moduleFile, moduleFile, TempFileProviderService.provider());
+            return VFS.mountZip(moduleFile, moduleFile);
         } catch (IOException e) {
             throw new DeploymentUnitProcessingException(e);
         }

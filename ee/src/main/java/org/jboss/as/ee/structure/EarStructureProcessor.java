@@ -44,7 +44,6 @@ import org.jboss.as.server.deployment.SubExplodedDeploymentMarker;
 import org.jboss.as.server.deployment.module.ModuleRootMarker;
 import org.jboss.as.server.deployment.module.MountHandle;
 import org.jboss.as.server.deployment.module.ResourceRoot;
-import org.jboss.as.server.deployment.module.TempFileProviderService;
 import org.jboss.metadata.ear.spec.EarMetaData;
 import org.jboss.metadata.ear.spec.ModuleMetaData;
 import org.jboss.metadata.ear.spec.ModuleMetaData.ModuleType;
@@ -58,6 +57,7 @@ import org.jboss.vfs.SuffixMatchFilter;
  *
  * @author John Bailey
  * @author Stuart Douglas
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public class EarStructureProcessor implements DeploymentUnitProcessor {
 
@@ -125,7 +125,7 @@ public class EarStructureProcessor implements DeploymentUnitProcessor {
                         MountedDeploymentOverlay overlay = overlays.get(relativeName);
                         final MountHandle mountHandle;
                         if(overlay != null) {
-                            overlay.remountAsZip(false);
+                            overlay.remountAsZip();
                             mountHandle = new MountHandle(null);
                         } else {
                             final Closeable closable = child.isFile() ? mount(child, false) : null;
@@ -249,8 +249,8 @@ public class EarStructureProcessor implements DeploymentUnitProcessor {
     }
 
     private static Closeable mount(VirtualFile moduleFile, boolean explode) throws IOException {
-        return explode ? VFS.mountZipExpanded(moduleFile, moduleFile, TempFileProviderService.provider())
-                : VFS.mountZip(moduleFile, moduleFile, TempFileProviderService.provider());
+        return explode ? VFS.mountZipExpanded(moduleFile, moduleFile)
+                : VFS.mountZip(moduleFile, moduleFile);
     }
 
     /**

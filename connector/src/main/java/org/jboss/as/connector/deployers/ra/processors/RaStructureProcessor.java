@@ -39,7 +39,6 @@ import org.jboss.as.server.deployment.module.ModuleRootMarker;
 import org.jboss.as.server.deployment.module.ModuleSpecification;
 import org.jboss.as.server.deployment.module.MountHandle;
 import org.jboss.as.server.deployment.module.ResourceRoot;
-import org.jboss.as.server.deployment.module.TempFileProviderService;
 import org.jboss.vfs.VFS;
 import org.jboss.vfs.VirtualFile;
 import org.jboss.vfs.VisitorAttributes;
@@ -49,6 +48,7 @@ import org.jboss.vfs.SuffixMatchFilter;
  * Deployment processor used to determine the structure of RAR deployments.
  *
  * @author John Bailey
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public class RaStructureProcessor implements DeploymentUnitProcessor {
     private static final String RAR_EXTENSION = ".rar";
@@ -95,9 +95,9 @@ public class RaStructureProcessor implements DeploymentUnitProcessor {
                 MountedDeploymentOverlay overlay = overlays.get(relativeName);
                 Closeable closable = NO_OP_CLOSEABLE;
                 if(overlay != null) {
-                    overlay.remountAsZip(false);
+                    overlay.remountAsZip();
                 } else if(child.isFile()) {
-                    closable = VFS.mountZip(child, child, TempFileProviderService.provider());
+                    closable = VFS.mountZip(child, child);
                 }
                 final MountHandle mountHandle = new MountHandle(closable);
                 final ResourceRoot childResource = new ResourceRoot(child, mountHandle);
