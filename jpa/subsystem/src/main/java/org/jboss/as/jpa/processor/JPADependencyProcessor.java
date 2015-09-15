@@ -24,22 +24,15 @@ package org.jboss.as.jpa.processor;
 
 import static org.jboss.as.jpa.messages.JpaLogger.ROOT_LOGGER;
 
-import java.io.IOException;
-import java.net.JarURLConnection;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.URLConnection;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.jar.JarFile;
 
 import org.jboss.as.ee.component.ComponentDescription;
 import org.jboss.as.ee.component.EEModuleDescription;
 import org.jboss.as.jpa.config.Configuration;
 import org.jboss.as.jpa.config.PersistenceUnitMetadataHolder;
 import org.jboss.as.jpa.config.PersistenceUnitsInApplication;
-import org.jboss.as.jpa.messages.JpaLogger;
 import org.jboss.as.jpa.service.PersistenceUnitServiceImpl;
 import org.jboss.as.server.deployment.Attachments;
 import org.jboss.as.server.deployment.DeploymentPhaseContext;
@@ -52,10 +45,7 @@ import org.jboss.as.server.deployment.module.ModuleDependency;
 import org.jboss.as.server.deployment.module.ModuleSpecification;
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleIdentifier;
-import org.jboss.modules.ModuleLoadException;
 import org.jboss.modules.ModuleLoader;
-import org.jboss.modules.ResourceLoaderSpec;
-import org.jboss.modules.ResourceLoaders;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceName;
 import org.jipijapa.plugin.spi.PersistenceUnitMetadata;
@@ -64,6 +54,7 @@ import org.jipijapa.plugin.spi.PersistenceUnitMetadata;
  * Deployment processor which adds a module dependencies for modules needed for JPA deployments.
  *
  * @author Scott Marlow (copied from WeldDepedencyProcessor)
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public class JPADependencyProcessor implements DeploymentUnitProcessor {
 
@@ -186,7 +177,6 @@ public class JPADependencyProcessor implements DeploymentUnitProcessor {
         int defaultProviderCount = 0;
         if (holder != null) {
             for (PersistenceUnitMetadata pu : holder.getPersistenceUnits()) {
-                String providerModule = pu.getProperties().getProperty(Configuration.PROVIDER_MODULE);
                 String adapterModule = pu.getProperties().getProperty(Configuration.ADAPTER_MODULE);
                 String adapterClass = pu.getProperties().getProperty(Configuration.ADAPTER_CLASS);
 
@@ -225,33 +215,4 @@ public class JPADependencyProcessor implements DeploymentUnitProcessor {
         }
         return defaultProviderCount;
     }
-
-    private void addHibernate3AdaptorToDeployment(final ModuleLoader moduleLoader, final DeploymentUnit deploymentUnit) {
-        final ModuleSpecification moduleSpecification = deploymentUnit.getAttachment(Attachments.MODULE_SPECIFICATION);
-        try {
-            final Module module = moduleLoader.loadModule(HIBERNATE_3_PROVIDER);
-            //use a trick to get to the root of the class loader
-            final URL url = module.getClassLoader().getResource(HIBERNATE3_PROVIDER_ADAPTOR.replace('.', '/') + ".class");
-
-            final URLConnection connection = url.openConnection();
-            if (!(connection instanceof JarURLConnection)) {
-                throw JpaLogger.ROOT_LOGGER.invalidUrlConnection("hibernate 3", connection);
-            }
-
-            final JarFile jarFile = ((JarURLConnection) connection).getJarFile();
-
-            moduleSpecification.addResourceLoader(ResourceLoaderSpec.createResourceLoaderSpec(ResourceLoaders.createJarResourceLoader("hibernate3integration", jarFile)));
-
-            // hack in the dependencies which are part of hibernate3integration
-            // TODO:  do this automatically (adding dependencies found in HIBERNATE_3_PROVIDER).
-            addDependency(moduleSpecification, moduleLoader, deploymentUnit, JBOSS_AS_NAMING_ID, JBOSS_JANDEX_ID);
-        } catch (ModuleLoadException e) {
-            throw JpaLogger.ROOT_LOGGER.cannotLoadModule(e, HIBERNATE_3_PROVIDER, "hibernate 3");
-        } catch (MalformedURLException e) {
-            throw JpaLogger.ROOT_LOGGER.cannotAddIntegration(e, "hibernate 3");
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
 }
