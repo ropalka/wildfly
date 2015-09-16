@@ -44,6 +44,8 @@ import org.jboss.as.server.deployment.SubExplodedDeploymentMarker;
 import org.jboss.as.server.deployment.module.ModuleRootMarker;
 import org.jboss.as.server.deployment.module.MountHandle;
 import org.jboss.as.server.deployment.module.ResourceRoot;
+import org.jboss.as.server.loaders.ResourceLoader;
+import org.jboss.as.server.loaders.ResourceLoaders;
 import org.jboss.metadata.ear.spec.EarMetaData;
 import org.jboss.metadata.ear.spec.ModuleMetaData;
 import org.jboss.metadata.ear.spec.ModuleMetaData.ModuleType;
@@ -131,7 +133,10 @@ public class EarStructureProcessor implements DeploymentUnitProcessor {
                             final Closeable closable = child.isFile() ? mount(child, false) : null;
                             mountHandle = new MountHandle(closable);
                         }
-                        final ResourceRoot childResource = new ResourceRoot(child, mountHandle);
+                        final ResourceLoader loader = overlay == null
+                                ? ResourceLoaders.newResourceLoader(child.getName(), deploymentRoot.getLoader(), relativeName)
+                                : ResourceLoaders.newResourceLoader(child.getName(), overlay.getFile(), deploymentRoot.getLoader());
+                        final ResourceRoot childResource = new ResourceRoot(loader, child, mountHandle);
                         if (child.getName().toLowerCase(Locale.ENGLISH).endsWith(JAR_EXTENSION)) {
                             ModuleRootMarker.mark(childResource);
                             deploymentUnit.addToAttachmentList(Attachments.RESOURCE_ROOTS, childResource);
@@ -170,7 +175,7 @@ public class EarStructureProcessor implements DeploymentUnitProcessor {
                 for (final VirtualFile child : childArchives) {
                     final boolean isWarFile = child.getName().toLowerCase(Locale.ENGLISH).endsWith(WAR_EXTENSION);
                     final boolean isRarFile = child.getName().toLowerCase(Locale.ENGLISH).endsWith(RAR_EXTENSION);
-                    this.createResourceRoot(deploymentUnit, child, isWarFile || isRarFile, isWarFile);
+                    this.createResourceRoot(deploymentRoot, deploymentUnit, child, isWarFile || isRarFile, isWarFile);
                 }
             } else {
                 final Set<VirtualFile> subDeploymentFiles = new HashSet<VirtualFile>();
@@ -199,7 +204,7 @@ public class EarStructureProcessor implements DeploymentUnitProcessor {
                     subDeploymentFiles.add(moduleFile);
 
                     final boolean webArchive = module.getType() == ModuleType.Web;
-                    final ResourceRoot childResource = this.createResourceRoot(deploymentUnit, moduleFile, true, webArchive);
+                    final ResourceRoot childResource = this.createResourceRoot(deploymentRoot, deploymentUnit, moduleFile, true, webArchive);
                     childResource.putAttachment(org.jboss.as.ee.structure.Attachments.MODULE_META_DATA, module);
 
                     if (!webArchive) {
@@ -238,7 +243,7 @@ public class EarStructureProcessor implements DeploymentUnitProcessor {
                     }
                     final String fileName = child.getName().toLowerCase(Locale.ENGLISH);
                     if (fileName.endsWith(SAR_EXTENSION) || fileName.endsWith(JAR_EXTENSION)) {
-                        this.createResourceRoot(deploymentUnit, child, false, false);
+                        this.createResourceRoot(deploymentRoot, deploymentUnit, child, false, false);
                     }
                 }
             }
@@ -257,6 +262,7 @@ public class EarStructureProcessor implements DeploymentUnitProcessor {
      * Creates a {@link ResourceRoot} for the passed {@link VirtualFile file} and adds it to the list of {@link ResourceRoot}s
      * in the {@link DeploymentUnit deploymentUnit}
      *
+     * @param deploymentRoot      The deployment resource root
      * @param deploymentUnit      The deployment unit
      * @param file                The file for which the resource root will be created
      * @param markAsSubDeployment If this is true, then the {@link ResourceRoot} that is created will be marked as a subdeployment
@@ -266,11 +272,13 @@ public class EarStructureProcessor implements DeploymentUnitProcessor {
      * @return Returns the created {@link ResourceRoot}
      * @throws IOException
      */
-    private ResourceRoot createResourceRoot(final DeploymentUnit deploymentUnit, final VirtualFile file, final boolean markAsSubDeployment, final boolean explodeDuringMount) throws IOException {
+    private ResourceRoot createResourceRoot(final ResourceRoot deploymentRoot, final DeploymentUnit deploymentUnit, final VirtualFile file, final boolean markAsSubDeployment, final boolean explodeDuringMount) throws IOException {
         final boolean war = file.getName().toLowerCase(Locale.ENGLISH).endsWith(WAR_EXTENSION);
         final Closeable closable = file.isFile() ? mount(file, explodeDuringMount) : exportExplodedWar(war, file, deploymentUnit);
         final MountHandle mountHandle = new MountHandle(closable);
-        final ResourceRoot resourceRoot = new ResourceRoot(file, mountHandle);
+        final String relativeName = file.getPathNameRelativeTo(deploymentRoot.getRoot());
+        final ResourceLoader loader = ResourceLoaders.newResourceLoader(file.getName(), deploymentRoot.getLoader(), relativeName);
+        final ResourceRoot resourceRoot = new ResourceRoot(loader, file, mountHandle);
         deploymentUnit.addToAttachmentList(Attachments.RESOURCE_ROOTS, resourceRoot);
         if (markAsSubDeployment) {
             SubDeploymentMarker.mark(resourceRoot);

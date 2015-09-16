@@ -29,8 +29,9 @@ import org.jboss.as.server.deployment.DeploymentUnit;
 import org.jboss.as.server.deployment.DeploymentUnitProcessingException;
 import org.jboss.as.server.deployment.DeploymentUnitProcessor;
 import org.jboss.as.server.deployment.module.ModuleRootMarker;
-import org.jboss.as.server.deployment.module.MountHandle;
 import org.jboss.as.server.deployment.module.ResourceRoot;
+import org.jboss.as.server.loaders.ResourceLoader;
+import org.jboss.as.server.loaders.ResourceLoaders;
 import org.jboss.as.web.common.WarMetaData;
 import org.jboss.metadata.javaee.spec.ParamValueMetaData;
 import org.jboss.metadata.web.jboss.JBossServletMetaData;
@@ -57,6 +58,7 @@ import java.util.List;
 
 /**
  * Recognize Spring deployment and add the JAX-RS integration to it
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public class JaxrsSpringProcessor implements DeploymentUnitProcessor {
 
@@ -71,20 +73,13 @@ public class JaxrsSpringProcessor implements DeploymentUnitProcessor {
     public static final String SERVICE_NAME = "resteasy-spring-integration-resource-root";
 
     private final ServiceTarget serviceTarget;
-    private VirtualFile resourceRoot;
+    private ResourceRoot resourceRoot;
 
     public JaxrsSpringProcessor(ServiceTarget serviceTarget) {
         this.serviceTarget = serviceTarget;
     }
 
-    /**
-     * Lookup Seam integration resource loader.
-     *
-     * @return the Seam integration resource loader
-     * @throws DeploymentUnitProcessingException
-     *          for any error
-     */
-    protected synchronized VirtualFile getResteasySpringVirtualFile() throws DeploymentUnitProcessingException {
+    protected synchronized ResourceRoot getResteasySpringVirtualFile() throws DeploymentUnitProcessingException {
         if(resourceRoot != null) {
             return resourceRoot;
         }
@@ -106,6 +101,7 @@ public class JaxrsSpringProcessor implements DeploymentUnitProcessor {
             if (file == null) {
                 throw JaxrsLogger.JAXRS_LOGGER.noSpringIntegrationJar();
             }
+            ResourceLoader loader = ResourceLoaders.newResourceLoader(file);
             VirtualFile vf = VFS.getChild(file.toURI());
             final Closeable mountHandle = VFS.mountZip(file, vf);
             Service<Closeable> mountHandleService = new Service<Closeable>() {
@@ -123,7 +119,7 @@ public class JaxrsSpringProcessor implements DeploymentUnitProcessor {
             ServiceBuilder<Closeable> builder = serviceTarget.addService(ServiceName.JBOSS.append(SERVICE_NAME),
                     mountHandleService);
             builder.setInitialMode(ServiceController.Mode.ACTIVE).install();
-            resourceRoot = vf;
+            resourceRoot = new ResourceRoot(loader, vf, null);
 
             return resourceRoot;
         } catch (Exception e) {
@@ -202,8 +198,7 @@ public class JaxrsSpringProcessor implements DeploymentUnitProcessor {
             }
             if (found) {
                 try {
-                    MountHandle mh = new MountHandle(null); // actual close is done by the MSC service above
-                    ResourceRoot resourceRoot = new ResourceRoot(getResteasySpringVirtualFile(), mh);
+                    ResourceRoot resourceRoot = getResteasySpringVirtualFile();
                     ModuleRootMarker.mark(resourceRoot);
                     deploymentUnit.addToAttachmentList(Attachments.RESOURCE_ROOTS, resourceRoot);
                 } catch (Exception e) {

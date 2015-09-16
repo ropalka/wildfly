@@ -29,6 +29,7 @@ import java.net.URL;
 
 import javax.xml.stream.Location;
 import javax.xml.stream.XMLStreamException;
+
 import org.jboss.as.server.deployment.DeploymentUnitProcessingException;
 import org.jboss.logging.BasicLogger;
 import org.jboss.logging.annotations.Cause;
@@ -356,4 +357,6 @@ public interface AppClientLogger extends BasicLogger {
     @Message(id = 25, value = "Unable to load ejb-client.properties URL: %s ")
     DeploymentUnitProcessingException exceptionLoadingEjbClientPropertiesURL(final String file, @Cause Throwable cause);
 
+    @Message(id = 26, value = "Unable to read appclient resource: %s")
+    DeploymentUnitProcessingException unableToReadAppclientResource(final String deployment, @Cause Throwable cause);
 }

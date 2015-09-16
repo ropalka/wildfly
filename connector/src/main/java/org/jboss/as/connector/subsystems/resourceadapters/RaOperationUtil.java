@@ -108,6 +108,8 @@ import org.jboss.as.server.deployment.Attachments;
 import org.jboss.as.server.deployment.annotation.ResourceRootIndexer;
 import org.jboss.as.server.deployment.module.MountHandle;
 import org.jboss.as.server.deployment.module.ResourceRoot;
+import org.jboss.as.server.loaders.ResourceLoader;
+import org.jboss.as.server.loaders.ResourceLoaders;
 import org.jboss.dmr.ModelNode;
 import org.jboss.jandex.Index;
 import org.jboss.jca.common.api.metadata.common.Capacity;
@@ -446,7 +448,8 @@ public class RaOperationUtil {
                 }
 
                 final MountHandle mountHandle = new MountHandle(closable);
-                final ResourceRoot resourceRoot = new ResourceRoot(child, mountHandle);
+                final ResourceLoader loader = ResourceLoaders.newResourceLoader(new File(path.getPath().split("META-INF")[0]));
+                final ResourceRoot resourceRoot = new ResourceRoot(loader, child, mountHandle);
 
                 final VirtualFile deploymentRoot = resourceRoot.getRoot();
                 if (deploymentRoot == null || !deploymentRoot.exists())

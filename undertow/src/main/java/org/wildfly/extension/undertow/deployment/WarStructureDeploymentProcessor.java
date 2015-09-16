@@ -47,6 +47,8 @@ import org.jboss.as.server.deployment.module.ModuleRootMarker;
 import org.jboss.as.server.deployment.module.ModuleSpecification;
 import org.jboss.as.server.deployment.module.MountHandle;
 import org.jboss.as.server.deployment.module.ResourceRoot;
+import org.jboss.as.server.loaders.ResourceLoader;
+import org.jboss.as.server.loaders.ResourceLoaders;
 import org.jboss.as.web.common.SharedTldsMetaDataBuilder;
 import org.jboss.as.web.common.WarMetaData;
 import org.jboss.modules.filter.PathFilters;
@@ -122,7 +124,7 @@ public class WarStructureDeploymentProcessor implements DeploymentUnitProcessor 
         final MountHandle mountHandle = deploymentResourceRoot.getMountHandle();
         try {
             // add standard resource roots, this should eventually replace ClassPathEntry
-            final List<ResourceRoot> resourceRoots = createResourceRoots(deploymentRoot, deploymentUnit);
+            final List<ResourceRoot> resourceRoots = createResourceRoots(deploymentResourceRoot, deploymentUnit);
             for (ResourceRoot root : resourceRoots) {
                 deploymentUnit.addToAttachmentList(Attachments.RESOURCE_ROOTS, root);
             }
@@ -194,16 +196,18 @@ public class WarStructureDeploymentProcessor implements DeploymentUnitProcessor 
      * Create the resource roots for a .war deployment
      *
      *
-     * @param deploymentRoot the deployment root
+     * @param resourceRoot the deployment resource root
      * @return the resource roots
      * @throws java.io.IOException for any error
      */
-    private List<ResourceRoot> createResourceRoots(final VirtualFile deploymentRoot, final DeploymentUnit deploymentUnit) throws IOException, DeploymentUnitProcessingException {
+    private List<ResourceRoot> createResourceRoots(final ResourceRoot resourceRoot, final DeploymentUnit deploymentUnit) throws IOException, DeploymentUnitProcessingException {
+        final VirtualFile deploymentRoot = resourceRoot.getRoot();
         final List<ResourceRoot> entries = new ArrayList<ResourceRoot>();
         // WEB-INF classes
         final VirtualFile webinfClasses = deploymentRoot.getChild(WEB_INF_CLASSES);
         if (webinfClasses.exists()) {
-            final ResourceRoot webInfClassesRoot = new ResourceRoot(webinfClasses.getName(), webinfClasses, null);
+            final ResourceLoader loader = ResourceLoaders.newResourceLoader(webinfClasses.getName(), resourceRoot.getLoader(), WEB_INF_CLASSES);
+            final ResourceRoot webInfClassesRoot = new ResourceRoot(loader, webinfClasses.getName(), webinfClasses, null);
             ModuleRootMarker.mark(webInfClassesRoot);
             entries.add(webInfClassesRoot);
         }
@@ -218,6 +222,9 @@ public class WarStructureDeploymentProcessor implements DeploymentUnitProcessor 
                     String relativeName = archive.getPathNameRelativeTo(deploymentRoot);
                     MountedDeploymentOverlay overlay = overlays.get(relativeName);
                     Closeable closable = null;
+                    final ResourceLoader loader = overlay == null
+                            ? ResourceLoaders.newResourceLoader(archive.getName(), resourceRoot.getLoader(), relativeName)
+                            : ResourceLoaders.newResourceLoader(archive.getName(), overlay.getFile(), resourceRoot.getLoader());
                     if(overlay != null) {
                         overlay.remountAsZip();
                     } else if (archive.isFile()) {
@@ -225,7 +232,8 @@ public class WarStructureDeploymentProcessor implements DeploymentUnitProcessor 
                     } else {
                         closable = null;
                     }
-                    final ResourceRoot webInfArchiveRoot = new ResourceRoot(archive.getName(), archive, new MountHandle(closable));
+
+                    final ResourceRoot webInfArchiveRoot = new ResourceRoot(loader, archive.getName(), archive, new MountHandle(closable));
                     ModuleRootMarker.mark(webInfArchiveRoot);
                     entries.add(webInfArchiveRoot);
                 } catch (IOException e) {

@@ -39,6 +39,8 @@ import org.jboss.as.server.deployment.SubDeploymentMarker;
 import org.jboss.as.server.deployment.module.ModuleRootMarker;
 import org.jboss.as.server.deployment.module.MountHandle;
 import org.jboss.as.server.deployment.module.ResourceRoot;
+import org.jboss.as.server.loaders.ResourceLoader;
+import org.jboss.as.server.loaders.ResourceLoaders;
 import org.jboss.vfs.VFS;
 import org.jboss.vfs.VirtualFile;
 
@@ -76,7 +78,13 @@ public class ApplicationClientStructureProcessor implements DeploymentUnitProces
                 } else {
                     final Closeable closable = appClientRoot.isFile() ? mount(appClientRoot) : null;
                     final MountHandle mountHandle = new MountHandle(closable);
-                    final ResourceRoot childResource = new ResourceRoot(appClientRoot, mountHandle);
+                    ResourceLoader loader;
+                    try {
+                        loader = ResourceLoaders.newResourceLoader(appClientRoot.getName(), root.getLoader(), deployment);
+                    } catch (IOException e) {
+                        throw AppClientLogger.ROOT_LOGGER.unableToReadAppclientResource(deployment, e);
+                    }
+                    final ResourceRoot childResource = new ResourceRoot(loader, appClientRoot, mountHandle);
                     ModuleRootMarker.mark(childResource);
                     SubDeploymentMarker.mark(childResource);
                     deploymentUnit.addToAttachmentList(Attachments.RESOURCE_ROOTS, childResource);

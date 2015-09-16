@@ -29,6 +29,8 @@ import java.util.Locale;
 import java.util.Map;
 
 import org.jboss.as.connector.logging.ConnectorLogger;
+import org.jboss.as.server.loaders.ResourceLoader;
+import org.jboss.as.server.loaders.ResourceLoaders;
 import org.jboss.as.server.deployment.Attachments;
 import org.jboss.as.server.deployment.DeploymentPhaseContext;
 import org.jboss.as.server.deployment.DeploymentUnit;
@@ -100,7 +102,10 @@ public class RaStructureProcessor implements DeploymentUnitProcessor {
                     closable = VFS.mountZip(child, child);
                 }
                 final MountHandle mountHandle = new MountHandle(closable);
-                final ResourceRoot childResource = new ResourceRoot(child, mountHandle);
+                final ResourceLoader loader = overlay == null
+                        ? ResourceLoaders.newResourceLoader(child.getName(), resourceRoot.getLoader(), relativeName)
+                        : ResourceLoaders.newResourceLoader(child.getName(), overlay.getFile(), resourceRoot.getLoader());
+                final ResourceRoot childResource = new ResourceRoot(loader, child, mountHandle);
                 ModuleRootMarker.mark(childResource);
                 deploymentUnit.addToAttachmentList(Attachments.RESOURCE_ROOTS, childResource);
                 resourceRoot.addToAttachmentList(Attachments.INDEX_IGNORE_PATHS, child.getPathNameRelativeTo(deploymentRoot));
