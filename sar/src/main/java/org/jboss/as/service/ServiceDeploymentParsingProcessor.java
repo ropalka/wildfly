@@ -36,17 +36,19 @@ import org.jboss.as.server.deployment.DeploymentPhaseContext;
 import org.jboss.as.server.deployment.DeploymentUnit;
 import org.jboss.as.server.deployment.DeploymentUnitProcessingException;
 import org.jboss.as.server.deployment.DeploymentUnitProcessor;
+import org.jboss.as.server.loaders.ResourceLoader;
 import org.jboss.as.service.descriptor.JBossServiceXmlDescriptor;
 import org.jboss.as.service.descriptor.JBossServiceXmlDescriptorParser;
 import org.jboss.as.service.descriptor.ParseResult;
 import org.jboss.as.service.logging.SarLogger;
+import org.jboss.modules.Resource;
 import org.jboss.staxmapper.XMLMapper;
-import org.jboss.vfs.VirtualFile;
 
 /**
  * DeploymentUnitProcessor responsible for parsing a jboss-service.xml descriptor and attaching the corresponding JBossServiceXmlDescriptor.
  *
  * @author John E. Bailey
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public class ServiceDeploymentParsingProcessor implements DeploymentUnitProcessor {
     static final String SERVICE_DESCRIPTOR_PATH = "META-INF/jboss-service.xml";
@@ -67,21 +69,16 @@ public class ServiceDeploymentParsingProcessor implements DeploymentUnitProcesso
      * @throws DeploymentUnitProcessingException
      */
     public void deploy(DeploymentPhaseContext phaseContext) throws DeploymentUnitProcessingException {
+        final ResourceLoader loader = phaseContext.getDeploymentUnit().getAttachment(Attachments.DEPLOYMENT_ROOT).getLoader();
+        if(loader == null) return;
 
-        final VirtualFile deploymentRoot = phaseContext.getDeploymentUnit().getAttachment(Attachments.DEPLOYMENT_ROOT).getRoot();
-
-        if(deploymentRoot == null || !deploymentRoot.exists())
-            return;
-
-        VirtualFile serviceXmlFile = null;
-        if(deploymentRoot.isDirectory()) {
-            serviceXmlFile = deploymentRoot.getChild(SERVICE_DESCRIPTOR_PATH);
-        } else if(deploymentRoot.getName().toLowerCase(Locale.ENGLISH).endsWith(SERVICE_DESCRIPTOR_SUFFIX)) {
-            serviceXmlFile = deploymentRoot;
+        Resource serviceXmlFile;
+        if (loader.getRootName().toLowerCase(Locale.ENGLISH).endsWith(SERVICE_DESCRIPTOR_SUFFIX)) {
+            serviceXmlFile = loader.getResource("");
+        } else {
+            serviceXmlFile = loader.getResource(SERVICE_DESCRIPTOR_PATH);
         }
-        if(serviceXmlFile == null || !serviceXmlFile.exists())
-            return;
-
+        if(serviceXmlFile == null) return;
 
         final XMLMapper xmlMapper = XMLMapper.Factory.create();
         final JBossServiceXmlDescriptorParser jBossServiceXmlDescriptorParser = new JBossServiceXmlDescriptorParser(JBossDescriptorPropertyReplacement.propertyReplacer(phaseContext.getDeploymentUnit()));
@@ -98,9 +95,9 @@ public class ServiceDeploymentParsingProcessor implements DeploymentUnitProcesso
             if(xmlDescriptor != null)
                 phaseContext.getDeploymentUnit().putAttachment(JBossServiceXmlDescriptor.ATTACHMENT_KEY, xmlDescriptor);
             else
-                throw SarLogger.ROOT_LOGGER.failedXmlParsing(serviceXmlFile);
+                throw SarLogger.ROOT_LOGGER.failedXmlParsing(serviceXmlFile.getName());
         } catch(Exception e) {
-            throw SarLogger.ROOT_LOGGER.failedXmlParsing(e, serviceXmlFile);
+            throw SarLogger.ROOT_LOGGER.failedXmlParsing(e, serviceXmlFile.getName());
         } finally {
             safeClose(xmlStream);
         }

@@ -30,7 +30,9 @@ import org.jboss.as.server.deployment.DeploymentUnitProcessor;
 import org.jboss.as.server.deployment.SubDeploymentMarker;
 import org.jboss.as.server.deployment.module.ModuleRootMarker;
 import org.jboss.as.server.deployment.module.ResourceRoot;
-import org.jboss.vfs.VirtualFile;
+import org.jboss.as.server.loaders.ResourceLoader;
+
+import org.jboss.modules.Resource;
 
 import java.util.List;
 
@@ -38,6 +40,7 @@ import java.util.List;
  * Deployment processor used to determine if a possible sub-deployment contains a service descriptor.
  *
  * @author John Bailey
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public class SarSubDeploymentProcessor implements DeploymentUnitProcessor {
     public void deploy(final DeploymentPhaseContext phaseContext) throws DeploymentUnitProcessingException {
@@ -48,11 +51,10 @@ public class SarSubDeploymentProcessor implements DeploymentUnitProcessor {
 
         final List<ResourceRoot> resourceRoots = deploymentUnit.getAttachmentList(Attachments.RESOURCE_ROOTS);
         for (ResourceRoot resourceRoot : resourceRoots) {
-            final VirtualFile rootFile = resourceRoot.getRoot();
+            final ResourceLoader loader = resourceRoot.getLoader();
             if (!SubDeploymentMarker.isSubDeployment(resourceRoot)) {
-                final VirtualFile sarDescriptor = rootFile
-                        .getChild(ServiceDeploymentParsingProcessor.SERVICE_DESCRIPTOR_PATH);
-                if (sarDescriptor.exists()) {
+                final Resource sarDescriptor = loader.getResource(ServiceDeploymentParsingProcessor.SERVICE_DESCRIPTOR_PATH);
+                if (sarDescriptor != null) {
                     SubDeploymentMarker.mark(resourceRoot);
                     ModuleRootMarker.mark(resourceRoot);
                 }
@@ -60,6 +62,6 @@ public class SarSubDeploymentProcessor implements DeploymentUnitProcessor {
         }
     }
 
-    public void undeploy(DeploymentUnit context) {
+    public void undeploy(final DeploymentUnit context) {
     }
 }

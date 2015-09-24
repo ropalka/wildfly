@@ -34,10 +34,10 @@ import org.jboss.logging.annotations.LogMessage;
 import org.jboss.logging.Logger;
 import org.jboss.logging.annotations.Message;
 import org.jboss.logging.annotations.MessageLogger;
-import org.jboss.vfs.VirtualFile;
 
 /**
  * @author <a href="mailto:jperkins@redhat.com">James R. Perkins</a>
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 @MessageLogger(projectCode = "WFLYSAR", length = 4)
 public interface SarLogger extends BasicLogger {
@@ -106,7 +106,7 @@ public interface SarLogger extends BasicLogger {
      * @return a {@link DeploymentUnitProcessingException} for the error.
      */
     @Message(id = 6, value = "Failed to parse service xml [%s]")
-    DeploymentUnitProcessingException failedXmlParsing(VirtualFile xmlFile);
+    DeploymentUnitProcessingException failedXmlParsing(String xmlFile);
 
     /**
      * Creates an exception indicating a failure to parse the service XML file.
@@ -116,7 +116,7 @@ public interface SarLogger extends BasicLogger {
      *
      * @return a {@link DeploymentUnitProcessingException} for the error.
      */
-    DeploymentUnitProcessingException failedXmlParsing(@Cause Throwable cause, VirtualFile xmlFile);
+    DeploymentUnitProcessingException failedXmlParsing(@Cause Throwable cause, String xmlFile);
 
     /**
      * Creates an exception indicating the method could not be found.
@@ -182,7 +182,7 @@ public interface SarLogger extends BasicLogger {
      * @return a {@link DeploymentUnitProcessingException} for the error.
      */
     @Message(id = 12, value = "Failed to process SAR child archives for [%s]")
-    DeploymentUnitProcessingException failedToProcessSarChild(@Cause Throwable cause, VirtualFile deploymentRoot);
+    DeploymentUnitProcessingException failedToProcessSarChild(@Cause Throwable cause, String deploymentRoot);
 
     /**
      * Creates an exception indicating that dependency of mbean was malformed in service descriptor.
