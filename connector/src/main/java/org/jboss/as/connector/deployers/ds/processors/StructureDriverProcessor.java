@@ -32,7 +32,7 @@ import org.jboss.as.server.deployment.DeploymentUnitProcessingException;
 import org.jboss.as.server.deployment.DeploymentUnitProcessor;
 import org.jboss.as.server.deployment.DeploymentUtils;
 import org.jboss.as.server.deployment.module.ResourceRoot;
-import org.jboss.vfs.VirtualFile;
+import org.jboss.as.server.loaders.ResourceLoader;
 
 /**
  * Detects a JDBC driver at an early stage.
@@ -40,6 +40,7 @@ import org.jboss.vfs.VirtualFile;
  *
  * @author Jason T. Greene
  * @author Thomas.Diesler@jboss.com
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public final class StructureDriverProcessor implements DeploymentUnitProcessor {
 
@@ -47,9 +48,9 @@ public final class StructureDriverProcessor implements DeploymentUnitProcessor {
     public void deploy(final DeploymentPhaseContext phaseContext) throws DeploymentUnitProcessingException {
         final DeploymentUnit deploymentUnit = phaseContext.getDeploymentUnit();
         List<ResourceRoot> resourceRoots = DeploymentUtils.allResourceRoots(deploymentUnit);
-        for (ResourceRoot resourceRoot : resourceRoots) {
-            final VirtualFile deploymentRoot = resourceRoot.getRoot();
-            if (deploymentRoot.getChild("META-INF/services/java.sql.Driver").exists())  {
+        for (final ResourceRoot resourceRoot : resourceRoots) {
+            final ResourceLoader loader = resourceRoot.getLoader();
+            if (loader.getResource("META-INF/services/java.sql.Driver") != null)  {
                 DEPLOYER_JDBC_LOGGER.debugf("SQL driver detected: %s", deploymentUnit.getName());
                 break;
             }
@@ -59,4 +60,5 @@ public final class StructureDriverProcessor implements DeploymentUnitProcessor {
     @Override
     public void undeploy(final DeploymentUnit context) {
     }
+
 }

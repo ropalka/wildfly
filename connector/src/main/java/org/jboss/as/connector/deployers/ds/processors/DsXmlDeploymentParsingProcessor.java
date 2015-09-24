@@ -23,9 +23,9 @@
 package org.jboss.as.connector.deployers.ds.processors;
 
 import java.io.Closeable;
-import java.io.FileInputStream;
 import java.io.InputStream;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
@@ -40,22 +40,23 @@ import org.jboss.as.server.deployment.DeploymentPhaseContext;
 import org.jboss.as.server.deployment.DeploymentUnit;
 import org.jboss.as.server.deployment.DeploymentUnitProcessingException;
 import org.jboss.as.server.deployment.DeploymentUnitProcessor;
+import org.jboss.as.server.loaders.ResourceLoader;
 import org.jboss.jca.common.api.metadata.ds.DataSource;
 import org.jboss.jca.common.api.metadata.ds.DataSources;
 import org.jboss.metadata.property.PropertyReplacer;
 import org.jboss.metadata.property.PropertyResolver;
-import org.jboss.vfs.VirtualFile;
+import org.jboss.modules.Resource;
 
 /**
  * Picks up -ds.xml deployments
  *
  * @author <a href="mailto:jesper.pedersen@jboss.org">Jesper Pedersen</a>
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public class DsXmlDeploymentParsingProcessor implements DeploymentUnitProcessor {
 
-
     static final AttachmentKey<AttachmentList<DataSources>> DATA_SOURCES_ATTACHMENT_KEY = AttachmentKey.createList(DataSources.class);
-
+    private static final String DATA_SOURCE_SUFFIX = "-ds.xml";
     private static final String[] LOCATIONS = {"WEB-INF", "META-INF"};
 
     /**
@@ -79,12 +80,12 @@ public class DsXmlDeploymentParsingProcessor implements DeploymentUnitProcessor 
         final PropertyResolver propertyResolver = deploymentUnit.getAttachment(org.jboss.as.ee.metadata.property.Attachments.FINAL_PROPERTY_RESOLVER);
         final PropertyReplacer propertyReplacer = deploymentUnit.getAttachment(org.jboss.as.ee.metadata.property.Attachments.FINAL_PROPERTY_REPLACER);
 
-        final Set<VirtualFile> files = dataSources(deploymentUnit);
+        final Set<Resource> resources = dataSources(deploymentUnit);
         boolean loggedDeprication = false;
-        for (VirtualFile f : files) {
+        for (Resource r : resources) {
             InputStream xmlStream = null;
             try {
-                xmlStream = new FileInputStream(f.getPhysicalFile());
+                xmlStream = r.openStream();
                 DsXmlParser parser = new DsXmlParser(propertyResolver, propertyReplacer);
                 parser.setSystemPropertiesResolved(resolveProperties);
                 DataSources dataSources = parser.parse(xmlStream);
@@ -119,25 +120,21 @@ public class DsXmlDeploymentParsingProcessor implements DeploymentUnitProcessor 
         }
     }
 
-    private Set<VirtualFile> dataSources(final DeploymentUnit deploymentUnit) {
-        final VirtualFile deploymentRoot = deploymentUnit.getAttachment(Attachments.DEPLOYMENT_ROOT).getRoot();
-        if (deploymentRoot == null || !deploymentRoot.exists()) {
-            return Collections.emptySet();
-        }
+    private Set<Resource> dataSources(final DeploymentUnit deploymentUnit) {
+        final ResourceLoader loader = deploymentUnit.getAttachment(Attachments.DEPLOYMENT_ROOT).getLoader();
+        final String deploymentRootName = loader.getRootName().toLowerCase(Locale.ENGLISH);
 
-        final String deploymentRootName = deploymentRoot.getName().toLowerCase(Locale.ENGLISH);
-
-        if (deploymentRootName.endsWith("-ds.xml")) {
-            return Collections.singleton(deploymentRoot);
+        if (deploymentRootName.endsWith(DATA_SOURCE_SUFFIX)) {
+            return Collections.singleton(loader.getResource(""));
         }
-        final Set<VirtualFile> ret = new HashSet<VirtualFile>();
-        for (String location : LOCATIONS) {
-            final VirtualFile loc = deploymentRoot.getChild(location);
-            if (loc.exists()) {
-                for (final VirtualFile file : loc.getChildren()) {
-                    if (file.getName().endsWith("-ds.xml")) {
-                        ret.add(file);
-                    }
+        final Set<Resource> ret = new HashSet<>();
+        for (final String location : LOCATIONS) {
+            final Iterator<Resource> resources = loader.iterateResources(location, false);
+            Resource resource;
+            while (resources.hasNext()) {
+                resource = resources.next();
+                if (resource.getName().endsWith(DATA_SOURCE_SUFFIX)) {
+                    ret.add(resource);
                 }
             }
         }
@@ -146,4 +143,5 @@ public class DsXmlDeploymentParsingProcessor implements DeploymentUnitProcessor 
 
     public void undeploy(final DeploymentUnit context) {
     }
+
 }
