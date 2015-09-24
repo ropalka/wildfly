@@ -22,29 +22,28 @@
 
 package org.jboss.as.connector.annotations.repository.jandex;
 
+import static org.junit.Assert.fail;
+
+import org.jboss.as.server.loaders.ResourceLoader;
+import org.jboss.as.server.loaders.ResourceLoaders;
 import org.jboss.jca.common.annotations.Annotations;
 import org.jboss.jca.common.api.validator.ValidateException;
 import org.jboss.jca.common.spi.annotations.repository.AnnotationRepository;
 
 import java.io.Closeable;
+import java.io.File;
 import java.io.InputStream;
-import java.net.URI;
-import java.util.List;
+import java.util.Iterator;
 
 import org.jboss.jandex.Index;
 import org.jboss.jandex.Indexer;
-import org.jboss.vfs.VFS;
-import org.jboss.vfs.VirtualFile;
-import org.jboss.vfs.VisitorAttributes;
-import org.jboss.vfs.SuffixMatchFilter;
 
+import org.jboss.modules.Resource;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import static org.junit.Assert.fail;
 
 /**
  * Test cases for the annotations handling
@@ -87,18 +86,21 @@ public class AnnotationsTestCase {
     @Test
     public void testProcessConnector() throws Throwable {
         try {
-            URI uri = getURI("/ra16inoutanno.rar");
-            final VirtualFile virtualFile = VFS.getChild(uri);
+            File file = getFile("/ra16inoutanno.rar");
+            final ResourceLoader loader = ResourceLoaders.newResourceLoader(file);
             final Indexer indexer = new Indexer();
-            final List<VirtualFile> classChildren = virtualFile.getChildren(new SuffixMatchFilter(".class",
-                    VisitorAttributes.RECURSE_LEAVES_ONLY));
-            for (VirtualFile classFile : classChildren) {
-                InputStream inputStream = null;
-                try {
-                    inputStream = classFile.openStream();
-                    indexer.index(inputStream);
-                } finally {
-                    safeClose(inputStream);
+            final Iterator<Resource> resources = loader.iterateResources("", true);
+            Resource resource;
+            while (resources.hasNext()) {
+                resource = resources.next();
+                if (resource.getName().endsWith(".class")) {
+                    InputStream inputStream = null;
+                    try {
+                        inputStream = resource.openStream();
+                        indexer.index(inputStream);
+                    } finally {
+                        safeClose(inputStream);
+                    }
                 }
             }
             final Index index = indexer.complete();
@@ -119,18 +121,21 @@ public class AnnotationsTestCase {
     @Test
     public void testProcessConnectorFail() throws Throwable {
         try {
-            URI uri = getURI("/rafail2connector.rar");
-            final VirtualFile virtualFile = VFS.getChild(uri);
+            File file = getFile("/rafail2connector.rar");
+            final ResourceLoader loader = ResourceLoaders.newResourceLoader(file);
             final Indexer indexer = new Indexer();
-            final List<VirtualFile> classChildren = virtualFile.getChildren(new SuffixMatchFilter(".class",
-                    VisitorAttributes.RECURSE_LEAVES_ONLY));
-            for (VirtualFile classFile : classChildren) {
-                InputStream inputStream = null;
-                try {
-                    inputStream = classFile.openStream();
-                    indexer.index(inputStream);
-                } finally {
-                    safeClose(inputStream);
+            final Iterator<Resource> resources = loader.iterateResources("", true);
+            Resource resource;
+            while (resources.hasNext()) {
+                resource = resources.next();
+                if (resource.getName().endsWith(".class")) {
+                    InputStream inputStream = null;
+                    try {
+                        inputStream = resource.openStream();
+                        indexer.index(inputStream);
+                    } finally {
+                        safeClose(inputStream);
+                    }
                 }
             }
             final Index index = indexer.complete();
@@ -153,18 +158,21 @@ public class AnnotationsTestCase {
     @Test
     public void testProcessConnectionDefinitions() throws Throwable {
         try {
-            URI uri = getURI("/ra16annoconndefs.rar");
-            final VirtualFile virtualFile = VFS.getChild(uri);
+            File file = getFile("/ra16annoconndefs.rar");
+            final ResourceLoader loader = ResourceLoaders.newResourceLoader(file);
             final Indexer indexer = new Indexer();
-            final List<VirtualFile> classChildren = virtualFile.getChildren(new SuffixMatchFilter(".class",
-                    VisitorAttributes.RECURSE_LEAVES_ONLY));
-            for (VirtualFile classFile : classChildren) {
-                InputStream inputStream = null;
-                try {
-                    inputStream = classFile.openStream();
-                    indexer.index(inputStream);
-                } finally {
-                    safeClose(inputStream);
+            final Iterator<Resource> resources = loader.iterateResources("", true);
+            Resource resource;
+            while (resources.hasNext()) {
+                resource = resources.next();
+                if (resource.getName().endsWith(".class")) {
+                    InputStream inputStream = null;
+                    try {
+                        inputStream = resource.openStream();
+                        indexer.index(inputStream);
+                    } finally {
+                        safeClose(inputStream);
+                    }
                 }
             }
             final Index index = indexer.complete();
@@ -185,18 +193,21 @@ public class AnnotationsTestCase {
     @Test
     public void testProcessConnectionDefinition() throws Throwable {
         try {
-            URI uri = getURI("/ra16annoconndef.rar");
-            final VirtualFile virtualFile = VFS.getChild(uri);
+            File file = getFile("/ra16annoconndef.rar");
+            final ResourceLoader loader = ResourceLoaders.newResourceLoader(file);
             final Indexer indexer = new Indexer();
-            final List<VirtualFile> classChildren = virtualFile.getChildren(new SuffixMatchFilter(".class",
-                    VisitorAttributes.RECURSE_LEAVES_ONLY));
-            for (VirtualFile classFile : classChildren) {
-                InputStream inputStream = null;
-                try {
-                    inputStream = classFile.openStream();
-                    indexer.index(inputStream);
-                } finally {
-                    safeClose(inputStream);
+            final Iterator<Resource> resources = loader.iterateResources("", true);
+            Resource resource;
+            while (resources.hasNext()) {
+                resource = resources.next();
+                if (resource.getName().endsWith(".class")) {
+                    InputStream inputStream = null;
+                    try {
+                        inputStream = resource.openStream();
+                        indexer.index(inputStream);
+                    } finally {
+                        safeClose(inputStream);
+                    }
                 }
             }
             final Index index = indexer.complete();
@@ -215,18 +226,21 @@ public class AnnotationsTestCase {
     @Test
     public void testProcessActivation() throws Throwable {
         try {
-            URI uri = getURI("/ra16annoactiv.rar");
-            final VirtualFile virtualFile = VFS.getChild(uri);
+            File file = getFile("/ra16annoactiv.rar");
+            final ResourceLoader loader = ResourceLoaders.newResourceLoader(file);
             final Indexer indexer = new Indexer();
-            final List<VirtualFile> classChildren = virtualFile.getChildren(new SuffixMatchFilter(".class",
-                    VisitorAttributes.RECURSE_LEAVES_ONLY));
-            for (VirtualFile classFile : classChildren) {
-                InputStream inputStream = null;
-                try {
-                    inputStream = classFile.openStream();
-                    indexer.index(inputStream);
-                } finally {
-                    safeClose(inputStream);
+            final Iterator<Resource> resources = loader.iterateResources("", true);
+            Resource resource;
+            while (resources.hasNext()) {
+                resource = resources.next();
+                if (resource.getName().endsWith(".class")) {
+                    InputStream inputStream = null;
+                    try {
+                        inputStream = resource.openStream();
+                        indexer.index(inputStream);
+                    } finally {
+                        safeClose(inputStream);
+                    }
                 }
             }
             final Index index = indexer.complete();
@@ -246,18 +260,21 @@ public class AnnotationsTestCase {
     @Test
     public void testProcessAuthenticationMechanism() throws Throwable {
         try {
-            URI uri = getURI("/ra16annoauthmech.rar");
-            final VirtualFile virtualFile = VFS.getChild(uri);
+            File file = getFile("/ra16annoauthmech.rar");
+            final ResourceLoader loader = ResourceLoaders.newResourceLoader(file);
             final Indexer indexer = new Indexer();
-            final List<VirtualFile> classChildren = virtualFile.getChildren(new SuffixMatchFilter(".class",
-                    VisitorAttributes.RECURSE_LEAVES_ONLY));
-            for (VirtualFile classFile : classChildren) {
-                InputStream inputStream = null;
-                try {
-                    inputStream = classFile.openStream();
-                    indexer.index(inputStream);
-                } finally {
-                    safeClose(inputStream);
+            final Iterator<Resource> resources = loader.iterateResources("", true);
+            Resource resource;
+            while (resources.hasNext()) {
+                resource = resources.next();
+                if (resource.getName().endsWith(".class")) {
+                    InputStream inputStream = null;
+                    try {
+                        inputStream = resource.openStream();
+                        indexer.index(inputStream);
+                    } finally {
+                        safeClose(inputStream);
+                    }
                 }
             }
             final Index index = indexer.complete();
@@ -277,18 +294,21 @@ public class AnnotationsTestCase {
     @Test
     public void testProcessAdministeredObject() throws Throwable {
         try {
-            URI uri = getURI("/ra16annoadminobj.rar");
-            final VirtualFile virtualFile = VFS.getChild(uri);
+            File file = getFile("/ra16annoadminobj.rar");
+            final ResourceLoader loader = ResourceLoaders.newResourceLoader(file);
             final Indexer indexer = new Indexer();
-            final List<VirtualFile> classChildren = virtualFile.getChildren(new SuffixMatchFilter(".class",
-                    VisitorAttributes.RECURSE_LEAVES_ONLY));
-            for (VirtualFile classFile : classChildren) {
-                InputStream inputStream = null;
-                try {
-                    inputStream = classFile.openStream();
-                    indexer.index(inputStream);
-                } finally {
-                    safeClose(inputStream);
+            final Iterator<Resource> resources = loader.iterateResources("", true);
+            Resource resource;
+            while (resources.hasNext()) {
+                resource = resources.next();
+                if (resource.getName().endsWith(".class")) {
+                    InputStream inputStream = null;
+                    try {
+                        inputStream = resource.openStream();
+                        indexer.index(inputStream);
+                    } finally {
+                        safeClose(inputStream);
+                    }
                 }
             }
             final Index index = indexer.complete();
@@ -308,18 +328,21 @@ public class AnnotationsTestCase {
     @Test
     public void testProcessConfigProperty() throws Throwable {
         try {
-            URI uri = getURI("/ra16annoconfprop.rar");
-            final VirtualFile virtualFile = VFS.getChild(uri);
+            File file = getFile("/ra16annoconfprop.rar");
+            final ResourceLoader loader = ResourceLoaders.newResourceLoader(file);
             final Indexer indexer = new Indexer();
-            final List<VirtualFile> classChildren = virtualFile.getChildren(new SuffixMatchFilter(".class",
-                    VisitorAttributes.RECURSE_LEAVES_ONLY));
-            for (VirtualFile classFile : classChildren) {
-                InputStream inputStream = null;
-                try {
-                    inputStream = classFile.openStream();
-                    indexer.index(inputStream);
-                } finally {
-                    safeClose(inputStream);
+            final Iterator<Resource> resources = loader.iterateResources("", true);
+            Resource resource;
+            while (resources.hasNext()) {
+                resource = resources.next();
+                if (resource.getName().endsWith(".class")) {
+                    InputStream inputStream = null;
+                    try {
+                        inputStream = resource.openStream();
+                        indexer.index(inputStream);
+                    } finally {
+                        safeClose(inputStream);
+                    }
                 }
             }
             final Index index = indexer.complete();
@@ -375,8 +398,8 @@ public class AnnotationsTestCase {
      * @return The URL to the archive
      * @throws Throwable throwable exception
      */
-    public URI getURI(String archive) throws Throwable {
-        return this.getClass().getResource(archive).toURI();
+    public File getFile(String archive) throws Throwable {
+        return new File(getClass().getResource(archive).toURI());
     }
 
     static void safeClose(final Closeable c) {
