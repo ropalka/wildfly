@@ -1,6 +1,6 @@
 package org.jboss.as.service;
 
-import static org.jboss.as.server.loaders.Utils.getArchiveName;
+import static org.jboss.as.server.loaders.Utils.getResourceName;
 import static org.jboss.as.server.loaders.Utils.getChildArchives;
 
 import java.io.Closeable;
@@ -54,7 +54,7 @@ public class SarStructureProcessor implements DeploymentUnitProcessor {
             final Collection<String> childArchives = getChildArchives(parentLoader, true, JAR_EXTENSION);
             String archiveName;
             for (final String archivePath : childArchives) {
-                archiveName = getArchiveName(archivePath);
+                archiveName = getResourceName(archivePath);
                 MountedDeploymentOverlay overlay = overlays.get(archivePath);
                 final ResourceLoader loader = overlay == null
                         ? ResourceLoaders.newResourceLoader(archiveName, resourceRoot.getLoader(), archivePath)
