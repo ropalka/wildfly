@@ -45,11 +45,11 @@ import org.jboss.logging.annotations.Message;
 import org.jboss.logging.annotations.MessageLogger;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.StartException;
-import org.jboss.vfs.VirtualFile;
 
 /**
  * @author <a href="mailto:jperkins@redhat.com">James R. Perkins</a>
  * @author <a href="mailto:david.lloyd@redhat.com">David M. Lloyd</a>
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 @MessageLogger(projectCode = "WFLYJCA", length = 4)
 public interface ConnectorLogger extends BasicLogger {
@@ -405,7 +405,7 @@ public interface ConnectorLogger extends BasicLogger {
      * @return a {@link DeploymentUnitProcessingException} for the error.
      */
     @Message(id = 43, value = "Failed to parse service xml [%s]")
-    DeploymentUnitProcessingException failedToParseServiceXml(VirtualFile xmlFile);
+    DeploymentUnitProcessingException failedToParseServiceXml(String xmlFile);
 
     /**
      * Creates an exception indicating a failure to parse the service XML.
@@ -414,7 +414,7 @@ public interface ConnectorLogger extends BasicLogger {
      * @param xmlFile the service XML file.
      * @return a {@link DeploymentUnitProcessingException} for the error.
      */
-    DeploymentUnitProcessingException failedToParseServiceXml(@Cause Throwable cause, VirtualFile xmlFile);
+    DeploymentUnitProcessingException failedToParseServiceXml(@Cause Throwable cause, String xmlFile);
 
     /**
      * Creates an exception indicating a failure to process the resource adapter child archives for the deployment root
@@ -425,7 +425,7 @@ public interface ConnectorLogger extends BasicLogger {
      * @return a {@link DeploymentUnitProcessingException} for the error.
      */
     @Message(id = 44, value = "Failed to process RA child archives for [%s]")
-    DeploymentUnitProcessingException failedToProcessRaChild(@Cause Throwable cause, VirtualFile deploymentRoot);
+    DeploymentUnitProcessingException failedToProcessRaChild(@Cause Throwable cause, String deploymentRoot);
 
     /**
      * A message indicating a failure to set an attribute.

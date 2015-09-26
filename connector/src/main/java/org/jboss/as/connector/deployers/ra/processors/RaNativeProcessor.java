@@ -23,9 +23,10 @@
 package org.jboss.as.connector.deployers.ra.processors;
 
 import static org.jboss.as.connector.logging.ConnectorLogger.ROOT_LOGGER;
+import static org.jboss.as.server.loaders.Utils.getResourceName;
 
 import java.io.File;
-import java.util.List;
+import java.util.Iterator;
 import java.util.Locale;
 
 import org.jboss.as.connector.logging.ConnectorLogger;
@@ -34,13 +35,14 @@ import org.jboss.as.server.deployment.DeploymentPhaseContext;
 import org.jboss.as.server.deployment.DeploymentUnit;
 import org.jboss.as.server.deployment.DeploymentUnitProcessingException;
 import org.jboss.as.server.deployment.DeploymentUnitProcessor;
-import org.jboss.vfs.VirtualFile;
-import org.jboss.vfs.VirtualFileFilter;
+import org.jboss.as.server.loaders.ResourceLoader;
+import org.jboss.modules.Resource;
 
 /**
  * Load native libraries for .rar deployments
  *
  * @author <a href="mailto:jesper.pedersen@jboss.org">Jesper Pedersen</a>
+ * @author <a href="mailto:ropalka@jboss.org">Richard Opalka</a>
  */
 public class RaNativeProcessor implements DeploymentUnitProcessor {
 
@@ -58,36 +60,29 @@ public class RaNativeProcessor implements DeploymentUnitProcessor {
      */
     @Override
     public void deploy(DeploymentPhaseContext phaseContext) throws DeploymentUnitProcessingException {
-        final VirtualFile deploymentRoot = phaseContext.getDeploymentUnit().getAttachment(Attachments.DEPLOYMENT_ROOT).getRoot();
-
-        process(deploymentRoot);
+        process(phaseContext.getDeploymentUnit().getAttachment(Attachments.DEPLOYMENT_ROOT).getLoader());
     }
 
-    public static void process(VirtualFile deploymentRoot) throws DeploymentUnitProcessingException {
-        if (deploymentRoot == null || !deploymentRoot.exists())
-            return;
-
-        final String deploymentRootName = deploymentRoot.getName().toLowerCase(Locale.ENGLISH);
-        if (!deploymentRootName.endsWith(".rar")) {
+    public static void process(ResourceLoader loader) throws DeploymentUnitProcessingException {
+        final String deploymentRootName = loader.getRootName().toLowerCase(Locale.ENGLISH);
+        if (!deploymentRootName.endsWith(RaStructureProcessor.RAR_EXTENSION)) {
             return;
         }
-
         try {
-            List<VirtualFile> libs = deploymentRoot.getChildrenRecursively(new LibraryFilter());
-
-            if (libs != null && libs.size() > 0) {
-                for (VirtualFile vf : libs) {
-                    String fileName = vf.getName().toLowerCase(Locale.ENGLISH);
-                    ROOT_LOGGER.tracef("Processing library: %s", fileName);
-
+            final Iterator<Resource> resources = loader.iterateResources("", true);
+            Resource resource;
+            String nativeFileAbsPath;
+            while (resources.hasNext()) {
+                resource = resources.next();
+                if (isNativeLibrary(resource)) {
+                    ROOT_LOGGER.tracef("Processing library: %s", resource.getName());
+                    // precondition RAR archives are exploded
+                    nativeFileAbsPath = resource.getURL().getFile();
                     try {
-                        File f = vf.getPhysicalFile();
-                        System.load(f.getAbsolutePath());
-
-                        ROOT_LOGGER.debugf("Loaded library: %s", f.getAbsolutePath());
-
+                        System.load(new File(nativeFileAbsPath).getAbsolutePath());
+                        ROOT_LOGGER.debugf("Loaded library: %s", nativeFileAbsPath);
                     } catch (Throwable t) {
-                        ROOT_LOGGER.debugf("Unable to load library: %s", fileName);
+                        ROOT_LOGGER.debugf("Unable to load library: %s", nativeFileAbsPath);
                     }
                 }
             }
@@ -99,21 +94,9 @@ public class RaNativeProcessor implements DeploymentUnitProcessor {
     public void undeploy(final DeploymentUnit context) {
     }
 
-
-    private static class LibraryFilter implements VirtualFileFilter {
-
-        public boolean accepts(VirtualFile vf) {
-            if (vf == null)
-                return false;
-
-            if (vf.isFile()) {
-                String fileName = vf.getName().toLowerCase(Locale.ENGLISH);
-                if (fileName.endsWith(".a") || fileName.endsWith(".so") || fileName.endsWith(".dll")) {
-                    return true;
-                }
-            }
-
-            return false;
-        }
+    private static boolean isNativeLibrary(final Resource resource) {
+        final String resourceName = getResourceName(resource.getName()).toLowerCase(Locale.ENGLISH);
+        return resourceName.endsWith(".a") || resourceName.endsWith(".so") || resourceName.endsWith(".dll");
     }
+
 }

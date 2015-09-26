@@ -49,6 +49,7 @@ import org.jboss.as.server.loaders.ResourceLoaders;
 import org.jboss.metadata.ear.spec.EarMetaData;
 import org.jboss.metadata.ear.spec.ModuleMetaData;
 import org.jboss.metadata.ear.spec.ModuleMetaData.ModuleType;
+import org.jboss.modules.Resource;
 import org.jboss.vfs.VFS;
 import org.jboss.vfs.VirtualFile;
 import org.jboss.vfs.VisitorAttributes;
@@ -214,7 +215,8 @@ public class EarStructureProcessor implements DeploymentUnitProcessor {
                     final String alternativeDD = module.getAlternativeDD();
                     if (alternativeDD != null && alternativeDD.trim().length() > 0) {
                         final VirtualFile alternateDeploymentDescriptor = deploymentRoot.getRoot().getChild(alternativeDD);
-                        if (!alternateDeploymentDescriptor.exists()) {
+                        final Resource alternateDeploymentDescriptorResource = deploymentRoot.getLoader().getResource(alternativeDD);
+                        if (!alternateDeploymentDescriptor.exists() && alternateDeploymentDescriptorResource == null) {
                             throw EeLogger.ROOT_LOGGER.alternateDeploymentDescriptor(alternateDeploymentDescriptor, moduleFile);
                         }
                         switch (module.getType()) {
@@ -222,7 +224,7 @@ public class EarStructureProcessor implements DeploymentUnitProcessor {
                                 childResource.putAttachment(org.jboss.as.ee.structure.Attachments.ALTERNATE_CLIENT_DEPLOYMENT_DESCRIPTOR, alternateDeploymentDescriptor);
                                 break;
                             case Connector:
-                                childResource.putAttachment(org.jboss.as.ee.structure.Attachments.ALTERNATE_CONNECTOR_DEPLOYMENT_DESCRIPTOR, alternateDeploymentDescriptor);
+                                childResource.putAttachment(org.jboss.as.ee.structure.Attachments.ALTERNATE_CONNECTOR_DEPLOYMENT_DESCRIPTOR, alternateDeploymentDescriptorResource);
                                 break;
                             case Ejb:
                                 childResource.putAttachment(org.jboss.as.ee.structure.Attachments.ALTERNATE_EJB_DEPLOYMENT_DESCRIPTOR, alternateDeploymentDescriptor);

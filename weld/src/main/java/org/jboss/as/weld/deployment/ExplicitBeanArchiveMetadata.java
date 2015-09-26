@@ -22,7 +22,7 @@
 package org.jboss.as.weld.deployment;
 
 import org.jboss.as.server.deployment.module.ResourceRoot;
-import org.jboss.vfs.VirtualFile;
+import org.jboss.modules.Resource;
 import org.jboss.weld.bootstrap.spi.BeansXml;
 
 /**
@@ -31,14 +31,14 @@ import org.jboss.weld.bootstrap.spi.BeansXml;
  * Thread Safety: This class is immutable and does not require a happens before event between construction and usage
  *
  * @author Stuart Douglas
- *
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public class ExplicitBeanArchiveMetadata {
 
     /**
      * The location of the beans.xml file for this bean archive
      */
-    private final VirtualFile beansXmlFile;
+    private final Resource beansXmlFile;
 
     /**
      * The ResourceRoot for the archive
@@ -59,13 +59,13 @@ public class ExplicitBeanArchiveMetadata {
      * The location of an additional beans.xml file for this bean archive. This may happen if a web archive defines
      * both META-INF/beans.xml and WEB-INF/beans.xml
      */
-    private final VirtualFile additionalBeansXmlFile;
+    private final Resource additionalBeansXmlFile;
 
-    public ExplicitBeanArchiveMetadata(VirtualFile beansXmlFile, ResourceRoot resourceRoot, BeansXml beansXml, boolean deploymentRoot) {
+    public ExplicitBeanArchiveMetadata(Resource beansXmlFile, ResourceRoot resourceRoot, BeansXml beansXml, boolean deploymentRoot) {
         this(beansXmlFile, null, resourceRoot, beansXml, deploymentRoot);
     }
 
-    public ExplicitBeanArchiveMetadata(VirtualFile beansXmlFile, VirtualFile additionalBeansXmlFile, ResourceRoot resourceRoot, BeansXml beansXml, boolean deploymentRoot) {
+    public ExplicitBeanArchiveMetadata(Resource beansXmlFile, Resource additionalBeansXmlFile, ResourceRoot resourceRoot, BeansXml beansXml, boolean deploymentRoot) {
         this.beansXmlFile = beansXmlFile;
         this.additionalBeansXmlFile = additionalBeansXmlFile;
         this.resourceRoot = resourceRoot;
@@ -73,7 +73,7 @@ public class ExplicitBeanArchiveMetadata {
         this.beansXml = beansXml;
     }
 
-    public VirtualFile getBeansXmlFile() {
+    public Resource getBeansXmlFile() {
         return beansXmlFile;
     }
 
@@ -89,7 +89,7 @@ public class ExplicitBeanArchiveMetadata {
         return beansXml;
     }
 
-    public VirtualFile getAdditionalBeansXmlFile() {
+    public Resource getAdditionalBeansXmlFile() {
         return additionalBeansXmlFile;
     }
 }

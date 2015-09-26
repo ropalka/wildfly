@@ -35,17 +35,18 @@ import org.jboss.as.server.deployment.DeploymentUnit;
 import org.jboss.as.server.deployment.DeploymentUnitProcessingException;
 import org.jboss.as.server.deployment.DeploymentUnitProcessor;
 import org.jboss.as.server.deployment.module.ResourceRoot;
+import org.jboss.as.server.loaders.ResourceLoader;
 import org.jboss.jca.common.api.metadata.resourceadapter.Activation;
 import org.jboss.jca.common.metadata.ironjacamar.IronJacamarParser;
-import org.jboss.vfs.VirtualFile;
+import org.jboss.modules.Resource;
 
 /**
  * DeploymentUnitProcessor responsible for parsing an iron-jacamar.xml descriptor
  * and attaching the corresponding IronJacamar metadata. It take care also to
  * register this metadata into IronJacamar0s MetadataRepository
  *
- * @author <a href="mailto:stefano.maestri@redhat.comdhat.com">Stefano
- *         Maestri</a>
+ * @author <a href="mailto:stefano.maestri@redhat.comdhat.com">Stefano Maestri</a>
+ * @author <a href="mailto:ropalka@redhat.comdhat.com">Richard Opalka</a>
  */
 public class IronJacamarDeploymentParsingProcessor implements DeploymentUnitProcessor {
 
@@ -63,34 +64,31 @@ public class IronJacamarDeploymentParsingProcessor implements DeploymentUnitProc
      * @throws DeploymentUnitProcessingException
      */
     @Override
-    public void deploy(DeploymentPhaseContext phaseContext) throws DeploymentUnitProcessingException {
+    public void deploy(final DeploymentPhaseContext phaseContext) throws DeploymentUnitProcessingException {
         final DeploymentUnit deploymentUnit = phaseContext.getDeploymentUnit();
         final ResourceRoot resourceRoot = deploymentUnit.getAttachment(Attachments.DEPLOYMENT_ROOT);
-        final VirtualFile deploymentRoot = resourceRoot.getRoot();
+        final ResourceLoader loader = resourceRoot.getLoader();
         final boolean resolveProperties = Util.shouldResolveJBoss(deploymentUnit);
 
-        IronJacamarXmlDescriptor xmlDescriptor = process(deploymentRoot, resolveProperties);
+        IronJacamarXmlDescriptor xmlDescriptor = process(loader, resolveProperties);
         if (xmlDescriptor != null) {
             deploymentUnit.putAttachment(IronJacamarXmlDescriptor.ATTACHMENT_KEY, xmlDescriptor);
         }
     }
 
-    public static IronJacamarXmlDescriptor process(VirtualFile deploymentRoot, boolean resolveProperties) throws DeploymentUnitProcessingException {
+    public static IronJacamarXmlDescriptor process(final ResourceLoader deploymentRoot, final boolean resolveProperties) throws DeploymentUnitProcessingException {
         IronJacamarXmlDescriptor xmlDescriptor = null;
-        if (deploymentRoot == null || !deploymentRoot.exists())
-            return null;
-
-        final String deploymentRootName = deploymentRoot.getName().toLowerCase(Locale.ENGLISH);
-        VirtualFile serviceXmlFile = null;
-        if (deploymentRootName.endsWith(".rar")) {
-            serviceXmlFile = deploymentRoot.getChild("/META-INF/ironjacamar.xml");
+        final String deploymentRootName = deploymentRoot.getRootName().toLowerCase(Locale.ENGLISH);
+        Resource serviceXmlFile = null;
+        if (deploymentRootName.endsWith(RaStructureProcessor.RAR_EXTENSION)) {
+            serviceXmlFile = deploymentRoot.getResource("/META-INF/ironjacamar.xml");
         }
 
-        if (serviceXmlFile == null || !serviceXmlFile.exists())
+        if (serviceXmlFile == null)
             return null;
 
         InputStream xmlStream = null;
-        Activation result = null;
+        Activation result;
         try {
             xmlStream = serviceXmlFile.openStream();
             IronJacamarParser ironJacamarParser = new IronJacamarParser();
@@ -100,9 +98,9 @@ public class IronJacamarDeploymentParsingProcessor implements DeploymentUnitProc
                 xmlDescriptor = new IronJacamarXmlDescriptor(result);
 
             } else
-                throw ConnectorLogger.ROOT_LOGGER.failedToParseServiceXml(serviceXmlFile);
+                throw ConnectorLogger.ROOT_LOGGER.failedToParseServiceXml(serviceXmlFile.getName());
         } catch (Exception e) {
-            throw ConnectorLogger.ROOT_LOGGER.failedToParseServiceXml(e, serviceXmlFile);
+            throw ConnectorLogger.ROOT_LOGGER.failedToParseServiceXml(e, serviceXmlFile.getName());
         } finally {
             safeClose(xmlStream);
         }

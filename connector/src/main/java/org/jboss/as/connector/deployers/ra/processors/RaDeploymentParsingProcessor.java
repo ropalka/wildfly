@@ -38,9 +38,10 @@ import org.jboss.as.server.deployment.DeploymentUnit;
 import org.jboss.as.server.deployment.DeploymentUnitProcessingException;
 import org.jboss.as.server.deployment.DeploymentUnitProcessor;
 import org.jboss.as.server.deployment.module.ResourceRoot;
+import org.jboss.as.server.loaders.ResourceLoader;
 import org.jboss.jca.common.api.metadata.spec.Connector;
 import org.jboss.jca.common.metadata.spec.RaParser;
-import org.jboss.vfs.VirtualFile;
+import org.jboss.modules.Resource;
 
 /**
  * DeploymentUnitProcessor responsible for parsing a standard jca xml descriptor
@@ -48,6 +49,7 @@ import org.jboss.vfs.VirtualFile;
  * metadata into IronJacamar's MetadataRepository
  *
  * @author <a href="mailto:stefano.maestri@redhat.com">Stefano Maestri</a>
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public class RaDeploymentParsingProcessor implements DeploymentUnitProcessor {
 
@@ -66,61 +68,57 @@ public class RaDeploymentParsingProcessor implements DeploymentUnitProcessor {
      *
      */
     @Override
-    public void deploy(DeploymentPhaseContext phaseContext) throws DeploymentUnitProcessingException {
+    public void deploy(final DeploymentPhaseContext phaseContext) throws DeploymentUnitProcessingException {
         final DeploymentUnit deploymentUnit = phaseContext.getDeploymentUnit();
         final ResourceRoot deploymentRoot = deploymentUnit.getAttachment(Attachments.DEPLOYMENT_ROOT);
         final boolean resolveProperties = Util.shouldResolveSpec(deploymentUnit);
 
-        final VirtualFile file = deploymentRoot.getRoot();
-        if (file == null || !file.exists())
-            return;
-
-        final String deploymentRootName = file.getName().toLowerCase(Locale.ENGLISH);
-        if (!deploymentRootName.endsWith(".rar")) {
+        final ResourceLoader loader = deploymentRoot.getLoader();
+        final String deploymentRootName = loader.getRootName().toLowerCase(Locale.ENGLISH);
+        if (!deploymentRootName.endsWith(RaStructureProcessor.RAR_EXTENSION)) {
             return;
         }
 
-        final VirtualFile alternateDescriptor = deploymentRoot.getAttachment(org.jboss.as.ee.structure.Attachments.ALTERNATE_CONNECTOR_DEPLOYMENT_DESCRIPTOR);
+        final Resource alternateDescriptor = deploymentRoot.getAttachment(org.jboss.as.ee.structure.Attachments.ALTERNATE_CONNECTOR_DEPLOYMENT_DESCRIPTOR);
         String prefix = "";
 
         if (deploymentUnit.getParent() != null) {
             prefix = deploymentUnit.getParent().getName() + "#";
         }
 
-        String deploymentName = prefix + file.getName();
-        ConnectorXmlDescriptor xmlDescriptor = process(resolveProperties, file, alternateDescriptor, deploymentName);
+        String deploymentName = prefix + loader.getRootName();
+        ConnectorXmlDescriptor xmlDescriptor = process(resolveProperties, loader, alternateDescriptor, deploymentName);
 
 
         phaseContext.getDeploymentUnit().putAttachment(ConnectorXmlDescriptor.ATTACHMENT_KEY, xmlDescriptor);
 
     }
 
-    public static ConnectorXmlDescriptor process(boolean resolveProperties, VirtualFile file, VirtualFile alternateDescriptor, String deploymentName) throws DeploymentUnitProcessingException {
+    public static ConnectorXmlDescriptor process(final boolean resolveProperties, final ResourceLoader loader, final Resource alternateDescriptor, final String deploymentName) throws DeploymentUnitProcessingException {
         // Locate the descriptor
-        final VirtualFile serviceXmlFile;
+        final Resource serviceXmlFile;
         if (alternateDescriptor != null) {
             serviceXmlFile = alternateDescriptor;
         } else {
-            serviceXmlFile = file.getChild("/META-INF/ra.xml");
+            serviceXmlFile = loader.getResource("/META-INF/ra.xml");
         }
         InputStream xmlStream = null;
         Connector result = null;
         try {
-            if (serviceXmlFile != null && serviceXmlFile.exists()) {
-
+            if (serviceXmlFile != null) {
                 xmlStream = serviceXmlFile.openStream();
                 RaParser raParser = new RaParser();
                 raParser.setSystemPropertiesResolved(resolveProperties);
                 result = raParser.parse(xmlStream);
                 if (result == null)
-                    throw ConnectorLogger.ROOT_LOGGER.failedToParseServiceXml(serviceXmlFile);
+                    throw ConnectorLogger.ROOT_LOGGER.failedToParseServiceXml(serviceXmlFile.getName());
             }
-            File root = file.getPhysicalFile();
+            File root = loader.getRoot();
             URL url = root.toURI().toURL();
             return new ConnectorXmlDescriptor(result, root, url, deploymentName);
 
         } catch (Exception e) {
-            throw ConnectorLogger.ROOT_LOGGER.failedToParseServiceXml(e, serviceXmlFile);
+            throw ConnectorLogger.ROOT_LOGGER.failedToParseServiceXml(e, serviceXmlFile != null ? serviceXmlFile.getName() : null);
         } finally {
             safeClose(xmlStream);
         }

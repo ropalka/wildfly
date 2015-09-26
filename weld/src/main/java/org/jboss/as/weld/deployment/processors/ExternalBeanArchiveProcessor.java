@@ -21,7 +21,6 @@
  */
 package org.jboss.as.weld.deployment.processors;
 
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -71,6 +70,7 @@ import org.jboss.weld.xml.BeansXmlParser;
  *
  * @author Stuart Douglas
  * @author Jozef Hartinger
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public class ExternalBeanArchiveProcessor implements DeploymentUnitProcessor {
 
@@ -101,18 +101,14 @@ public class ExternalBeanArchiveProcessor implements DeploymentUnitProcessor {
         final HashSet<URL> existing = new HashSet<URL>();
 
         for (DeploymentUnit deployment : deploymentUnits) {
-            try {
-                final ExplicitBeanArchiveMetadataContainer weldDeploymentMetadata = deployment.getAttachment(ExplicitBeanArchiveMetadataContainer.ATTACHMENT_KEY);
-                if (weldDeploymentMetadata != null) {
-                    for (ExplicitBeanArchiveMetadata md : weldDeploymentMetadata.getBeanArchiveMetadata().values()) {
-                        existing.add(md.getBeansXmlFile().toURL());
-                        if (md.getAdditionalBeansXmlFile() != null) {
-                            existing.add(md.getAdditionalBeansXmlFile().toURL());
-                        }
+            final ExplicitBeanArchiveMetadataContainer weldDeploymentMetadata = deployment.getAttachment(ExplicitBeanArchiveMetadataContainer.ATTACHMENT_KEY);
+            if (weldDeploymentMetadata != null) {
+                for (ExplicitBeanArchiveMetadata md : weldDeploymentMetadata.getBeanArchiveMetadata().values()) {
+                    existing.add(md.getBeansXmlFile().getURL());
+                    if (md.getAdditionalBeansXmlFile() != null) {
+                        existing.add(md.getAdditionalBeansXmlFile().getURL());
                     }
                 }
-            } catch (MalformedURLException e) {
-                throw new DeploymentUnitProcessingException(e);
             }
 
             EEModuleDescription moduleDesc = deployment.getAttachment(org.jboss.as.ee.component.Attachments.EE_MODULE_DESCRIPTION);

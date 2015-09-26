@@ -78,10 +78,6 @@ public interface WeldLogger extends BasicLogger {
     @Message(id = 3, value = "Processing weld deployment %s")
     void processingWeldDeployment(String deployment);
 
-    @LogMessage(level = Logger.Level.WARN)
-    @Message(id = 4, value = "Found beans.xml file in non-standard location: %s, war deployments should place beans.xml files into WEB-INF/beans.xml")
-    void beansXmlInNonStandardLocation(String location);
-
     @LogMessage(level = Logger.Level.ERROR)
     @Message(id = 5, value = "Could not find BeanManager for deployment %s")
     void couldNotFindBeanManagerForDeployment(String beanManager);
@@ -123,10 +119,6 @@ public interface WeldLogger extends BasicLogger {
     void exceptionClearingThreadState(@Cause Exception e);
 
     @LogMessage(level = Logger.Level.ERROR)
-    @Message(id = 15, value = "Error loading file %s")
-    void errorLoadingFile(String newPath);
-
-    @LogMessage(level = Logger.Level.ERROR)
     @Message(id = 16, value = "Could not read entries")
     void couldNotReadEntries(@Cause IOException ioe);
 
@@ -137,9 +129,6 @@ public interface WeldLogger extends BasicLogger {
     @LogMessage(level = Logger.Level.WARN)
     @Message(id = 18, value = "Found both WEB-INF/beans.xml and WEB-INF/classes/META-INF/beans.xml. It is not portable to use both locations at the same time. Weld is going to use the former location for this deployment.")
     void duplicateBeansXml();
-
-    @Message(id = 19, value = "Could get beans.xml file as URL when processing file: %s")
-    DeploymentUnitProcessingException couldNotGetBeansXmlAsURL(String beansXml, @Cause Throwable cause);
 
     @Message(id = 20, value = "Could not load interceptor class : %s")
     DeploymentUnitProcessingException couldNotLoadInterceptorClass(String interceptorClass, @Cause Throwable cause);

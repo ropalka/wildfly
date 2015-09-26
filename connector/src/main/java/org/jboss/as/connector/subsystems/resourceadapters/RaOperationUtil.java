@@ -106,7 +106,6 @@ import org.jboss.as.controller.OperationFailedException;
 import org.jboss.as.security.service.SecurityDomainService;
 import org.jboss.as.server.deployment.Attachments;
 import org.jboss.as.server.deployment.annotation.ResourceRootIndexer;
-import org.jboss.as.server.deployment.module.MountHandle;
 import org.jboss.as.server.deployment.module.ResourceRoot;
 import org.jboss.as.server.loaders.ResourceLoader;
 import org.jboss.as.server.loaders.ResourceLoaders;
@@ -145,13 +144,9 @@ import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceRegistry;
 import org.jboss.msc.service.ServiceTarget;
-import org.jboss.vfs.VFS;
-import org.jboss.vfs.VirtualFile;
-
 
 public class RaOperationUtil {
     public static final ServiceName RAR_MODULE = ServiceName.of("rarinsidemodule");
-
 
     public static ModifiableResourceAdapter buildResourceAdaptersObject(final String id, final OperationContext context, ModelNode operation, String archiveOrModule) throws OperationFailedException {
         Map<String, String> configProperties = new HashMap<>(0);
@@ -438,25 +433,16 @@ public class RaOperationUtil {
         URL path = module.getExportedResource("META-INF/ra.xml");
         Closeable closable = null;
             try {
-                VirtualFile child;
                 if (path.getPath().contains("!")) {
                     throw new OperationFailedException(ConnectorLogger.ROOT_LOGGER.compressedRarNotSupportedInModuleRA(moduleName));
-                } else {
-                    child = VFS.getChild(path.getPath().split("META-INF")[0]);
-
-                    closable = VFS.mountReal(new File(path.getPath().split("META-INF")[0]), child);
                 }
 
-                final MountHandle mountHandle = new MountHandle(closable);
                 final ResourceLoader loader = ResourceLoaders.newResourceLoader(new File(path.getPath().split("META-INF")[0]));
-                final ResourceRoot resourceRoot = new ResourceRoot(loader, child, mountHandle);
+                final ResourceRoot resourceRoot = new ResourceRoot(loader, null, null);
 
-                final VirtualFile deploymentRoot = resourceRoot.getRoot();
-                if (deploymentRoot == null || !deploymentRoot.exists())
-                    return;
-                ConnectorXmlDescriptor connectorXmlDescriptor = RaDeploymentParsingProcessor.process(resolveProperties, deploymentRoot, null, name);
-                IronJacamarXmlDescriptor ironJacamarXmlDescriptor = IronJacamarDeploymentParsingProcessor.process(deploymentRoot, resolveProperties);
-                RaNativeProcessor.process(deploymentRoot);
+                ConnectorXmlDescriptor connectorXmlDescriptor = RaDeploymentParsingProcessor.process(resolveProperties, loader, null, name);
+                IronJacamarXmlDescriptor ironJacamarXmlDescriptor = IronJacamarDeploymentParsingProcessor.process(loader, resolveProperties);
+                RaNativeProcessor.process(loader);
                 Map<ResourceRoot, Index> annotationIndexes = new HashMap<ResourceRoot, Index>();
                 ResourceRootIndexer.indexResourceRoot(resourceRoot);
                 Index index = resourceRoot.getAttachment(Attachments.ANNOTATION_INDEX);
