@@ -137,7 +137,7 @@ public final class WSRefDDProcessor extends AbstractDeploymentDescriptorBindings
 
     private static UnifiedVirtualFile getUnifiedVirtualFile(final DeploymentUnit deploymentUnit) { // TODO: refactor to common code
         final ResourceRoot resourceRoot = deploymentUnit.getAttachment(org.jboss.as.server.deployment.Attachments.DEPLOYMENT_ROOT);
-        return new VirtualFileAdaptor(resourceRoot.getRoot());
+        return new VirtualFileAdaptor(resourceRoot.getLoader(), null);
     }
 
     private static boolean isEmpty(final String string) { // TODO: some common class - StringUtils ?

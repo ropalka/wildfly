@@ -21,7 +21,6 @@
  */
 package org.jboss.as.webservices.deployers;
 
-import java.io.IOException;
 import java.net.URL;
 
 import org.jboss.as.ee.structure.JBossDescriptorPropertyReplacement;
@@ -31,10 +30,9 @@ import org.jboss.as.server.deployment.DeploymentUnit;
 import org.jboss.as.server.deployment.DeploymentUnitProcessingException;
 import org.jboss.as.server.deployment.DeploymentUnitProcessor;
 import org.jboss.as.server.deployment.module.ResourceRoot;
-import org.jboss.as.webservices.logging.WSLogger;
 import org.jboss.as.webservices.metadata.JBossWebservicesPropertyReplaceFactory;
 import org.jboss.as.webservices.util.WSAttachmentKeys;
-import org.jboss.vfs.VirtualFile;
+import org.jboss.modules.Resource;
 import org.jboss.wsf.spi.metadata.webservices.JBossWebservicesMetaData;
 
 /**
@@ -62,17 +60,11 @@ public final class JBossWebservicesDescriptorDeploymentProcessor implements Depl
     }
 
     private URL getJBossWebServicesDescriptorURL(final ResourceRoot deploymentRoot) throws DeploymentUnitProcessingException {
-        VirtualFile jwsdd = deploymentRoot.getRoot().getChild("WEB-INF/jboss-webservices.xml");
-
-        if (!jwsdd.exists()) {
-            jwsdd = deploymentRoot.getRoot().getChild("META-INF/jboss-webservices.xml");
+        Resource jwsdd = deploymentRoot.getLoader().getResource("WEB-INF/jboss-webservices.xml");
+        if (jwsdd == null) {
+            jwsdd = deploymentRoot.getLoader().getResource("META-INF/jboss-webservices.xml");
         }
-
-        try {
-            return jwsdd.exists() ? jwsdd.toURL() : null;
-        } catch (IOException e) {
-            throw WSLogger.ROOT_LOGGER.cannotGetURLForDescriptor(e, jwsdd.getPathName());
-        }
+        return jwsdd != null ? jwsdd.getURL() : null;
     }
 
 }

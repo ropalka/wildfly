@@ -118,7 +118,7 @@ public class WebServiceReferences {
 
     private static UnifiedVirtualFile getUnifiedVirtualFile(final DeploymentUnit unit) {
         final ResourceRoot resourceRoot = unit.getAttachment(org.jboss.as.server.deployment.Attachments.DEPLOYMENT_ROOT);
-        return new VirtualFileAdaptor(resourceRoot.getRoot());
+        return new VirtualFileAdaptor(resourceRoot.getLoader(), null);
     }
 
     private static boolean isEmpty(final String string) {

@@ -23,17 +23,17 @@ package org.jboss.as.webservices.deployers;
 
 import java.io.IOException;
 import java.lang.annotation.Annotation;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.List;
 
+import org.jboss.as.server.loaders.ResourceLoader;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.metadata.javaee.spec.ParamValueMetaData;
 import org.jboss.metadata.web.jboss.JBossWebMetaData;
-import org.jboss.vfs.VirtualFile;
+import org.jboss.modules.Resource;
 import org.jboss.ws.api.annotation.EndpointConfig;
 import org.jboss.ws.common.configuration.AbstractCommonConfigResolver;
 import org.jboss.ws.common.integration.WSConstants;
@@ -47,10 +47,10 @@ public class ConfigResolver extends AbstractCommonConfigResolver {
     private final String annotationConfigFile;
     private final String descriptorConfigName;
     private final String descriptorConfigFile;
-    private final VirtualFile root;
+    private final ResourceLoader loader;
     private final boolean isWar;
 
-    public ConfigResolver(ClassInfo epClassInfo, JBossWebservicesMetaData jwmd, JBossWebMetaData jbwebmd, VirtualFile root, boolean isWar) {
+    public ConfigResolver(ClassInfo epClassInfo, JBossWebservicesMetaData jwmd, JBossWebMetaData jbwebmd, ResourceLoader loader, boolean isWar) {
         this.epClassInfo = epClassInfo;
         this.className = epClassInfo.name().toString();
         List<AnnotationInstance> annotations = epClassInfo.annotations().get(
@@ -79,7 +79,7 @@ public class ConfigResolver extends AbstractCommonConfigResolver {
         }
         this.descriptorConfigFile = f != null ? f : (jwmd != null ? jwmd.getConfigFile() : null);
         this.descriptorConfigName = n != null ? n : (jwmd != null ? jwmd.getConfigName() : null);
-        this.root = root;
+        this.loader = loader;
         this.isWar = isWar;
     }
 
@@ -114,31 +114,21 @@ public class ConfigResolver extends AbstractCommonConfigResolver {
     }
 
     @Override
-    protected URL getConfigFile(String configFileName) throws IOException {
-        return root.getChild(configFileName).asFileURL();
+    protected URL getConfigFile(final String configFileName) throws IOException {
+        final Resource configFile = loader.getResource(configFileName);
+        return configFile != null ? configFile.getURL() : null;
     }
 
     @Override
-    protected URL getDefaultConfigFile(String defaultConfigFileName) {
-        URL url = null;
+    protected URL getDefaultConfigFile(final String defaultConfigFileName) {
+        Resource configFile = null;
         if (isWar) {
-            url = asFileURL(root.getChild("/WEB-INF/classes/" + defaultConfigFileName));
+            configFile = loader.getResource("/WEB-INF/classes/" + defaultConfigFileName);
         }
-        if (url == null) {
-            url = asFileURL(root.getChild("/" + defaultConfigFileName));
+        if (configFile == null) {
+            configFile = loader.getResource("/" + defaultConfigFileName);
         }
-        return url;
+        return configFile != null ? configFile.getURL() : null;
     }
 
-    private URL asFileURL(VirtualFile vf) {
-        URL url = null;
-        if (vf != null && vf.exists()) {
-            try {
-                url = vf.asFileURL();
-            } catch (MalformedURLException e) {
-                // ignore
-            }
-        }
-        return url;
-    }
 }

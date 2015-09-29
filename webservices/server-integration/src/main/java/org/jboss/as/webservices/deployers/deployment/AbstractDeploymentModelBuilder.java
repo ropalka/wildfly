@@ -33,13 +33,13 @@ import org.jboss.as.ejb3.deployment.EjbDeploymentAttachmentKeys;
 import org.jboss.as.server.deployment.Attachments;
 import org.jboss.as.server.deployment.DeploymentUnit;
 import org.jboss.as.server.deployment.module.ResourceRoot;
+import org.jboss.as.server.loaders.ResourceLoader;
 import org.jboss.as.webservices.logging.WSLogger;
 import org.jboss.as.webservices.metadata.model.JAXWSDeployment;
 import org.jboss.as.webservices.util.VirtualFileAdaptor;
 import org.jboss.metadata.ejb.spec.EjbJarMetaData;
 import org.jboss.metadata.web.jboss.JBossWebMetaData;
 import org.jboss.modules.Module;
-import org.jboss.vfs.VirtualFile;
 import org.jboss.ws.common.ResourceLoaderAdapter;
 import org.jboss.wsf.spi.SPIProvider;
 import org.jboss.wsf.spi.SPIProviderResolver;
@@ -177,7 +177,7 @@ abstract class AbstractDeploymentModelBuilder implements DeploymentModelBuilder 
     private ArchiveDeployment newDeployment(final DeploymentUnit unit) {
         WSLogger.ROOT_LOGGER.tracef("Creating new unified WS deployment model for %s", unit);
         final ResourceRoot deploymentRoot = unit.getAttachment(Attachments.DEPLOYMENT_ROOT);
-        final VirtualFile root = deploymentRoot != null ? deploymentRoot.getRoot() : null;
+        final ResourceLoader loader = deploymentRoot != null ? deploymentRoot.getLoader() : null;
         final ClassLoader classLoader;
         final Module module = unit.getAttachment(Attachments.MODULE);
         if (module == null) {
@@ -199,7 +199,7 @@ abstract class AbstractDeploymentModelBuilder implements DeploymentModelBuilder 
             parentDep = this.newDeployment(null, unit.getParent().getName(), parentModule.getClassLoader(), null);
         }
 
-        final UnifiedVirtualFile uvf = root != null ? new VirtualFileAdaptor(root) : new ResourceLoaderAdapter(classLoader);
+        final UnifiedVirtualFile uvf = loader != null ? new VirtualFileAdaptor(loader, null) : new ResourceLoaderAdapter(classLoader);
         final ArchiveDeployment dep = this.newDeployment(parentDep, unit.getName(), classLoader, uvf);
 
         //add an AnnotationInfo attachment that uses composite jandex index

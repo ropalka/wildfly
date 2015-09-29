@@ -45,6 +45,7 @@ import org.jboss.as.server.deployment.Attachments;
 import org.jboss.as.server.deployment.DeploymentUnit;
 import org.jboss.as.server.deployment.DeploymentUnitProcessingException;
 import org.jboss.as.server.deployment.annotation.CompositeIndex;
+import org.jboss.as.server.loaders.ResourceLoader;
 import org.jboss.as.webservices.injection.WSEndpointHandlersMapping;
 import org.jboss.as.webservices.metadata.model.EJBEndpoint;
 import org.jboss.as.webservices.metadata.model.POJOEndpoint;
@@ -54,7 +55,6 @@ import org.jboss.jandex.ClassInfo;
 import org.jboss.metadata.web.jboss.JBossWebMetaData;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceName;
-import org.jboss.vfs.VirtualFile;
 import org.jboss.wsf.spi.metadata.config.EndpointConfig;
 import org.jboss.wsf.spi.metadata.webservices.JBossWebservicesMetaData;
 
@@ -71,7 +71,7 @@ public final class WSIntegrationProcessorJAXWS_HANDLER extends AbstractIntegrati
     @Override
     protected void processAnnotation(final DeploymentUnit unit, final EEModuleDescription moduleDescription) throws DeploymentUnitProcessingException {
         final WSEndpointHandlersMapping mapping = getOptionalAttachment(unit, WS_ENDPOINT_HANDLERS_MAPPING_KEY);
-        final VirtualFile root = unit.getAttachment(DEPLOYMENT_ROOT).getRoot();
+        final ResourceLoader loader = unit.getAttachment(DEPLOYMENT_ROOT).getLoader();
         final JBossWebservicesMetaData jbossWebservicesMD = unit.getAttachment(WSAttachmentKeys.JBOSS_WEBSERVICES_METADATA_KEY);
         final CompositeIndex index = unit.getAttachment(Attachments.COMPOSITE_ANNOTATION_INDEX);
         final boolean war = DeploymentTypeMarker.isType(DeploymentType.WAR, unit);
@@ -91,7 +91,7 @@ public final class WSIntegrationProcessorJAXWS_HANDLER extends AbstractIntegrati
 
             if (classInfo != null && isJaxwsEndpoint(classInfo, index, false)) {
                 final String endpointClassName = classInfo.name().toString();
-                final ConfigResolver configResolver = new ConfigResolver(classInfo, jbossWebservicesMD, jwmd, root, war);
+                final ConfigResolver configResolver = new ConfigResolver(classInfo, jbossWebservicesMD, jwmd, loader, war);
                 final EndpointConfig config = configResolver.resolveEndpointConfig();
                 if (config != null) {
                     registerConfigMapping(endpointClassName, config, unit);

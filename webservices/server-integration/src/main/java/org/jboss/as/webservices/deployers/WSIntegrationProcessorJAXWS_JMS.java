@@ -47,7 +47,7 @@ import org.jboss.as.webservices.logging.WSLogger;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
-import org.jboss.vfs.VirtualFile;
+import org.jboss.modules.Resource;
 import org.jboss.ws.common.deployment.SOAPAddressWSDLParser;
 import org.jboss.wsf.spi.metadata.jms.JMSEndpointMetaData;
 import org.jboss.wsf.spi.metadata.jms.JMSEndpointsMetaData;
@@ -56,6 +56,7 @@ import org.jboss.wsf.spi.metadata.jms.JMSEndpointsMetaData;
  * DUP for detecting JMS WS endpoints
  *
  * @author <a href="mailto:alessio.soldano@jboss.com">Alessio Soldano</a>
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public final class WSIntegrationProcessorJAXWS_JMS implements DeploymentUnitProcessor {
 
@@ -99,8 +100,8 @@ public final class WSIntegrationProcessorJAXWS_JMS implements DeploymentUnitProc
                 try {
                     final ResourceRoot resourceRoot = getWsdlResourceRoot(unit, wsdlLocation);
                     if (resourceRoot == null) continue;
-                    final VirtualFile wsdlLocationFile = resourceRoot.getRoot().getChild(wsdlLocation);
-                    final URL url = wsdlLocationFile.toURL();
+                    final Resource wsdlLocationFile = resourceRoot.getLoader().getResource(wsdlLocation);
+                    final URL url = wsdlLocationFile.getURL();
                     SOAPAddressWSDLParser parser = new SOAPAddressWSDLParser(url);
                     for (AnnotationInstance ai : map.get(wsdlLocation)) {
                         String port = ai.value(PORT_NAME).asString();
@@ -132,7 +133,7 @@ public final class WSIntegrationProcessorJAXWS_JMS implements DeploymentUnitProc
     }
 
     private static ResourceRoot getWsdlResourceRoot(final DeploymentUnit unit, final String wsdlPath) {
-        final AttachmentList<ResourceRoot> resourceRoots = new AttachmentList<ResourceRoot>(ResourceRoot.class);
+        final AttachmentList<ResourceRoot> resourceRoots = new AttachmentList<>(ResourceRoot.class);
         final ResourceRoot root = unit.getAttachment(DEPLOYMENT_ROOT);
         resourceRoots.add(root);
         final AttachmentList<ResourceRoot> otherResourceRoots = unit.getAttachment(RESOURCE_ROOTS);
@@ -140,8 +141,8 @@ public final class WSIntegrationProcessorJAXWS_JMS implements DeploymentUnitProc
             resourceRoots.addAll(otherResourceRoots);
         }
         for (final ResourceRoot resourceRoot : resourceRoots) {
-            VirtualFile file = resourceRoot.getRoot().getChild(wsdlPath);
-            if (file.exists()) return resourceRoot;
+            Resource file = resourceRoot.getLoader().getResource(wsdlPath);
+            if (file != null) return resourceRoot;
         }
         return null;
     }

@@ -1,6 +1,6 @@
 /*
  * JBoss, Home of Professional Open Source
- * Copyright 2012, JBoss Inc., and individual contributors as indicated
+ * Copyright 2015, JBoss Inc., and individual contributors as indicated
  * by the @authors tag. See the copyright.txt in the distribution for a
  * full listing of individual contributors.
  *
@@ -21,55 +21,52 @@
  */
 package org.jboss.as.webservices.util;
 
+import static org.jboss.as.server.loaders.Utils.getResourceName;
+
 import java.io.IOException;
 import java.net.URL;
-import java.util.LinkedList;
 import java.util.List;
 
+import org.jboss.as.server.loaders.ResourceLoader;
 import org.jboss.as.webservices.logging.WSLogger;
-import org.jboss.vfs.VirtualFile;
+import org.jboss.modules.Resource;
 import org.jboss.wsf.spi.deployment.UnifiedVirtualFile;
 
 /**
- * A VirtualFile adaptor.
- *
- * @author Thomas.Diesler@jboss.org
- * @author Ales.Justin@jboss.org
- * @author alessio.soldano@jboss.com
+ * A ResourceLoader and Resource adaptor.
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public final class VirtualFileAdaptor implements UnifiedVirtualFile {
 
-    private static final long serialVersionUID = -4509594124653184349L;
+    private static final long serialVersionUID = -1;
 
-    private final transient VirtualFile file;
+    private final transient ResourceLoader loader;
+    private final transient Resource resource;
 
-    public VirtualFileAdaptor(VirtualFile file) {
-        this.file = file;
+    public VirtualFileAdaptor(final ResourceLoader loader, final Resource resource) {
+        this.loader = loader;
+        this.resource = resource;
     }
 
-    private VirtualFile getFile() throws IOException {
-        return file;
-    }
-
-    private UnifiedVirtualFile findChild(String child, boolean throwExceptionIfNotFound) throws IOException {
-        final VirtualFile virtualFile = getFile();
-        final VirtualFile childFile = file.getChild(child);
-        if (!childFile.exists()) {
+    private UnifiedVirtualFile findChild(final String child, final boolean throwExceptionIfNotFound) throws IOException {
+        if (loader == null) throw new UnsupportedOperationException();
+        final Resource childResource = loader.getResource(child);
+        if (childResource == null) {
             if (throwExceptionIfNotFound) {
-                throw WSLogger.ROOT_LOGGER.missingChild(child, virtualFile);
+                throw WSLogger.ROOT_LOGGER.missingChild(child, loader.getRootName());
             } else {
-                WSLogger.ROOT_LOGGER.tracef("Child '%s' not found for VirtualFile: %s", child, virtualFile);
+                WSLogger.ROOT_LOGGER.tracef("Child '%s' not found for ResourceLoader: %s", child, loader.getRootName());
                 return null;
             }
         }
-        return new VirtualFileAdaptor(childFile);
+        return new VirtualFileAdaptor(null, childResource);
     }
 
-    public UnifiedVirtualFile findChild(String child) throws IOException {
+    public UnifiedVirtualFile findChild(final String child) throws IOException {
         return findChild(child, true);
     }
 
-    public UnifiedVirtualFile findChildFailSafe(String child) {
+    public UnifiedVirtualFile findChildFailSafe(final String child) {
         try {
             return findChild(child, false);
         } catch (IOException e) {
@@ -78,29 +75,16 @@ public final class VirtualFileAdaptor implements UnifiedVirtualFile {
     }
 
     public URL toURL() {
-        try {
-            return getFile().toURL();
-        } catch (Exception e) {
-            return null;
-        }
+        if (resource == null) throw new UnsupportedOperationException();
+        return resource.getURL();
     }
 
     public List<UnifiedVirtualFile> getChildren() throws IOException {
-        List<VirtualFile> vfList = getFile().getChildren();
-        if (vfList == null)
-            return null;
-        List<UnifiedVirtualFile> uvfList = new LinkedList<UnifiedVirtualFile>();
-        for (VirtualFile vf : vfList) {
-            uvfList.add(new VirtualFileAdaptor(vf));
-        }
-        return uvfList;
+        throw new UnsupportedOperationException();
     }
 
     public String getName() {
-        try {
-            return getFile().getName();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        if (resource == null) throw new UnsupportedOperationException();
+        return getResourceName(resource.getName());
     }
 }

@@ -44,7 +44,6 @@ import org.jboss.logging.annotations.Message;
 import org.jboss.logging.annotations.MessageLogger;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.StartException;
-import org.jboss.vfs.VirtualFile;
 import org.jboss.wsf.spi.WSFException;
 import org.jboss.wsf.spi.deployment.DeploymentAspect;
 
@@ -198,8 +197,8 @@ public interface WSLogger extends BasicLogger {
     @Message(id = 38, value = "Cannot find component view: %s")
     IllegalStateException cannotFindComponentView(ServiceName viewName);
 
-    @Message(id = 39, value = "Child '%s' not found for VirtualFile: %s")
-    IOException missingChild(String child, VirtualFile file);
+    @Message(id = 39, value = "Child '%s' not found for deployment: %s")
+    IOException missingChild(String child, String deployment);
 
     @Message(id = 40, value = "Failed to create context")
     Exception createContextPhaseFailed(@Cause Throwable cause);
@@ -253,8 +252,8 @@ public interface WSLogger extends BasicLogger {
     //@Message(id = 56, value = "Method invocation failed with exception: %s")
     //void methodInvocationFailed(@Cause Throwable cause, String message);
 
-    @Message(id = 57, value = "Unable to get URL for: %s")
-    DeploymentUnitProcessingException cannotGetURLForDescriptor(@Cause Throwable cause, String resourcePath);
+    //@Message(id = 57, value = "Unable to get URL for: %s")
+    //DeploymentUnitProcessingException cannotGetURLForDescriptor(@Cause Throwable cause, String resourcePath);
 
     @Message(id = 58, value = "JAX-RPC not supported")
     DeploymentUnitProcessingException jaxRpcNotSupported();

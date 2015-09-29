@@ -21,7 +21,6 @@
  */
 package org.jboss.as.webservices.deployers;
 
-import java.io.IOException;
 import java.net.URL;
 
 import org.jboss.as.ee.structure.JBossDescriptorPropertyReplacement;
@@ -34,7 +33,7 @@ import org.jboss.as.server.deployment.module.ResourceRoot;
 import org.jboss.as.webservices.logging.WSLogger;
 import org.jboss.as.webservices.metadata.WebservicesPropertyReplaceFactory;
 import org.jboss.as.webservices.util.WSAttachmentKeys;
-import org.jboss.vfs.VirtualFile;
+import org.jboss.modules.Resource;
 import org.jboss.wsf.spi.metadata.webservices.WebserviceDescriptionMetaData;
 import org.jboss.wsf.spi.metadata.webservices.WebservicesMetaData;
 
@@ -67,17 +66,11 @@ public final class WebservicesDescriptorDeploymentProcessor implements Deploymen
     }
 
     private URL getWebServicesDescriptorURL(final ResourceRoot deploymentRoot) throws DeploymentUnitProcessingException {
-        VirtualFile wsdd = deploymentRoot.getRoot().getChild("WEB-INF/webservices.xml");
-
-        if (!wsdd.exists()) {
-            wsdd = deploymentRoot.getRoot().getChild("META-INF/webservices.xml");
+        Resource wsdd = deploymentRoot.getLoader().getResource("WEB-INF/webservices.xml");
+        if (wsdd == null) {
+            wsdd = deploymentRoot.getLoader().getResource("META-INF/webservices.xml");
         }
-
-        try {
-            return wsdd.exists() ? wsdd.toURL() : null;
-        } catch (IOException e) {
-            throw WSLogger.ROOT_LOGGER.cannotGetURLForDescriptor(e, wsdd.getPathName());
-        }
+        return wsdd != null ? wsdd.getURL() : null;
     }
 
     private boolean hasJaxRpcMapping(WebservicesMetaData webservicesMD) {

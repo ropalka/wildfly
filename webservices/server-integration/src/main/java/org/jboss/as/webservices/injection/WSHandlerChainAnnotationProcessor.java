@@ -54,7 +54,7 @@ import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Index;
-import org.jboss.vfs.VirtualFile;
+import org.jboss.modules.Resource;
 import org.jboss.wsf.spi.metadata.j2ee.serviceref.UnifiedHandlerChainMetaData;
 import org.jboss.wsf.spi.metadata.j2ee.serviceref.UnifiedHandlerChainsMetaData;
 import org.jboss.wsf.spi.metadata.j2ee.serviceref.UnifiedHandlerChainsMetaDataParser;
@@ -192,13 +192,13 @@ public final class WSHandlerChainAnnotationProcessor implements DeploymentUnitPr
                 classURI = new URI(annotatedClassName.replace('.', '/'));
             } catch (final URISyntaxException ignore) {}
             final String handlerChainConfigFileResourcePath = classURI.resolve(handlerChainConfigFile).toString();
-            VirtualFile config = currentResourceRoot.getRoot().getChild(handlerChainConfigFileResourcePath);
-            if (config.exists() && config.isFile()) {
+            Resource config = currentResourceRoot.getLoader().getResource(handlerChainConfigFileResourcePath);
+            if (config != null) {
                 return config.openStream();
             } else {
                 for (ResourceRoot rr : resourceRoots) {
-                    config = rr.getRoot().getChild(handlerChainConfigFileResourcePath);
-                    if (config.exists() && config.isFile()) {
+                    config = rr.getLoader().getResource(handlerChainConfigFileResourcePath);
+                    if (config != null) {
                         return config.openStream();
                     }
                 }
