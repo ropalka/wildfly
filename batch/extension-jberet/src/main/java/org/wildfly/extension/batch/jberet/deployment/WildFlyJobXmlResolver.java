@@ -22,6 +22,8 @@
 
 package org.wildfly.extension.batch.jberet.deployment;
 
+import static org.jboss.as.server.loaders.Utils.getResourceName;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.AccessController;
@@ -29,12 +31,13 @@ import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.Set;
-import java.util.stream.Collectors;
 import javax.xml.stream.XMLResolver;
 import javax.xml.stream.XMLStreamException;
 
@@ -47,8 +50,8 @@ import org.jboss.as.server.deployment.AttachmentKey;
 import org.jboss.as.server.deployment.Attachments;
 import org.jboss.as.server.deployment.DeploymentUnit;
 import org.jboss.as.server.deployment.DeploymentUnitProcessingException;
-import org.jboss.vfs.VirtualFile;
-import org.jboss.vfs.VirtualFileFilter;
+import org.jboss.as.server.loaders.ResourceLoader;
+import org.jboss.modules.Resource;
 import org.wildfly.extension.batch.jberet._private.BatchLogger;
 import org.wildfly.security.manager.WildFlySecurityManager;
 
@@ -57,13 +60,14 @@ import org.wildfly.security.manager.WildFlySecurityManager;
  * {@link ServiceLoader} and processed before XML found in the deployment itself.
  *
  * @author <a href="mailto:jperkins@redhat.com">James R. Perkins</a>
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public class WildFlyJobXmlResolver implements JobXmlResolver {
     public static final AttachmentKey<WildFlyJobXmlResolver> JOB_XML_RESOLVER = AttachmentKey.create(WildFlyJobXmlResolver.class);
 
     private final Set<JobXmlResolver> jobXmlResolvers;
     private final Map<String, String> resolvedJobs;
-    private final Map<String, VirtualFile> jobXmlFiles;
+    private final Map<String, Resource> jobXmlFiles;
     private final ClassLoader classLoader;
 
     private WildFlyJobXmlResolver() {
@@ -73,7 +77,7 @@ public class WildFlyJobXmlResolver implements JobXmlResolver {
         jobXmlFiles = Collections.emptyMap();
     }
 
-    private WildFlyJobXmlResolver(final ClassLoader classLoader, final Map<String, VirtualFile> jobXmlFiles) {
+    private WildFlyJobXmlResolver(final ClassLoader classLoader, final Map<String, Resource> jobXmlFiles) {
         this.classLoader = classLoader;
         resolvedJobs = new LinkedHashMap<>();
         jobXmlResolvers = new LinkedHashSet<>();
@@ -81,27 +85,30 @@ public class WildFlyJobXmlResolver implements JobXmlResolver {
     }
 
     public static WildFlyJobXmlResolver of(final ClassLoader classLoader, final DeploymentUnit deploymentUnit) throws DeploymentUnitProcessingException {// Get the root file
-        final VirtualFile root = deploymentUnit.getAttachment(Attachments.DEPLOYMENT_ROOT).getRoot();
-        final VirtualFile jobsDir;
+        final ResourceLoader loader = deploymentUnit.getAttachment(Attachments.DEPLOYMENT_ROOT).getLoader();
+        final Iterator<Resource> jobs;
         // Only files in the META-INF/batch-jobs directory
         if (DeploymentTypeMarker.isType(DeploymentType.WAR, deploymentUnit)) {
-            jobsDir = root.getChild("WEB-INF/classes/META-INF/batch-jobs");
+            jobs = loader.iterateResources("WEB-INF/classes/META-INF/batch-jobs", false);
         } else {
-            jobsDir = root.getChild("META-INF/batch-jobs");
+            jobs = loader.iterateResources("META-INF/batch-jobs", false);
         }
         final WildFlyJobXmlResolver jobXmlResolver;
-        if (jobsDir != null && jobsDir.exists()) {
-            try {
-                // We may have some job XML files
-                final Map<String, VirtualFile> xmlFiles = jobsDir.getChildren(JobXmlFilter.INSTANCE)
-                        .stream()
-                        .collect(Collectors.toMap(VirtualFile::getName,  (f) -> f));
-                jobXmlResolver = new WildFlyJobXmlResolver(classLoader, xmlFiles);
-                // Initialize this instance
-                jobXmlResolver.init();
-            } catch (IOException e) {
-                throw BatchLogger.LOGGER.errorProcessingBatchJobsDir(e);
+        if (jobs.hasNext()) {
+            // We may have some job XML files
+            final Map<String, Resource> xmlFiles = new HashMap<>();
+            Resource jobResource;
+            String jobName;
+            while (jobs.hasNext()) {
+                jobResource = jobs.next();
+                jobName = getResourceName(jobResource.getName());
+                if (jobName.endsWith(".xml")) {
+                    xmlFiles.put(jobName, jobResource);
+                }
             }
+            jobXmlResolver = new WildFlyJobXmlResolver(classLoader, xmlFiles);
+            // Initialize this instance
+            jobXmlResolver.init();
         } else {
             // This is likely not a batch deployment, creates a no-op service
             jobXmlResolver = new WildFlyJobXmlResolver();
@@ -121,7 +128,7 @@ public class WildFlyJobXmlResolver implements JobXmlResolver {
                 return in;
             }
         }
-        final VirtualFile file = jobXmlFiles.get(jobXml);
+        final Resource file = jobXmlFiles.get(jobXml);
         if (file == null) {
             return null;
         }
@@ -160,7 +167,7 @@ public class WildFlyJobXmlResolver implements JobXmlResolver {
         }
 
         // Load the default names
-        for (Map.Entry<String, VirtualFile> entry : jobXmlFiles.entrySet()) {
+        for (Map.Entry<String, Resource> entry : jobXmlFiles.entrySet()) {
             try {
                 // Parsing the entire job XML seems excessive to just get the job name. There are two reasons for this:
                 //  1) If an error occurs during parsing there's no real need to consider this a valid job
@@ -184,13 +191,4 @@ public class WildFlyJobXmlResolver implements JobXmlResolver {
         }
     }
 
-    private static class JobXmlFilter implements VirtualFileFilter {
-
-        static final JobXmlFilter INSTANCE = new JobXmlFilter();
-
-        @Override
-        public boolean accepts(final VirtualFile file) {
-            return file.isFile() && file.getName().endsWith(".xml");
-        }
-    }
 }

@@ -26,7 +26,6 @@ import javax.batch.operations.JobStartException;
 import javax.batch.operations.NoSuchJobException;
 
 import org.jboss.as.controller.PathElement;
-import org.jboss.as.server.deployment.DeploymentUnitProcessingException;
 import org.jboss.logging.BasicLogger;
 import org.jboss.logging.Logger;
 import org.jboss.logging.Logger.Level;
@@ -53,8 +52,8 @@ public interface BatchLogger extends BasicLogger {
      *
      * @return a {@link org.jboss.as.server.deployment.DeploymentUnitProcessingException} for the error
      */
-    @Message(id = 1, value = "Error processing META-INF/batch-jobs directory.")
-    DeploymentUnitProcessingException errorProcessingBatchJobsDir(@Cause Throwable cause);
+    //@Message(id = 1, value = "Error processing META-INF/batch-jobs directory.")
+    //DeploymentUnitProcessingException errorProcessingBatchJobsDir(@Cause Throwable cause);
 
     /**
      * Creates an exception indicating that the resource of given type can not be removed.
