@@ -23,11 +23,10 @@
 package org.wildfly.extension.messaging.activemq.deployment;
 
 import java.io.Closeable;
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.InputStream;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Locale;
 import java.util.Set;
 
@@ -37,47 +36,43 @@ import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 
 import org.jboss.as.ee.structure.JBossDescriptorPropertyReplacement;
+import org.jboss.as.server.loaders.ResourceLoader;
 import org.wildfly.extension.messaging.activemq.logging.MessagingLogger;
 import org.jboss.as.server.deployment.Attachments;
 import org.jboss.as.server.deployment.DeploymentPhaseContext;
 import org.jboss.as.server.deployment.DeploymentUnit;
 import org.jboss.as.server.deployment.DeploymentUnitProcessingException;
 import org.jboss.as.server.deployment.DeploymentUnitProcessor;
+import org.jboss.modules.Resource;
 import org.jboss.staxmapper.XMLMapper;
-import org.jboss.vfs.VirtualFile;
 
 /**
  * Processor that handles the messaging subsystems deployable XML
  *
  * @author Stuart Douglas
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public class MessagingXmlParsingDeploymentUnitProcessor implements DeploymentUnitProcessor {
 
     private static final XMLInputFactory INPUT_FACTORY = XMLInputFactory.newInstance();
-
     private static final String[] LOCATIONS = {"WEB-INF", "META-INF"};
-
+    private static final String JMS_XML_EXTENSION = "-jms.xml";
     private static final QName ROOT_1_0 = new QName(Namespace.MESSAGING_DEPLOYMENT_1_0.getUriString(), "messaging-deployment");
     private static final QName ROOT_NO_NAMESPACE = new QName("messaging-deployment");
-
 
     @Override
     public void deploy(final DeploymentPhaseContext phaseContext) throws DeploymentUnitProcessingException {
         final DeploymentUnit deploymentUnit = phaseContext.getDeploymentUnit();
-        final Set<VirtualFile> files = messageDestinations(deploymentUnit);
-
-
+        final Set<Resource> files = messageDestinations(deploymentUnit);
         final XMLMapper mapper = XMLMapper.Factory.create();
         final MessagingDeploymentParser_1_0 messagingDeploymentParser_1_0 = new MessagingDeploymentParser_1_0(JBossDescriptorPropertyReplacement.propertyReplacer(deploymentUnit));
         mapper.registerRootElement(ROOT_1_0, messagingDeploymentParser_1_0);
         mapper.registerRootElement(ROOT_NO_NAMESPACE, messagingDeploymentParser_1_0);
 
-        for (final VirtualFile file : files) {
+        for (final Resource file : files) {
             InputStream xmlStream = null;
-
             try {
-                final File f = file.getPhysicalFile();
-                xmlStream = new FileInputStream(f);
+                xmlStream = file.openStream();
                 try {
 
                     final XMLInputFactory inputFactory = INPUT_FACTORY;
@@ -89,10 +84,10 @@ public class MessagingXmlParsingDeploymentUnitProcessor implements DeploymentUni
                         mapper.parseDocument(result, streamReader);
                         deploymentUnit.addToAttachmentList(MessagingAttachments.PARSE_RESULT, result);
                     } finally {
-                        safeClose(streamReader, f.getAbsolutePath());
+                        safeClose(streamReader, file.getName());
                     }
                 } catch (XMLStreamException e) {
-                    throw MessagingLogger.ROOT_LOGGER.couldNotParseDeployment(f.getPath(), e);
+                    throw MessagingLogger.ROOT_LOGGER.couldNotParseDeployment(file.getName(), e);
                 }
             } catch (Exception e) {
                 throw new DeploymentUnitProcessingException(e.getMessage(), e);
@@ -120,29 +115,23 @@ public class MessagingXmlParsingDeploymentUnitProcessor implements DeploymentUni
 
     @Override
     public void undeploy(final DeploymentUnit context) {
-
     }
 
+    private Set<Resource> messageDestinations(final DeploymentUnit deploymentUnit) {
+        final ResourceLoader loader = deploymentUnit.getAttachment(Attachments.DEPLOYMENT_ROOT).getLoader();
+        final String deploymentRootName = loader.getRootName().toLowerCase(Locale.ENGLISH);
 
-    private Set<VirtualFile> messageDestinations(final DeploymentUnit deploymentUnit) {
-        final VirtualFile deploymentRoot = deploymentUnit.getAttachment(Attachments.DEPLOYMENT_ROOT).getRoot();
-        if (deploymentRoot == null || !deploymentRoot.exists()) {
-            return Collections.emptySet();
+        if (deploymentRootName.endsWith(JMS_XML_EXTENSION)) {
+            return Collections.singleton(loader.getResource(""));
         }
-
-        final String deploymentRootName = deploymentRoot.getName().toLowerCase(Locale.ENGLISH);
-
-        if (deploymentRootName.endsWith("-jms.xml")) {
-            return Collections.singleton(deploymentRoot);
-        }
-        final Set<VirtualFile> ret = new HashSet<VirtualFile>();
+        final Set<Resource> ret = new HashSet<>();
         for (String location : LOCATIONS) {
-            final VirtualFile loc = deploymentRoot.getChild(location);
-            if (loc.exists()) {
-                for (final VirtualFile file : loc.getChildren()) {
-                    if (file.getName().endsWith("-jms.xml")) {
-                        ret.add(file);
-                    }
+            final Iterator<Resource> loc = loader.iterateResources(location, false);
+            Resource resource;
+            while (loc.hasNext()) {
+                resource = loc.next();
+                if (resource.getName().endsWith(JMS_XML_EXTENSION)) {
+                    ret.add(resource);
                 }
             }
         }
