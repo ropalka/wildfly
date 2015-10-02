@@ -33,7 +33,6 @@ import org.jboss.logging.annotations.LogMessage;
 import org.jboss.logging.Logger;
 import org.jboss.logging.annotations.Message;
 import org.jboss.logging.annotations.MessageLogger;
-import org.jboss.vfs.VirtualFile;
 
 import static org.jboss.logging.Logger.Level.ERROR;
 import static org.jboss.logging.Logger.Level.INFO;
@@ -44,6 +43,7 @@ import static org.jboss.logging.Logger.Level.WARN;
  *
  * @author Stuart Douglas
  * @author <a href="mailto:david.lloyd@redhat.com">David M. Lloyd</a>
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 @MessageLogger(projectCode = "WFLYJSF", length = 4)
 public interface JSFLogger extends BasicLogger {
@@ -67,7 +67,7 @@ public interface JSFLogger extends BasicLogger {
 
     @LogMessage(level = ERROR)
     @Message(id = 4, value = "Failed to parse %s, managed beans defined in this file will not be available")
-    void managedBeansConfigParseFailed(VirtualFile facesConfig);
+    void managedBeansConfigParseFailed(String facesConfig);
 
     @LogMessage(level = WARN)
     @Message(id = 5, value = "Unknown JSF version '%s'.  Default version '%s' will be used instead.")

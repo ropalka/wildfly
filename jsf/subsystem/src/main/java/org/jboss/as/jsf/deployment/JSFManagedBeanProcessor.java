@@ -21,6 +21,8 @@
  */
 package org.jboss.as.jsf.deployment;
 
+import static org.jboss.as.server.loaders.Utils.getResourceName;
+
 import org.jboss.as.ee.component.ComponentDescription;
 import org.jboss.as.ee.component.EEApplicationClasses;
 import org.jboss.as.ee.component.EEModuleDescription;
@@ -35,6 +37,7 @@ import org.jboss.as.server.deployment.DeploymentUnitProcessor;
 import org.jboss.as.server.deployment.DeploymentUtils;
 import org.jboss.as.server.deployment.annotation.CompositeIndex;
 import org.jboss.as.server.deployment.module.ResourceRoot;
+import org.jboss.as.server.loaders.ResourceLoader;
 import org.jboss.as.web.common.WarMetaData;
 import org.jboss.as.web.common.WebComponentDescription;
 import org.jboss.jandex.AnnotationInstance;
@@ -45,13 +48,14 @@ import org.jboss.metadata.javaee.spec.ParamValueMetaData;
 import org.jboss.metadata.parser.util.NoopXMLResolver;
 import org.jboss.metadata.web.spec.WebMetaData;
 import org.jboss.modules.Module;
-import org.jboss.vfs.VirtualFile;
+import org.jboss.modules.Resource;
 
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamConstants;
 import javax.xml.stream.XMLStreamReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Iterator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -60,16 +64,16 @@ import java.util.Set;
  * Sets up JSF managed beans as components using information in the annotations and
  *
  * @author Stuart Douglas
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
-public class JSFManagedBeanProcessor implements DeploymentUnitProcessor {
+public final class JSFManagedBeanProcessor implements DeploymentUnitProcessor {
 
-    public static final DotName MANAGED_BEAN_ANNOTATION = DotName.createSimple("javax.faces.bean.ManagedBean");
-
-    private static final String WEB_INF_FACES_CONFIG = "WEB-INF/faces-config.xml";
-
+    private static final DotName MANAGED_BEAN_ANNOTATION = DotName.createSimple("javax.faces.bean.ManagedBean");
+    private static final String FACES_CONFIG_FILE = "faces-config.xml";
+    private static final String DOT_FACES_CONFIG_FILE = "." + FACES_CONFIG_FILE;
+    private static final String WEB_INF_FACES_CONFIG = "WEB-INF/" + FACES_CONFIG_FILE;
     private static final String MANAGED_BEAN = "managed-bean";
     private static final String MANAGED_BEAN_CLASS = "managed-bean-class";
-
     private static final String CONFIG_FILES = "javax.faces.CONFIG_FILES";
 
     @Override
@@ -107,15 +111,18 @@ public class JSFManagedBeanProcessor implements DeploymentUnitProcessor {
             }
             installManagedBeanComponent(managedBean, moduleDescription, deploymentUnit, applicationClassesDescription);
         }
+    }
 
+    @Override
+    public void undeploy(final DeploymentUnit context) {
     }
 
     /**
      * Parse the faces config files looking for managed bean classes. The parser is quite
      * simplistic as the only information we need is the managed-bean-class element
      */
-    private void processXmlManagedBeans(final DeploymentUnit deploymentUnit, final Set<String> managedBeanClasses) {
-        for (final VirtualFile facesConfig : getConfigurationFiles(deploymentUnit)) {
+    private static void processXmlManagedBeans(final DeploymentUnit deploymentUnit, final Set<String> managedBeanClasses) {
+        for (final Resource facesConfig : getConfigurationFiles(deploymentUnit)) {
             InputStream is = null;
             try {
                 is = facesConfig.openStream();
@@ -160,7 +167,7 @@ public class JSFManagedBeanProcessor implements DeploymentUnitProcessor {
                     }
                 }
             } catch (Exception e) {
-                JSFLogger.ROOT_LOGGER.managedBeansConfigParseFailed(facesConfig);
+                JSFLogger.ROOT_LOGGER.managedBeansConfigParseFailed(facesConfig.getName());
             } finally {
                 try {
                     if (is != null) {
@@ -173,21 +180,26 @@ public class JSFManagedBeanProcessor implements DeploymentUnitProcessor {
         }
     }
 
-    public Set<VirtualFile> getConfigurationFiles(DeploymentUnit deploymentUnit) {
-        final Set<VirtualFile> ret = new HashSet<VirtualFile>();
+    private static Set<Resource> getConfigurationFiles(final DeploymentUnit deploymentUnit) {
+        final Set<Resource> ret = new HashSet<>();
         final List<ResourceRoot> resourceRoots = DeploymentUtils.allResourceRoots(deploymentUnit);
+        ResourceLoader loader;
+        Iterator<Resource> candidates;
+        Resource candidate;
+        String candidateName;
         for (final ResourceRoot resourceRoot : resourceRoots) {
-            final VirtualFile webInfFacesConfig = resourceRoot.getRoot().getChild(WEB_INF_FACES_CONFIG);
-            if (webInfFacesConfig.exists()) {
+            loader = resourceRoot.getLoader();
+            final Resource webInfFacesConfig = loader.getResource(WEB_INF_FACES_CONFIG);
+            if (webInfFacesConfig != null) {
                 ret.add(webInfFacesConfig);
             }
             //look for files that end in .faces-config.xml
-            final VirtualFile metaInf = resourceRoot.getRoot().getChild("META-INF");
-            if (metaInf.exists() && metaInf.isDirectory()) {
-                for (final VirtualFile file : metaInf.getChildren()) {
-                    if (file.getName().equals("faces-config.xml") || file.getName().endsWith(".faces-config.xml")) {
-                        ret.add(file);
-                    }
+            candidates = loader.iterateResources("META-INF", false);
+            while (candidates.hasNext()) {
+                candidate = candidates.next();
+                candidateName = getResourceName(candidate.getName());
+                if (candidateName.equals(FACES_CONFIG_FILE) || candidateName.endsWith(DOT_FACES_CONFIG_FILE)) {
+                    ret.add(candidate);
                 }
             }
         }
@@ -212,9 +224,11 @@ public class JSFManagedBeanProcessor implements DeploymentUnitProcessor {
             final String[] files = configFiles.split(",");
             final ResourceRoot deploymentRoot = deploymentUnit.getAttachment(Attachments.DEPLOYMENT_ROOT);
             if (deploymentRoot != null) {
+                loader = deploymentRoot.getLoader();
+                Resource configFile;
                 for (final String file : files) {
-                    final VirtualFile configFile = deploymentRoot.getRoot().getChild(file);
-                    if (configFile.exists()) {
+                    configFile = loader.getResource(file);
+                    if (configFile != null) {
                         ret.add(configFile);
                     }
                 }
@@ -223,7 +237,7 @@ public class JSFManagedBeanProcessor implements DeploymentUnitProcessor {
         return ret;
     }
 
-    private void handleAnnotations(final CompositeIndex index, final Set<String> managedBeanClasses) throws DeploymentUnitProcessingException {
+    private static void handleAnnotations(final CompositeIndex index, final Set<String> managedBeanClasses) throws DeploymentUnitProcessingException {
         final List<AnnotationInstance> annotations = index.getAnnotations(MANAGED_BEAN_ANNOTATION);
         if (annotations != null) {
             for (final AnnotationInstance annotation : annotations) {
@@ -239,14 +253,10 @@ public class JSFManagedBeanProcessor implements DeploymentUnitProcessor {
         }
     }
 
-    private void installManagedBeanComponent(String className, final EEModuleDescription moduleDescription, final DeploymentUnit deploymentUnit, final EEApplicationClasses applicationClassesDescription) {
+    private static void installManagedBeanComponent(final String className, final EEModuleDescription moduleDescription, final DeploymentUnit deploymentUnit, final EEApplicationClasses applicationClassesDescription) {
         final ComponentDescription componentDescription = new WebComponentDescription(MANAGED_BEAN.toString() + "." + className, className, moduleDescription, deploymentUnit.getServiceName(), applicationClassesDescription);
         moduleDescription.addComponent(componentDescription);
         deploymentUnit.addToAttachmentList(WebComponentDescription.WEB_COMPONENTS, componentDescription.getStartServiceName());
     }
 
-    @Override
-    public void undeploy(final DeploymentUnit context) {
-
-    }
 }
