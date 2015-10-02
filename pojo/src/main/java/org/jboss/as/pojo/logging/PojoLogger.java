@@ -33,7 +33,6 @@ import org.jboss.logging.Logger;
 import org.jboss.logging.annotations.Message;
 import org.jboss.logging.annotations.MessageLogger;
 import org.jboss.msc.service.StartException;
-import org.jboss.vfs.VirtualFile;
 
 import static org.jboss.logging.Logger.Level.INFO;
 import static org.jboss.logging.Logger.Level.WARN;
@@ -43,6 +42,7 @@ import java.util.Set;
 /**
  * @author <a href="mailto:jperkins@redhat.com">James R. Perkins</a>
  * @author <a href="mailto:ales.justin@jboss.org">Ales Justin</a>
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 @MessageLogger(projectCode = "WFLYPOJO", length = 4)
 public interface PojoLogger extends BasicLogger {
@@ -126,7 +126,7 @@ public interface PojoLogger extends BasicLogger {
      * @return a {@link DeploymentUnitProcessingException} for the error.
      */
     @Message(id = 8, value = "Failed to parse POJO xml [ %s ]")
-    DeploymentUnitProcessingException failedToParse(VirtualFile file);
+    DeploymentUnitProcessingException failedToParse(String file);
 
     /**
      * Cannot instantiate new instance
@@ -394,5 +394,5 @@ public interface PojoLogger extends BasicLogger {
      * @return a {@link DeploymentUnitProcessingException} for the error.
      */
     @Message(id = 38, value = "Exception while parsing POJO descriptor file: %s")
-    DeploymentUnitProcessingException parsingException(VirtualFile beansXml, @Cause Throwable cause);
+    DeploymentUnitProcessingException parsingException(String beansXml, @Cause Throwable cause);
 }

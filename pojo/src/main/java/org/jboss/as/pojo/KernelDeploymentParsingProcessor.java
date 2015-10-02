@@ -23,11 +23,11 @@
 package org.jboss.as.pojo;
 
 import java.io.Closeable;
-import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 
 import javax.xml.namespace.QName;
@@ -44,23 +44,24 @@ import org.jboss.as.server.deployment.DeploymentUnit;
 import org.jboss.as.server.deployment.DeploymentUnitProcessingException;
 import org.jboss.as.server.deployment.DeploymentUnitProcessor;
 import org.jboss.as.server.deployment.module.ResourceRoot;
+import org.jboss.as.server.loaders.ResourceLoader;
+import org.jboss.modules.Resource;
 import org.jboss.staxmapper.XMLMapper;
-import org.jboss.vfs.VirtualFile;
-import org.jboss.vfs.VirtualFileFilter;
-import org.jboss.vfs.SuffixMatchFilter;
 
 /**
  * DeploymentUnitProcessor responsible for parsing a jboss-beans.xml
  * descriptor and attaching the corresponding KernelDeploymentXmlDescriptor.
  *
  * @author <a href="mailto:ales.justin@jboss.org">Ales Justin</a>
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
-public class KernelDeploymentParsingProcessor implements DeploymentUnitProcessor {
+public final class KernelDeploymentParsingProcessor implements DeploymentUnitProcessor {
 
-    private final XMLMapper xmlMapper = XMLMapper.Factory.create();
-    private final XMLInputFactory inputFactory = XMLInputFactory.newInstance();
+    private static final String JBOSS_BEANS_EXTENSION = "jboss-beans.xml";
+    private static final XMLMapper xmlMapper = XMLMapper.Factory.create();
+    private static final XMLInputFactory inputFactory = XMLInputFactory.newInstance();
 
-    public KernelDeploymentParsingProcessor() {
+    static {
         final KernelDeploymentXmlDescriptorParser parser = new KernelDeploymentXmlDescriptorParser();
         xmlMapper.registerRootElement(new QName(KernelDeploymentXmlDescriptorParser.NAMESPACE, "deployment"), parser);
         // old MC parser -- just a warning / info atm
@@ -69,81 +70,51 @@ public class KernelDeploymentParsingProcessor implements DeploymentUnitProcessor
         xmlMapper.registerRootElement(new QName(LegacyKernelDeploymentXmlDescriptorParser.MC_NAMESPACE_2_0, "deployment"), legacy);
     }
 
-    /**
-     * Process a deployment for jboss-beans.xml files.
-     * Will parse the xml file and attach a configuration discovered during processing.
-     *
-     * @param phaseContext the deployment unit context
-     * @throws DeploymentUnitProcessingException
-     *
-     */
     @Override
-    public void deploy(DeploymentPhaseContext phaseContext) throws DeploymentUnitProcessingException {
+    public void deploy(final DeploymentPhaseContext phaseContext) throws DeploymentUnitProcessingException {
         DeploymentUnit unit = phaseContext.getDeploymentUnit();
-        if (unit.hasAttachment(Attachments.OSGI_MANIFEST))
+        if (unit.hasAttachment(Attachments.OSGI_MANIFEST)) {
             return;
-        final VirtualFile deploymentRoot = unit.getAttachment(Attachments.DEPLOYMENT_ROOT).getRoot();
-        parseDescriptors(unit, deploymentRoot);
+        }
+        final ResourceLoader loader = unit.getAttachment(Attachments.DEPLOYMENT_ROOT).getLoader();
+        parseJBossBeansDescriptors(unit, loader);
         final List<ResourceRoot> resourceRoots = unit.getAttachmentList(Attachments.RESOURCE_ROOTS);
-        for (ResourceRoot root : resourceRoots)
-            parseDescriptors(unit, root.getRoot());
+        for (final ResourceRoot root : resourceRoots) {
+            parseJBossBeansDescriptors(unit, root.getLoader());
+        }
     }
 
-    /**
-     * Find and parse -jboss-beans.xml files.
-     *
-     * @param unit the deployment unit
-     * @param root the root
-     * @throws DeploymentUnitProcessingException
-     *          for any error
-     */
-    protected void parseDescriptors(DeploymentUnit unit, VirtualFile root) throws DeploymentUnitProcessingException {
-        if (root == null || root.exists() == false)
-            return;
+    @Override
+    public void undeploy(final DeploymentUnit context) {
+    }
 
-        Collection<VirtualFile> beans;
-        final String name = root.getName();
-        if (name.endsWith("jboss-beans.xml")) {
-            beans = Collections.singleton(root);
+    private static void parseJBossBeansDescriptors(final DeploymentUnit unit, final ResourceLoader loader) throws DeploymentUnitProcessingException {
+        final Collection<Resource> beans;
+        if (loader.getRootName().endsWith(JBOSS_BEANS_EXTENSION)) {
+            beans = Collections.singleton(loader.getResource(""));
         } else {
-            VirtualFileFilter filter = new SuffixMatchFilter("jboss-beans.xml");
-            beans = new ArrayList<VirtualFile>();
-            try {
-                // try plain .jar/META-INF
-                VirtualFile metainf = root.getChild("META-INF");
-                if (metainf.exists())
-                    beans.addAll(metainf.getChildren(filter));
+            beans = new ArrayList<>();
+            collectJBossBeansDescriptors(loader, "META-INF", beans);
+            collectJBossBeansDescriptors(loader, "WEB-INF", beans);
+            collectJBossBeansDescriptors(loader, "WEB-INF/classes/META-INF", beans);
+        }
+        for (final Resource beansXmlFile : beans) {
+            parseJBossBeansDescriptor(unit, beansXmlFile);
+        }
+    }
 
-                // allow for WEB-INF/*-jboss-beans.xml
-                VirtualFile webinf = root.getChild("WEB-INF");
-                if (webinf.exists()) {
-                    beans.addAll(webinf.getChildren(filter));
-
-                    // allow WEB-INF/classes/META-INF
-                    metainf = webinf.getChild("classes/META-INF");
-                    if (metainf.exists())
-                        beans.addAll(metainf.getChildren(filter));
-                }
-            } catch (IOException e) {
-                throw new DeploymentUnitProcessingException(e);
+    private static void collectJBossBeansDescriptors(final ResourceLoader loader, final String dir, final Collection<Resource> beans) {
+        final Iterator<Resource> beanResources = loader.iterateResources(dir, false);
+        Resource candidate;
+        while (beanResources.hasNext()) {
+            candidate = beanResources.next();
+            if (candidate.getName().endsWith(JBOSS_BEANS_EXTENSION)) {
+                beans.add(candidate);
             }
         }
-        for (VirtualFile beansXmlFile : beans)
-            parseDescriptor(unit, beansXmlFile);
     }
 
-    /**
-     * Parse -jboss-beans.xml file.
-     *
-     * @param unit         the deployment unit
-     * @param beansXmlFile the beans xml file
-     * @throws DeploymentUnitProcessingException
-     *          for any error
-     */
-    protected void parseDescriptor(DeploymentUnit unit, VirtualFile beansXmlFile) throws DeploymentUnitProcessingException {
-        if (beansXmlFile == null || beansXmlFile.exists() == false)
-            return;
-
+    private static void parseJBossBeansDescriptor(final DeploymentUnit unit, final Resource beansXmlFile) throws DeploymentUnitProcessingException {
         InputStream xmlStream = null;
         try {
             xmlStream = beansXmlFile.openStream();
@@ -154,17 +125,17 @@ public class KernelDeploymentParsingProcessor implements DeploymentUnitProcessor
             if (xmlDescriptor != null)
                 unit.addToAttachmentList(KernelDeploymentXmlDescriptor.ATTACHMENT_KEY, xmlDescriptor);
             else
-                throw PojoLogger.ROOT_LOGGER.failedToParse(beansXmlFile);
+                throw PojoLogger.ROOT_LOGGER.failedToParse(beansXmlFile.getName());
         } catch (DeploymentUnitProcessingException e) {
             throw e;
         } catch (Exception e) {
-            throw PojoLogger.ROOT_LOGGER.parsingException(beansXmlFile, e);
+            throw PojoLogger.ROOT_LOGGER.parsingException(beansXmlFile.getName(), e);
         } finally {
             safeClose(xmlStream);
         }
     }
 
-    static void safeClose(final Closeable c) {
+    private static void safeClose(final Closeable c) {
         if (c != null) {
             try {
                 c.close();
@@ -174,7 +145,4 @@ public class KernelDeploymentParsingProcessor implements DeploymentUnitProcessor
         }
     }
 
-    @Override
-    public void undeploy(DeploymentUnit context) {
-    }
 }
