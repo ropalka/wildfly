@@ -22,13 +22,9 @@
 
 package org.wildfly.extension.clustering.singleton.deployment;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.InputStreamReader;
 
 import javax.xml.stream.XMLInputFactory;
-import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 
 import org.jboss.as.server.deployment.Attachments;
@@ -37,12 +33,13 @@ import org.jboss.as.server.deployment.DeploymentUnit;
 import org.jboss.as.server.deployment.DeploymentUnitProcessingException;
 import org.jboss.as.server.deployment.DeploymentUnitProcessor;
 import org.jboss.as.server.logging.ServerLogger;
+import org.jboss.modules.Resource;
 import org.jboss.staxmapper.XMLMapper;
-import org.jboss.vfs.VirtualFile;
 
 /**
  * Parses a deployment descriptor defining the singleton deployment policy.
  * @author Paul Ferraro
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public class SingletonDeploymentParsingProcessor implements DeploymentUnitProcessor {
 
@@ -58,26 +55,22 @@ public class SingletonDeploymentParsingProcessor implements DeploymentUnitProces
     }
 
     @Override
-    public void deploy(DeploymentPhaseContext context) throws DeploymentUnitProcessingException {
+    public void deploy(final DeploymentPhaseContext context) throws DeploymentUnitProcessingException {
         DeploymentUnit unit = context.getDeploymentUnit();
         if (!unit.hasAttachment(SingletonDeploymentDependencyProcessor.CONFIGURATION_KEY)) {
-            VirtualFile file = unit.getAttachment(Attachments.DEPLOYMENT_ROOT).getRoot().getChild(SINGLETON_DEPLOYMENT_DESCRIPTOR);
-            if (file.exists()) {
-                try {
-                    unit.putAttachment(SingletonDeploymentDependencyProcessor.CONFIGURATION_KEY, this.parse(unit, file.getPhysicalFile()));
-                } catch (IOException e) {
-                    throw new DeploymentUnitProcessingException(e);
-                }
+            Resource file = unit.getAttachment(Attachments.DEPLOYMENT_ROOT).getLoader().getResource(SINGLETON_DEPLOYMENT_DESCRIPTOR);
+            if (file != null) {
+                unit.putAttachment(SingletonDeploymentDependencyProcessor.CONFIGURATION_KEY, this.parse(unit, file));
             }
         }
     }
 
     @Override
-    public void undeploy(DeploymentUnit unit) {
+    public void undeploy(final DeploymentUnit unit) {
     }
 
-    private SingletonDeploymentConfiguration parse(DeploymentUnit unit, File file) throws DeploymentUnitProcessingException {
-        try (FileReader reader = new FileReader(file)) {
+    private SingletonDeploymentConfiguration parse(final DeploymentUnit unit, final Resource file) throws DeploymentUnitProcessingException {
+        try (InputStreamReader reader = new InputStreamReader(file.openStream())) {
             XMLStreamReader xmlReader = XML_INPUT_FACTORY.createXMLStreamReader(reader);
             try  {
                 MutableSingletonDeploymentConfiguration config = new MutableSingletonDeploymentConfiguration(unit);
@@ -86,12 +79,8 @@ public class SingletonDeploymentParsingProcessor implements DeploymentUnitProces
             } finally {
                 xmlReader.close();
             }
-        } catch (XMLStreamException e) {
-            throw ServerLogger.ROOT_LOGGER.errorLoadingDeploymentStructureFile(file.getPath(), e);
-        } catch (FileNotFoundException e) {
-            throw ServerLogger.ROOT_LOGGER.deploymentStructureFileNotFound(file);
-        } catch (IOException e) {
-            throw ServerLogger.ROOT_LOGGER.deploymentStructureFileNotFound(file);
+        } catch (Exception e) {
+            throw ServerLogger.ROOT_LOGGER.errorLoadingDeploymentStructureFile(file.getName(), e);
         }
     }
 }
