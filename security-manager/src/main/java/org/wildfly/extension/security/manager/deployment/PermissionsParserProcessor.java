@@ -39,8 +39,8 @@ import org.jboss.as.server.deployment.module.ResourceRoot;
 import org.jboss.metadata.parser.util.NoopXMLResolver;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleLoader;
+import org.jboss.modules.Resource;
 import org.jboss.modules.security.PermissionFactory;
-import org.jboss.vfs.VirtualFile;
 
 /**
  * This class implements a {@link DeploymentUnitProcessor} that parses security permission files that might be
@@ -66,6 +66,7 @@ import org.jboss.vfs.VirtualFile;
  * takes precedence over the standard permissions.xml.
  *
  * @author <a href="mailto:sguilhen@redhat.com">Stefan Guilhen</a>
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public class PermissionsParserProcessor implements DeploymentUnitProcessor {
 
@@ -94,8 +95,8 @@ public class PermissionsParserProcessor implements DeploymentUnitProcessor {
         final ModuleIdentifier moduleIdentifier = deploymentUnit.getAttachment(Attachments.MODULE_IDENTIFIER);
 
         // non-spec behavior: always process permissions declared in META-INF/jboss-permissions.xml.
-        VirtualFile jbossPermissionsXML = deploymentRoot.getRoot().getChild(JBOSS_PERMISSIONS_XML);
-        if (jbossPermissionsXML.exists() && jbossPermissionsXML.isFile()) {
+        Resource jbossPermissionsXML = deploymentRoot.getLoader().getResource(JBOSS_PERMISSIONS_XML);
+        if (jbossPermissionsXML != null) {
             List<PermissionFactory> factories = this.parsePermissions(jbossPermissionsXML, moduleLoader, moduleIdentifier);
             for (PermissionFactory factory : factories) {
                 moduleSpecification.addPermissionFactory(factory);
@@ -110,8 +111,8 @@ public class PermissionsParserProcessor implements DeploymentUnitProcessor {
         // defined at the .ear level, if any).
         else {
             if (deploymentUnit.getParent() == null) {
-                VirtualFile permissionsXML = deploymentRoot.getRoot().getChild(PERMISSIONS_XML);
-                if (permissionsXML.exists() && permissionsXML.isFile()) {
+                Resource permissionsXML = deploymentRoot.getLoader().getResource(PERMISSIONS_XML);
+                if (permissionsXML != null) {
                     // parse the permissions and attach them in the deployment unit.
                     List<PermissionFactory> factories = this.parsePermissions(permissionsXML, moduleLoader, moduleIdentifier);
                     for (PermissionFactory factory : factories) {
@@ -145,13 +146,13 @@ public class PermissionsParserProcessor implements DeploymentUnitProcessor {
      * be lazily instantiated after the deployment unit module has been created.
      * </p>
      *
-     * @param file the {@link VirtualFile} that contains the permissions declarations.
+     * @param file the {@link Resource} that contains the permissions declarations.
      * @param loader the {@link ModuleLoader} that is to be used by the factory to instantiate the permission.
      * @param identifier the {@link ModuleIdentifier} that is to be used by the factory to instantiate the permission.
      * @return a list of {@link PermissionFactory} objects representing the parsed permissions.
      * @throws DeploymentUnitProcessingException if an error occurs while parsing the permissions.
      */
-    private List<PermissionFactory> parsePermissions(final VirtualFile file, final ModuleLoader loader, final ModuleIdentifier identifier)
+    private List<PermissionFactory> parsePermissions(final Resource file, final ModuleLoader loader, final ModuleIdentifier identifier)
             throws DeploymentUnitProcessingException {
 
         InputStream inputStream = null;
