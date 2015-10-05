@@ -21,11 +21,9 @@
  */
 package org.jboss.as.jdr.commands;
 
-
 import org.jboss.as.jdr.util.Utils;
-import org.jboss.vfs.VFS;
-import org.jboss.vfs.VirtualFile;
 
+import java.io.File;
 import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -39,12 +37,12 @@ public class JarCheck extends JdrCommand {
     @Override
     public void execute() throws Exception {
         this.buffer = new StringBuilder();
-        walk(VFS.getChild(this.env.getJbossHome()));
+        walk(new File(this.env.getJbossHome()));
         this.env.getZip().add(this.buffer.toString(), "jarcheck.txt");
     }
 
-    private void walk(VirtualFile root) throws NoSuchAlgorithmException {
-        for(VirtualFile f : root.getChildren()) {
+    private void walk(File root) throws NoSuchAlgorithmException {
+        for(File f : root.listFiles()) {
             if(f.isDirectory()) {
                 walk(f);
             }
@@ -54,16 +52,15 @@ public class JarCheck extends JdrCommand {
         }
     }
 
-    private void check(VirtualFile f) throws NoSuchAlgorithmException {
+    private void check(File f) throws NoSuchAlgorithmException {
         try {
             MessageDigest alg = MessageDigest.getInstance("md5");
             byte [] buffer = Utils.toBytes(f);
             alg.update(buffer);
             String sum = new BigInteger(1, alg.digest()).toString(16);
             this.buffer.append(
-                    f.getPathName().replace(this.env.getJbossHome(), "JBOSSHOME") + "\n"
-                    + sum + "\n"
-                    + getManifestString(f) + "===");
+                    f.getAbsolutePath().replace(this.env.getJbossHome(), "JBOSSHOME") + "\n"
+                    + sum + "\n===");
         }
         catch( java.util.zip.ZipException ze ) {
             // skip
@@ -73,16 +70,6 @@ public class JarCheck extends JdrCommand {
         }
         catch( java.io.IOException ioe ) {
             ROOT_LOGGER.debug(ioe);
-        }
-    }
-
-    private String getManifestString(VirtualFile file) throws java.io.IOException {
-        try {
-            String result = Utils.toString(file.getChild(Utils.MANIFEST_NAME));
-            return result != null? result: "";
-        } catch (Exception npe) {
-            ROOT_LOGGER.tracef("no MANIFEST present");
-            return "";
         }
     }
 }

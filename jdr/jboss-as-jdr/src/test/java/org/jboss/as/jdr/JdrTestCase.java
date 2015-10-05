@@ -26,13 +26,11 @@ import org.jboss.as.jdr.util.JdrZipFile;
 import org.jboss.as.jdr.util.PatternSanitizer;
 import org.jboss.as.jdr.util.XMLSanitizer;
 import org.jboss.as.jdr.vfs.Filters;
-import org.jboss.vfs.VFS;
-import org.jboss.vfs.VirtualFile;
-import org.jboss.vfs.VirtualFileFilter;
 import org.junit.Test;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
+import java.io.FileFilter;
 import java.io.InputStream;
 
 import static org.junit.Assert.*;
@@ -64,9 +62,9 @@ public class JdrTestCase {
 
     @Test
     public void testBlackListFilter() {
-        VirtualFileFilter blf = Filters.regexBlackList();
-        assertFalse(blf.accepts(VFS.getChild("/foo/bar/baz/mgmt-users.properties")));
-        assertFalse(blf.accepts(VFS.getChild("/foo/bar/baz/application-users.properties")));
+        FileFilter blf = Filters.regexBlackList();
+        assertFalse(blf.accept(new File("/foo/bar/baz/mgmt-users.properties")));
+        assertFalse(blf.accept(new File("/foo/bar/baz/application-users.properties")));
     }
 
     @Test
@@ -93,50 +91,50 @@ public class JdrTestCase {
 
     @Test
     public void testWildcardFilterAcceptAnything() throws Exception {
-        VirtualFileFilter filter = Filters.wildcard("*");
-        VirtualFile good = VFS.getChild("/this/is/a/test.txt");
-        assertTrue(filter.accepts(good));
+        FileFilter filter = Filters.wildcard("*");
+        File good = new File("/this/is/a/test.txt");
+        assertTrue(filter.accept(good));
     }
 
     @Test
     public void testWildcardFilterPrefixGlob() throws Exception {
-        VirtualFileFilter filter = Filters.wildcard("*.txt");
-        VirtualFile good = VFS.getChild("/this/is/a/test.txt");
-        VirtualFile bad = VFS.getChild("/this/is/a/test.xml");
-        VirtualFile wingood = VFS.getChild("/C:/this/is/a/test.txt");
-        VirtualFile winbad = VFS.getChild("/C:/this/is/a/test.xml");
-        assertTrue(filter.accepts(good));
-        assertFalse(filter.accepts(bad));
-        assertTrue(filter.accepts(wingood));
-        assertFalse(filter.accepts(winbad));
+        FileFilter filter = Filters.wildcard("*.txt");
+        File good = new File("/this/is/a/test.txt");
+        File bad = new File("/this/is/a/test.xml");
+        File wingood = new File("/C:/this/is/a/test.txt");
+        File winbad = new File("/C:/this/is/a/test.xml");
+        assertTrue(filter.accept(good));
+        assertFalse(filter.accept(bad));
+        assertTrue(filter.accept(wingood));
+        assertFalse(filter.accept(winbad));
     }
 
     @Test
     public void testWildcardFilterSuffixGlob() throws Exception {
-        VirtualFileFilter filter = Filters.wildcard("/this/is*");
-        VirtualFile good = VFS.getChild("/this/is/a/test.txt");
-        VirtualFile bad = VFS.getChild("/that/is/a/test.txt");
-        VirtualFile wingood = VFS.getChild("/C:/this/is/a/test.txt");
-        VirtualFile winbad = VFS.getChild("/C:/that/is/a/test.txt");
-        assertTrue(filter.accepts(good));
-        assertFalse(filter.accepts(bad));
-        assertTrue(filter.accepts(wingood));
-        assertFalse(filter.accepts(winbad));
+        FileFilter filter = Filters.wildcard("/this/is*");
+        File good = new File("/this/is/a/test.txt");
+        File bad = new File("/that/is/a/test.txt");
+        File wingood = new File("/C:/this/is/a/test.txt");
+        File winbad = new File("/C:/that/is/a/test.txt");
+        assertTrue(filter.accept(good));
+        assertFalse(filter.accept(bad));
+        assertTrue(filter.accept(wingood));
+        assertFalse(filter.accept(winbad));
     }
 
     @Test
     public void testWildcardFilterMiddleGlob() throws Exception {
-        VirtualFileFilter filter = Filters.wildcard("/this*test.txt");
-        VirtualFile good = VFS.getChild("/this/is/a/test.txt");
-        VirtualFile bad1 = VFS.getChild("/that/is/a/test.txt");
-        VirtualFile bad2 = VFS.getChild("/this/is/a/test.xml");
-        VirtualFile win = VFS.getChild("/C:/this/is/a/test.txt");
-        VirtualFile winbad = VFS.getChild("/C:/this/is/a/test.xml");
-        assertTrue(filter.accepts(good));
-        assertTrue(filter.accepts(win));
-        assertFalse(filter.accepts(bad1));
-        assertFalse(filter.accepts(bad2));
-        assertFalse(filter.accepts(winbad));
+        FileFilter filter = Filters.wildcard("/this*test.txt");
+        File good = new File("/this/is/a/test.txt");
+        File bad1 = new File("/that/is/a/test.txt");
+        File bad2 = new File("/this/is/a/test.xml");
+        File win = new File("/C:/this/is/a/test.txt");
+        File winbad = new File("/C:/this/is/a/test.xml");
+        assertTrue(filter.accept(good));
+        assertTrue(filter.accept(win));
+        assertFalse(filter.accept(bad1));
+        assertFalse(filter.accept(bad2));
+        assertFalse(filter.accept(winbad));
     }
 
     private void safeClose(JdrZipFile zf) {

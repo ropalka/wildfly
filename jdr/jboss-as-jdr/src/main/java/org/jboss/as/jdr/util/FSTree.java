@@ -21,10 +21,7 @@
  */
 package org.jboss.as.jdr.util;
 
-import org.jboss.vfs.VFS;
-import org.jboss.vfs.VirtualFile;
-
-import java.util.List;
+import java.io.File;
 
 public class FSTree {
     int directoryCount = 0;
@@ -33,7 +30,7 @@ public class FSTree {
     String topDirectory = null;
     String fmt = "%s%s%s %s";
 
-    public FSTree(String root) throws Exception {
+    public FSTree(File root) throws Exception {
         this.traverse(root, "", true);
     }
 
@@ -56,20 +53,19 @@ public class FSTree {
         }
     }
 
-    private void traverse(String dir, String padding) throws java.io.IOException {
+    private void traverse(File dir, String padding) throws java.io.IOException {
         traverse(dir, padding, false);
     }
 
-    private void append(VirtualFile f, String padding) {
+    private void append(File f, String padding) {
         String baseName = f.getName();
-        String size = formatBytes(f.getSize());
+        String size = formatBytes(f.length());
         buf.append(String.format(fmt, padding, "+-- ", size, baseName));
         buf.append("\n");
     }
 
-    private void traverse(String dir, String padding, boolean first)
+    private void traverse(File path, String padding, boolean first)
         throws java.io.IOException {
-        VirtualFile path = VFS.getChild(dir);
 
         if (!first) {
             String _p = padding.substring(0, padding.length() -1);
@@ -82,11 +78,11 @@ public class FSTree {
         }
 
         int count = 0;
-        List<VirtualFile> files = path.getChildren();
-        for (VirtualFile f : files ) {
+        File[] files = path.listFiles();
+        for (File f : files ) {
             count += 1;
 
-            if (f.getPathName().startsWith(".")) {
+            if (f.getName().startsWith(".")) {
                 continue;
             }
             else if (f.isFile()) {
@@ -97,15 +93,15 @@ public class FSTree {
                 buf.append("+-- ");
                 buf.append(f.getName());
                 buf.append(" -> ");
-                buf.append(f.getPathName());
+                buf.append(f.getAbsolutePath());
                 buf.append("\n");
             }
             else if (f.isDirectory()) {
-                if (count == files.size()) {
-                    traverse(f.getPathName(), padding + " ");
+                if (count == files.length) {
+                    traverse(f, padding + " ");
                 }
                 else {
-                    traverse(f.getPathName(), padding + "|");
+                    traverse(f, padding + "|");
                 }
             }
         }

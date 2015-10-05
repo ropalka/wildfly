@@ -1,10 +1,9 @@
 package org.jboss.as.jdr.util;
 
-import org.jboss.vfs.VirtualFile;
-
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.IOException;
@@ -51,13 +50,13 @@ public final class Utils {
         return result;
     }
 
-    public static String toString(VirtualFile r) throws IOException {
+    public static String toString(File r) throws IOException {
         return new String(toBytes(r));
     }
 
-    public static byte[] toBytes(VirtualFile r) throws IOException {
+    public static byte[] toBytes(File r) throws IOException {
         byte [] buffer = new byte[1024];
-        InputStream is = r.openStream();
+        InputStream is = new FileInputStream(r);
 
         ByteArrayOutputStream os = new ByteArrayOutputStream();
         int bytesRead = is.read(buffer);
@@ -85,15 +84,12 @@ public final class Utils {
         }
     }
 
-    public static boolean isSymlink(VirtualFile vFile) throws IOException {
-
-        File file = vFile.getPhysicalFile();
-
+    public static boolean isSymlink(File file) throws IOException {
         if(Utils.isWindows()){
             return false;
         }
 
-        File fileInCanonicalDir = null;
+        File fileInCanonicalDir;
         if (file.getParent() == null) {
             fileInCanonicalDir = file;
         } else {

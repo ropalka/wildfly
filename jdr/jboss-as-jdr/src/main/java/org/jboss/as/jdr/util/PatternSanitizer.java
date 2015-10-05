@@ -21,10 +21,9 @@
  */
 package org.jboss.as.jdr.util;
 
-import org.jboss.vfs.VirtualFileFilter;
-
 import java.io.ByteArrayOutputStream;
 import java.io.ByteArrayInputStream;
+import java.io.FileFilter;
 import java.io.InputStream;
 import java.io.PrintWriter;
 import java.util.regex.Matcher;
@@ -39,7 +38,7 @@ public class PatternSanitizer extends AbstractSanitizer {
     private final Pattern pattern;
     private final String replacement;
 
-    public PatternSanitizer(String pattern, String replacement, VirtualFileFilter filter) throws Exception {
+    public PatternSanitizer(String pattern, String replacement, FileFilter filter) throws Exception {
         this.pattern = Pattern.compile(pattern);
         this.replacement = replacement;
         this.filter = filter;

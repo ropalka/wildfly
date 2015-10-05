@@ -28,7 +28,7 @@ public class FSTreeTest {
 
     @Test
     public void testTree() throws Exception {
-        FSTree tree = new FSTree(baseDirectory.getPath());
+        FSTree tree = new FSTree(new File(baseDirectory.getPath()));
         assertEquals(tree.toString(), "FSTreeTest\n");
     }
 }

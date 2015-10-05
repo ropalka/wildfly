@@ -25,6 +25,7 @@ import static org.jboss.as.jdr.logger.JdrLogger.ROOT_LOGGER;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.FileFilter;
 import java.io.InputStream;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -38,7 +39,6 @@ import javax.xml.xpath.XPathExpression;
 import javax.xml.xpath.XPathFactory;
 
 import org.apache.commons.io.IOUtils;
-import org.jboss.vfs.VirtualFileFilter;
 import org.w3c.dom.Document;
 import org.w3c.dom.NodeList;
 
@@ -52,7 +52,7 @@ public class XMLSanitizer extends AbstractSanitizer {
     private DocumentBuilder builder;
     private Transformer transformer;
 
-    public XMLSanitizer(String pattern, VirtualFileFilter filter) throws Exception {
+    public XMLSanitizer(String pattern, FileFilter filter) throws Exception {
         this.filter = filter;
         XPathFactory factory = XPathFactory.newInstance();
         XPath xpath = factory.newXPath();

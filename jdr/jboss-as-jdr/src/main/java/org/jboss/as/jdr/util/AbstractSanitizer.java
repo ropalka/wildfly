@@ -1,8 +1,9 @@
 package org.jboss.as.jdr.util;
 
 import org.jboss.as.jdr.vfs.Filters;
-import org.jboss.vfs.VirtualFile;
-import org.jboss.vfs.VirtualFileFilter;
+
+import java.io.File;
+import java.io.FileFilter;
 
 import java.io.InputStream;
 
@@ -13,7 +14,7 @@ import java.io.InputStream;
  */
 abstract class AbstractSanitizer implements Sanitizer {
 
-    protected VirtualFileFilter filter = Filters.TRUE;
+    protected FileFilter filter = Filters.TRUE;
 
     @Override
     public abstract InputStream sanitize(InputStream in) throws Exception;
@@ -22,11 +23,11 @@ abstract class AbstractSanitizer implements Sanitizer {
     /**
      * returns whether or not a VirtualFile should be processed by this sanitizer.
      *
-     * @param resource {@link VirtualFile} resource to test
+     * @param resource file resource to test
      * @return
      */
     @Override
-    public boolean accepts(VirtualFile resource) {
-        return filter.accepts(resource);
+    public boolean accepts(File resource) {
+        return filter.accept(resource);
     }
 }

@@ -22,9 +22,9 @@
 package org.jboss.as.jdr.vfs;
 
 import org.jboss.as.jdr.util.WildcardPattern;
-import org.jboss.vfs.VirtualFile;
-import org.jboss.vfs.VirtualFileFilter;
 
+import java.io.File;
+import java.io.FileFilter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -36,27 +36,27 @@ import java.util.regex.Pattern;
  */
 public class Filters {
 
-    public static final VirtualFileFilter TRUE = new VirtualFileFilter() {
-        public boolean accepts(VirtualFile file) {
+    public static final FileFilter TRUE = new FileFilter() {
+        public boolean accept(File file) {
             return true;
         }
     };
 
-    public static VirtualFileFilter not(final VirtualFileFilter filter) {
-        return new VirtualFileFilter() {
+    public static FileFilter not(final FileFilter filter) {
+        return new FileFilter() {
             @Override
-            public boolean accepts(VirtualFile file) {
-                return !filter.accepts(file);
+            public boolean accept(File file) {
+                return !filter.accept(file);
             }
         };
     }
 
-    public static VirtualFileFilter and(final VirtualFileFilter... filters) {
-        return new VirtualFileFilter() {
+    public static FileFilter and(final FileFilter... filters) {
+        return new FileFilter() {
             @Override
-            public boolean accepts(VirtualFile file) {
-                for(VirtualFileFilter f: filters) {
-                    if(!f.accepts(file)){
+            public boolean accept(File file) {
+                for(FileFilter f: filters) {
+                    if(!f.accept(file)) {
                         return false;
                     }
                 }
@@ -65,12 +65,12 @@ public class Filters {
         };
     }
 
-    public static VirtualFileFilter or(final VirtualFileFilter... filters) {
-        return new VirtualFileFilter() {
+    public static FileFilter or(final FileFilter... filters) {
+        return new FileFilter() {
             @Override
-            public boolean accepts(VirtualFile file) {
-                for(VirtualFileFilter f: filters) {
-                    if(f.accepts(file)){
+            public boolean accept(File file) {
+                for(FileFilter f: filters) {
+                    if(f.accept(file)) {
                         return true;
                     }
                 }
@@ -79,12 +79,12 @@ public class Filters {
         };
     }
 
-    public static VirtualFileFilter wildcard(final String p){
-        return new VirtualFileFilter() {
+    public static FileFilter wildcard(final String p){
+        return new FileFilter() {
             private WildcardPattern pattern = new WildcardPattern(p);
             @Override
-            public boolean accepts(VirtualFile file) {
-                return pattern.matches(file.getPathName());
+            public boolean accept(File file) {
+                return pattern.matches(file.getAbsolutePath());
             }
         };
     }
@@ -105,16 +105,16 @@ public class Filters {
         return new RegexBlacklistFilter(patterns);
     }
 
-    public static VirtualFileFilter suffix(final String s){
-        return new VirtualFileFilter() {
+    public static FileFilter suffix(final String s){
+        return new FileFilter() {
             @Override
-            public boolean accepts(VirtualFile file) {
-                return file.getPathName().endsWith(s);
+            public boolean accept(File file) {
+                return file.getAbsolutePath().endsWith(s);
             }
         };
     }
 
-    public interface BlacklistFilter extends VirtualFileFilter {
+    public interface BlacklistFilter extends FileFilter {
         void add(final String... patterns);
     }
 
@@ -133,7 +133,7 @@ public class Filters {
         }
 
         @Override
-        public boolean accepts(VirtualFile file) {
+        public boolean accept(File file) {
             for(WildcardPattern p: this.patterns){
                 if(p.matches(file.getName())){
                     return false;
@@ -162,7 +162,7 @@ public class Filters {
         }
 
         @Override
-        public boolean accepts(final VirtualFile file) {
+        public boolean accept(final File file) {
             for(Pattern p: this.patterns){
                 if(p.matcher(file.getName()).matches()){
                     return false;

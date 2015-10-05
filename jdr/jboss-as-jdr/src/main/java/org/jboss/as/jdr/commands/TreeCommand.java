@@ -21,13 +21,14 @@
  */
 package org.jboss.as.jdr.commands;
 
+import java.io.File;
 import org.jboss.as.jdr.util.FSTree;
 
 public class TreeCommand extends JdrCommand {
 
     @Override
     public void execute() throws Exception {
-        FSTree tree = new FSTree(this.env.getJbossHome());
+        FSTree tree = new FSTree(new File(this.env.getJbossHome()));
         this.env.getZip().add(tree.toString(), "tree.txt");
     }
 }

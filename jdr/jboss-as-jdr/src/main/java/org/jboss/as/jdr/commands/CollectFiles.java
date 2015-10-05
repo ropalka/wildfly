@@ -24,12 +24,13 @@ package org.jboss.as.jdr.commands;
 import org.jboss.as.jdr.util.Utils;
 import org.jboss.as.jdr.util.Sanitizer;
 import org.jboss.as.jdr.vfs.Filters;
-import org.jboss.vfs.VFS;
-import org.jboss.vfs.VirtualFile;
-import org.jboss.vfs.VirtualFileFilter;
 
+import java.io.File;
+import java.io.FileFilter;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
@@ -38,20 +39,20 @@ import java.util.List;
 
 public class CollectFiles extends JdrCommand {
 
-    private VirtualFileFilter filter = Filters.TRUE;
+    private FileFilter filter = Filters.TRUE;
     private Filters.BlacklistFilter blacklistFilter = Filters.wildcardBlackList();
     private LinkedList<Sanitizer> sanitizers = new LinkedList<Sanitizer>();
-    private Comparator<VirtualFile> sorter = new Comparator<VirtualFile>() {
+    private Comparator<File> sorter = new Comparator<File>() {
         @Override
-        public int compare(VirtualFile resource, VirtualFile resource1) {
-            return Long.signum(resource.getLastModified() - resource1.getLastModified());
+        public int compare(File resource, File resource1) {
+            return Long.signum(resource.lastModified() - resource1.lastModified());
         }
     };
 
     // -1 means no limit
     private long limit = -1;
 
-    public CollectFiles(VirtualFileFilter filter) {
+    public CollectFiles(FileFilter filter) {
         this.filter = filter;
     }
 
@@ -66,7 +67,7 @@ public class CollectFiles extends JdrCommand {
         return this;
     }
 
-    public CollectFiles sorter(Comparator<VirtualFile> sorter){
+    public CollectFiles sorter(Comparator<File> sorter){
         this.sorter = sorter;
         return this;
     }
@@ -81,10 +82,24 @@ public class CollectFiles extends JdrCommand {
         return this;
     }
 
+    private void getChildrenRecursively(final File file, final FileFilter filter, final List<File> matches) {
+        final File[] files = file.listFiles();
+        for (final File f : files) {
+            if (f.isDirectory()) {
+                getChildrenRecursively(f, filter, matches);
+            } else {
+                if (filter.accept(f)) {
+                    matches.add(f);
+                }
+            }
+        }
+    }
+
     @Override
     public void execute() throws Exception {
-        VirtualFile root = VFS.getChild(this.env.getJbossHome());
-        List<VirtualFile> matches = root.getChildrenRecursively(Filters.and(this.filter, this.blacklistFilter));
+        File root = new File(this.env.getJbossHome());
+        List<File> matches = new ArrayList<File>();
+        getChildrenRecursively(root, Filters.and(this.filter, this.blacklistFilter), matches);
 
         // order the files in some arbitrary way.. basically prep for the limiter so things like log files can
         // be gotten in chronological order.  Keep in mind everything that might be collected per the filter for
@@ -96,11 +111,11 @@ public class CollectFiles extends JdrCommand {
 
         // limit how much data we collect
         Limiter limiter = new Limiter(limit);
-        Iterator<VirtualFile> iter = matches.iterator();
+        Iterator<File> iter = matches.iterator();
 
         while(iter.hasNext() && !limiter.isDone()) {
 
-            VirtualFile f = iter.next();
+            File f = iter.next();
             InputStream stream = limiter.limit(f);
 
             for (Sanitizer sanitizer : this.sanitizers) {
@@ -142,10 +157,10 @@ public class CollectFiles extends JdrCommand {
          * @return
          * @throws IOException
          */
-        public InputStream limit(VirtualFile resource) throws IOException {
+        public InputStream limit(File resource) throws IOException {
 
-            InputStream is = resource.openStream();
-            long resourceSize = resource.getSize();
+            InputStream is = new FileInputStream(resource);
+            long resourceSize = resource.length();
 
             // if we're limiting and know we're not going to consume the whole file, we skip
             // ahead so that we get the tail of the file instead of the beginning of it, and we

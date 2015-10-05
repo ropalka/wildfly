@@ -22,9 +22,9 @@
 package org.jboss.as.jdr.util;
 
 import org.jboss.as.jdr.commands.JdrEnvironment;
-import org.jboss.vfs.VirtualFile;
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.text.SimpleDateFormat;
@@ -112,16 +112,16 @@ public class JdrZipFile {
     }
 
     /**
-     * Adds the content of the {@link InputStream} to the zip in a location that mirrors where {@link VirtualFile file} is located.
+     * Adds the content of the {@link InputStream} to the zip in a location that mirrors where file is located.
      *
      * For example if {@code file} is at {@code /tmp/foo/bar} and {@code $JBOSS_HOME} is {@code tmp} then the destination will be {@code JBOSSHOME/foo/bar}
      *
-     * @param file {@link VirtualFile} where metadata is read from
+     * @param file where metadata is read from
      * @param is content to write to the zip file
      * @throws Exception
      */
-    public void add(VirtualFile file, InputStream is) throws Exception {
-        String name = "JBOSS_HOME" + file.getPhysicalFile().getAbsolutePath().substring(this.jbossHome.length());
+    public void add(File file, InputStream is) throws Exception {
+        String name = "JBOSS_HOME" + file.getAbsolutePath().substring(this.jbossHome.length());
         this.add(is, name);
     }
 
