@@ -26,7 +26,7 @@ import static org.jipijapa.JipiLogger.JPA_LOGGER;
 import java.io.IOException;
 import java.io.InputStream;
 
-import org.jboss.vfs.VirtualFile;
+import org.jboss.modules.Resource;
 
 import org.hibernate.jpa.boot.spi.InputStreamAccess;
 import org.hibernate.jpa.boot.spi.NamedInputStream;
@@ -36,14 +36,16 @@ import org.hibernate.jpa.boot.spi.NamedInputStream;
  * types of resources found during archive scanning.
  *
  * @author Steve Ebersole
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
-public class VirtualFileInputStreamAccess implements InputStreamAccess {
-    private final String name;
-    private final VirtualFile virtualFile;
+public class ResourceInputStreamAccess implements InputStreamAccess {
 
-    public VirtualFileInputStreamAccess(String name, VirtualFile virtualFile) {
+    private final String name;
+    private final Resource resource;
+
+    public ResourceInputStreamAccess(String name, Resource resource) {
         this.name = name;
-        this.virtualFile = virtualFile;
+        this.resource = resource;
     }
 
     @Override
@@ -54,10 +56,10 @@ public class VirtualFileInputStreamAccess implements InputStreamAccess {
     @Override
     public InputStream accessInputStream() {
         try {
-            return virtualFile.openStream();
+            return resource.openStream();
         }
-        catch (IOException e) {
-            throw JPA_LOGGER.cannotOpenVFSStream(e, virtualFile.getName());
+        catch (final IOException e) {
+            throw JPA_LOGGER.cannotOpenVFSStream(e, name);
         }
     }
 
@@ -65,4 +67,5 @@ public class VirtualFileInputStreamAccess implements InputStreamAccess {
     public NamedInputStream asNamedInputStream() {
         return new NamedInputStream( getStreamName(), accessInputStream() );
     }
+
 }

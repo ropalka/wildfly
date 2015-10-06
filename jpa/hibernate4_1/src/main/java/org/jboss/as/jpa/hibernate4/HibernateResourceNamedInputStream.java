@@ -22,34 +22,31 @@
 
 package org.jboss.as.jpa.hibernate4;
 
-import static org.jipijapa.JipiLogger.JPA_LOGGER;
+import static org.jboss.as.server.loaders.Utils.getResourceName;
+
+import org.jboss.modules.Resource;
 
 import java.io.IOException;
 import java.io.InputStream;
 
-import org.jboss.vfs.VirtualFile;
-
 /**
- * VFS named input stream.
+ * Resource named input stream.
  *
  * @author <a href="mailto:ales.justin@jboss.org">Ales Justin</a>
  * @author Scott Marlow
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
-public class HibernateVirtualFileNamedInputStream extends HibernateLazyNamedInputStream {
-    private VirtualFile file;
+public final class HibernateResourceNamedInputStream extends HibernateLazyNamedInputStream {
 
-    private static String name(VirtualFile file) {
-        if (file == null)
-            throw JPA_LOGGER.nullVar("file");
-        return file.getName();
-    }
+    private Resource resource;
 
-    public HibernateVirtualFileNamedInputStream(VirtualFile file) {
-        super(name(file));
-        this.file = file;
+    HibernateResourceNamedInputStream(Resource resource) {
+        super(getResourceName(resource.getName()));
+        this.resource = resource;
     }
 
     protected InputStream getLazyStream() throws IOException {
-        return file.openStream();
+        return resource.openStream();
     }
+
 }

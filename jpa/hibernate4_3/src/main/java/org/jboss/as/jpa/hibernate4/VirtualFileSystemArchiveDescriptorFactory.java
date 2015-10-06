@@ -23,30 +23,30 @@ package org.jboss.as.jpa.hibernate4;
 
 import static org.jipijapa.JipiLogger.JPA_LOGGER;
 
-import java.net.URISyntaxException;
+import java.io.IOException;
 import java.net.URL;
-
-import org.jboss.vfs.VFS;
 
 import org.hibernate.jpa.boot.archive.internal.StandardArchiveDescriptorFactory;
 import org.hibernate.jpa.boot.archive.spi.ArchiveDescriptor;
 
 /**
  * In Hibernate terms, the ArchiveDescriptorFactory contract is used to plug in handling for how to deal
- * with archives in various systems.  For JBoss, that means its VirtualFileSystem API.
+ * with archives in various systems. For JBoss, that means its ResourceLoader API.
  *
  * @author Steve Ebersole
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
-public class VirtualFileSystemArchiveDescriptorFactory extends StandardArchiveDescriptorFactory {
+public final class VirtualFileSystemArchiveDescriptorFactory extends StandardArchiveDescriptorFactory {
+
     public static final VirtualFileSystemArchiveDescriptorFactory INSTANCE = new VirtualFileSystemArchiveDescriptorFactory();
 
     @Override
-    public ArchiveDescriptor buildArchiveDescriptor(URL url, String entryBase) {
+    public ArchiveDescriptor buildArchiveDescriptor(final URL url, final String entryBase) {
         try {
-            return new VirtualFileSystemArchiveDescriptor( VFS.getChild( url.toURI() ), entryBase );
-        }
-        catch (URISyntaxException e) {
+            return new ResourceLoaderArchiveDescriptor( url, entryBase );
+        } catch (final IOException e) {
             throw JPA_LOGGER.uriSyntaxException(e);
         }
     }
+
 }

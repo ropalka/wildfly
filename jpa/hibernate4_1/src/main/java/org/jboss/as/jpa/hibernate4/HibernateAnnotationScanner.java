@@ -23,34 +23,39 @@
 package org.jboss.as.jpa.hibernate4;
 
 import static org.jipijapa.JipiLogger.JPA_LOGGER;
+import static org.jboss.as.server.loaders.Utils.getResourceName;
+import static org.jboss.modules.PathUtils.canonicalize;
+import static org.jboss.modules.PathUtils.relativize;
 
+import java.io.File;
 import java.io.IOException;
 import java.lang.annotation.Annotation;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import org.hibernate.ejb.packaging.NamedInputStream;
 import org.hibernate.ejb.packaging.Scanner;
+import org.jboss.as.server.loaders.ResourceLoader;
+import org.jboss.as.server.loaders.ResourceLoaders;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Index;
-import org.jboss.vfs.VFS;
-import org.jboss.vfs.VirtualFile;
+import org.jboss.modules.Resource;
 import org.jipijapa.plugin.spi.PersistenceUnitMetadata;
-
 
 /**
  * Annotation scanner for Hibernate
  *
  * @author Scott Marlow (forked from Ales Justin's ScannerImpl in AS6)
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public class HibernateAnnotationScanner implements Scanner {
 
@@ -273,33 +278,26 @@ public class HibernateAnnotationScanner implements Scanner {
             for (Set<NamedInputStream> nims : map.values())
                 result.addAll(nims);
         } else {
-            VirtualFile root = null;
+            ResourceLoader root = null;
             for (String pattern : filePatterns) {
                 Set<NamedInputStream> niss = map.get(pattern);
                 if (niss == null) {
                     if (root == null)
-                        root = getFile(jarToScan);
+                        root = getLoader(jarToScan);
 
-                    try {
-                        List<VirtualFile> children = root.getChildrenRecursively(new HibernatePatternFilter(pattern));
-                        niss = toNIS(children);
-                    } catch (IOException e) {
-                        throw new RuntimeException(e);
+                    final Iterator<Resource> resources = root.iterateResources("", true);
+                    Resource candidate;
+                    while (resources.hasNext()) {
+                        candidate = resources.next();
+                        if (HibernatePatternFilter.matches(pattern, candidate)) {
+                            result.add(new HibernateResourceNamedInputStream(candidate));
+                        }
                     }
-                }
-                if (niss != null)
+                } else {
                     result.addAll(niss);
+                }
             }
         }
-    }
-
-    private Set<NamedInputStream> toNIS(Iterable<VirtualFile> files) {
-        Set<NamedInputStream> result = new HashSet<NamedInputStream>();
-        for (VirtualFile file : files) {
-            NamedInputStream nis = new HibernateVirtualFileNamedInputStream(file);
-            result.add(nis);
-        }
-        return result;
     }
 
     @Override
@@ -309,14 +307,25 @@ public class HibernateAnnotationScanner implements Scanner {
 
     @Override
     public String getUnqualifiedJarName(URL jarUrl) {
-        VirtualFile file = getFile(jarUrl);
-        return file.getName();
+        return getResourceName(jarUrl.getPath());
     }
 
-    private VirtualFile getFile(URL url) {
+    private ResourceLoader getLoader(final URL url) {
         try {
-            return VFS.getChild(url.toURI());
-        } catch (URISyntaxException e) {
+            String archiveURL = url.toString();
+            archiveURL = archiveURL.startsWith("jar:") ? archiveURL.substring(4) : archiveURL;
+            archiveURL = archiveURL.startsWith("file:") ? archiveURL.substring(5) : archiveURL;
+            int exclamationIndex = archiveURL.indexOf("!");
+            final String archiveFile = exclamationIndex > -1 ? archiveURL.substring(0, exclamationIndex) : archiveURL;
+            final String path = exclamationIndex > -1 ? archiveURL.substring(exclamationIndex + 1) : "";
+            String normalizedPath = relativize(canonicalize(path));
+            normalizedPath = normalizedPath.endsWith("/") ? normalizedPath.substring(0, normalizedPath.length() - 1) : normalizedPath;
+            ResourceLoader loader = ResourceLoaders.newResourceLoader(new File(archiveFile));
+            if (!normalizedPath.equals("") && !normalizedPath.equals("/")) {
+                loader = ResourceLoaders.newResourceLoader(normalizedPath, loader, normalizedPath);
+            }
+            return loader;
+        } catch (IOException e) {
             throw new IllegalArgumentException(e);
         }
     }

@@ -42,7 +42,6 @@ import org.jboss.logging.Logger;
 import org.jboss.logging.annotations.Message;
 import org.jboss.logging.annotations.MessageLogger;
 import org.jboss.modules.ModuleIdentifier;
-import org.jboss.vfs.VirtualFile;
 
 /**
  * Date: 07.06.2011
@@ -380,12 +379,11 @@ public interface JpaLogger extends BasicLogger {
     /**
      * Creates an exception indicating the child could not be found on the parent.
      *
-     * @param child  the child that could not be found.
-     * @param parent the parent.
+     * @param archive that could not be found.
      * @return a {@link RuntimeException} for the error.
      */
-    @Message(id = 31, value = "Could not find child '%s' on '%s'")
-    RuntimeException childNotFound(String child, VirtualFile parent);
+    @Message(id = 31, value = "Could not find archive '%s'")
+    RuntimeException archiveNotFound(String archive);
 
     /**
      * Creates an exception indicating the class level annotation must provide the parameter specified.
@@ -477,7 +475,7 @@ public interface JpaLogger extends BasicLogger {
      * @return the message.
      */
     @Message(id = 40, value = "Failed to parse %s")
-    String failedToParse(VirtualFile file);
+    String failedToParse(String file);
 
     /**
      * Creates an exception indicating the entity manager factory implementation can only be a Hibernate version.

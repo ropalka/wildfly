@@ -24,40 +24,32 @@ package org.jboss.as.jpa.hibernate4;
 
 import static org.jipijapa.JipiLogger.JPA_LOGGER;
 
-import org.jboss.vfs.VirtualFile;
-import org.jboss.vfs.VirtualFileFilter;
+import org.jboss.modules.Resource;
 
 /**
  * Mock work of NativeScanner matching.
  *
  * @author <a href="mailto:ales.justin@jboss.org">Ales Justin</a>
  * @author Scott Marlow
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
-public class HibernatePatternFilter implements VirtualFileFilter {
+final class HibernatePatternFilter {
+
     private static final String SLASH = "/";
     private static final String PREFIX = "**/*";
-    private final String pattern;
-    private final boolean exact;
 
-    public HibernatePatternFilter(String pattern) {
-        if (pattern == null)
+    private HibernatePatternFilter() {
+        // forbidden instantiation
+    }
+
+    static boolean matches(String pattern, final Resource resource) {
+        if (pattern == null) {
             throw JPA_LOGGER.nullVar("pattern");
-
-        exact = !pattern.contains(SLASH); // no path split or glob
-        if (exact == false && (pattern.startsWith(PREFIX))) {
-            this.pattern = pattern.substring(4);
-        } else {
-            this.pattern = pattern;
         }
-    }
 
-    protected boolean accepts(String name) {
-        return exact ? name.equals(pattern) : name.endsWith(pattern);
-    }
-
-    public boolean accepts(VirtualFile file) {
-        String name = exact ? file.getName() : file.getPathName();
-        return accepts(name);
+        boolean exact = !pattern.contains(SLASH); // no path split or glob
+        pattern = pattern.startsWith(PREFIX) ? pattern.substring(4) : pattern;
+        return exact ? resource.getName().equals(pattern) : resource.getName().endsWith(pattern);
     }
 
 }

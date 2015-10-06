@@ -42,16 +42,12 @@ import org.eclipse.persistence.jpa.Archive;
  * See https://community.jboss.org/wiki/HowToUseEclipseLinkWithAS7
  *
  * @author Rich DiCroce
- *
  */
 public class JBossArchiveFactoryImpl extends ArchiveFactoryImpl {
-
-    private static final String VFS = "vfs";
 
     public JBossArchiveFactoryImpl() {
         super();
     }
-
 
     public JBossArchiveFactoryImpl(Logger logger) {
         super(logger);
@@ -59,12 +55,7 @@ public class JBossArchiveFactoryImpl extends ArchiveFactoryImpl {
 
     @Override
     public Archive createArchive(URL rootUrl, String descriptorLocation, @SuppressWarnings("rawtypes") Map properties) throws URISyntaxException, IOException {
-        String protocol = rootUrl.getProtocol();
-        if (VFS.equals(protocol)) {
-            return new VFSArchive(rootUrl, descriptorLocation);
-        } else {
-            return super.createArchive(rootUrl, descriptorLocation, properties);
-        }
+        return super.createArchive(rootUrl, descriptorLocation, properties);
     }
 
 }

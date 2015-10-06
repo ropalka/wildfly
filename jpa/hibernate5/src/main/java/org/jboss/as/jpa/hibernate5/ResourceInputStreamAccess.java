@@ -21,22 +21,22 @@ import java.io.InputStream;
 
 import org.hibernate.boot.archive.spi.ArchiveException;
 import org.hibernate.boot.archive.spi.InputStreamAccess;
-import org.jboss.vfs.VirtualFile;
-
+import org.jboss.modules.Resource;
 
 /**
  * InputStreamAccess provides Hibernate with lazy, on-demand access to InputStreams for the various
  * types of resources found during archive scanning.
  *
  * @author Steve Ebersole
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
-public class VirtualFileInputStreamAccess implements InputStreamAccess {
+public class ResourceInputStreamAccess implements InputStreamAccess {
     private final String name;
-    private final VirtualFile virtualFile;
+    private final Resource resource;
 
-    public VirtualFileInputStreamAccess(String name, VirtualFile virtualFile) {
+    public ResourceInputStreamAccess(String name, Resource resource) {
         this.name = name;
-        this.virtualFile = virtualFile;
+        this.resource = resource;
     }
 
     @Override
@@ -47,10 +47,10 @@ public class VirtualFileInputStreamAccess implements InputStreamAccess {
     @Override
     public InputStream accessInputStream() {
         try {
-            return virtualFile.openStream();
+            return resource.openStream();
         }
-        catch (IOException e) {
-            throw new ArchiveException( "Unable to open VirtualFile-based InputStream", e );
+        catch (final IOException e) {
+            throw new ArchiveException( "Unable to open resource based InputStream", e );
         }
     }
 

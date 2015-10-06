@@ -23,6 +23,8 @@
 package org.jboss.as.jpa.container;
 
 import static org.jboss.as.jpa.messages.JpaLogger.ROOT_LOGGER;
+import static org.jboss.modules.PathUtils.canonicalize;
+import static org.jboss.modules.PathUtils.relativize;
 
 import java.util.List;
 
@@ -34,7 +36,6 @@ import org.jboss.as.server.deployment.DeploymentUnit;
 import org.jboss.as.server.deployment.DeploymentUtils;
 import org.jboss.as.server.deployment.SubDeploymentMarker;
 import org.jboss.as.server.deployment.module.ResourceRoot;
-import org.jboss.vfs.VirtualFile;
 import org.jipijapa.plugin.spi.PersistenceUnitMetadata;
 
 /**
@@ -42,6 +43,7 @@ import org.jipijapa.plugin.spi.PersistenceUnitMetadata;
  *
  * @author Scott Marlow (forked from Carlo de Wolf code).
  * @author Stuart Douglas
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public class PersistenceUnitSearch {
     // cache the trace enabled flag
@@ -209,19 +211,10 @@ public class PersistenceUnitSearch {
     }
 
     private static PersistenceUnitMetadata getPersistenceUnit(DeploymentUnit current, final String absolutePath, String puName) {
-        final String path;
-        if (absolutePath.startsWith("../")) {
-            path = absolutePath.substring(3);
-        } else {
-            path = absolutePath;
-        }
-        final VirtualFile parent = current.getAttachment(Attachments.DEPLOYMENT_ROOT).getRoot().getParent();
-        final VirtualFile resolvedPath = parent.getChild(path);
-
-        List<ResourceRoot> resourceRoots = DeploymentUtils.allResourceRoots(DeploymentUtils.getTopDeploymentUnit(current));
-
-        for (ResourceRoot resourceRoot : resourceRoots) {
-            if (resourceRoot.getRoot().equals(resolvedPath)) {
+        final String archiveName = relativize(canonicalize(absolutePath));
+        final List<ResourceRoot> resourceRoots = DeploymentUtils.allResourceRoots(DeploymentUtils.getTopDeploymentUnit(current));
+        for (final ResourceRoot resourceRoot : resourceRoots) {
+            if (resourceRoot.getLoader().getPath().equals(archiveName)) {
                 PersistenceUnitMetadataHolder holder = resourceRoot.getAttachment(PersistenceUnitMetadataHolder.PERSISTENCE_UNITS);
                 if (holder != null) {
                     for (PersistenceUnitMetadata pu : holder.getPersistenceUnits()) {

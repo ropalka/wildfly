@@ -22,7 +22,6 @@
 package org.jboss.as.jpa.hibernate4.scan;
 
 import java.io.BufferedInputStream;
-import java.io.Closeable;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -63,8 +62,6 @@ import org.jboss.shrinkwrap.api.exporter.ExplodedExporter;
 import org.jboss.shrinkwrap.api.exporter.ZipExporter;
 import org.jboss.shrinkwrap.api.spec.JavaArchive;
 import org.jboss.shrinkwrap.api.spec.WebArchive;
-import org.jboss.vfs.VFS;
-import org.jboss.vfs.VirtualFile;
 
 import org.hibernate.jpa.boot.archive.internal.ArchiveHelper;
 import org.hibernate.jpa.boot.archive.spi.ArchiveDescriptor;
@@ -427,25 +424,17 @@ public class ScannerTest {
 		File defaultPar = buildDefaultPar();
 		addPackageToClasspath( defaultPar );
 
-		final VirtualFile virtualFile = VFS.getChild( defaultPar.getAbsolutePath() );
-		Closeable closeable = VFS.mountZip( virtualFile, virtualFile);
+		ArchiveDescriptor archiveDescriptor = VirtualFileSystemArchiveDescriptorFactory.INSTANCE.buildArchiveDescriptor( defaultPar.toURI().toURL() );
+		AbstractScannerImpl.ResultCollector resultCollector = new AbstractScannerImpl.ResultCollector( new StandardScanOptions() );
+		archiveDescriptor.visitArchive(
+				new AbstractScannerImpl.ArchiveContextImpl(
+						new PersistenceUnitDescriptorAdapter(),
+						true,
+						resultCollector
+				)
+		);
 
-		try {
-			ArchiveDescriptor archiveDescriptor = VirtualFileSystemArchiveDescriptorFactory.INSTANCE.buildArchiveDescriptor( defaultPar.toURI().toURL() );
-			AbstractScannerImpl.ResultCollector resultCollector = new AbstractScannerImpl.ResultCollector( new StandardScanOptions() );
-			archiveDescriptor.visitArchive(
-					new AbstractScannerImpl.ArchiveContextImpl(
-							new PersistenceUnitDescriptorAdapter(),
-							true,
-							resultCollector
-					)
-			);
-
-			validateResults( resultCollector, ApplicationServer.class, Version.class );
-		}
-		finally {
-			closeable.close();
-		}
+		validateResults( resultCollector, ApplicationServer.class, Version.class );
 	}
 
 	private void validateResults(AbstractScannerImpl.ResultCollector resultCollector, Class... expectedClasses) throws IOException {
@@ -473,60 +462,35 @@ public class ScannerTest {
 		File nestedEar = buildNestedEar( defaultPar );
 		addPackageToClasspath( nestedEar );
 
-		final VirtualFile nestedEarVirtualFile = VFS.getChild( nestedEar.getAbsolutePath() );
-		Closeable closeable = VFS.mountZip( nestedEarVirtualFile, nestedEarVirtualFile );
+		ArchiveDescriptor archiveDescriptor = VirtualFileSystemArchiveDescriptorFactory.INSTANCE.buildArchiveDescriptor(
+				new URL("jar:" + nestedEar.toURI().toURL().toString() + "!/defaultpar.par")
+		);
 
-		try {
-			VirtualFile parVirtualFile = nestedEarVirtualFile.getChild( "defaultpar.par" );
-			Closeable closeable2 = VFS.mountZip( parVirtualFile, parVirtualFile );
-			try {
-				ArchiveDescriptor archiveDescriptor = VirtualFileSystemArchiveDescriptorFactory.INSTANCE.buildArchiveDescriptor( parVirtualFile.toURL() );
+		AbstractScannerImpl.ResultCollector resultCollector = new AbstractScannerImpl.ResultCollector( new StandardScanOptions() );
+		archiveDescriptor.visitArchive(
+				new AbstractScannerImpl.ArchiveContextImpl(
+						new PersistenceUnitDescriptorAdapter(),
+						true,
+						resultCollector
+				)
+		);
 
-				AbstractScannerImpl.ResultCollector resultCollector = new AbstractScannerImpl.ResultCollector( new StandardScanOptions() );
-				archiveDescriptor.visitArchive(
-						new AbstractScannerImpl.ArchiveContextImpl(
-								new PersistenceUnitDescriptorAdapter(),
-								true,
-								resultCollector
-						)
-				);
-
-				validateResults( resultCollector, ApplicationServer.class, Version.class );
-			}
-			finally {
-				closeable2.close();
-			}
-		}
-		finally {
-			closeable.close();
-		}
+		validateResults( resultCollector, ApplicationServer.class, Version.class );
 
 		File nestedEarDir = buildNestedEarDir( defaultPar );
-		final VirtualFile nestedEarDirVirtualFile = VFS.getChild( nestedEarDir.getAbsolutePath() );
+		archiveDescriptor = VirtualFileSystemArchiveDescriptorFactory.INSTANCE.buildArchiveDescriptor(
+				new URL("jar:" + nestedEarDir.toURI().toURL().toString() + "!/defaultpar.par")
+		);
+		resultCollector = new AbstractScannerImpl.ResultCollector( new StandardScanOptions() );
+		archiveDescriptor.visitArchive(
+				new AbstractScannerImpl.ArchiveContextImpl(
+						new PersistenceUnitDescriptorAdapter(),
+						true,
+						resultCollector
+				)
+		);
 
-		try {
-			VirtualFile parVirtualFile = nestedEarDirVirtualFile.getChild( "defaultpar.par" );
-			closeable = VFS.mountZip( parVirtualFile, parVirtualFile );
-			try {
-				ArchiveDescriptor archiveDescriptor = VirtualFileSystemArchiveDescriptorFactory.INSTANCE.buildArchiveDescriptor( parVirtualFile.toURL() );
-				AbstractScannerImpl.ResultCollector resultCollector = new AbstractScannerImpl.ResultCollector( new StandardScanOptions() );
-				archiveDescriptor.visitArchive(
-						new AbstractScannerImpl.ArchiveContextImpl(
-								new PersistenceUnitDescriptorAdapter(),
-								true,
-								resultCollector
-						)
-				);
-
-				validateResults( resultCollector, ApplicationServer.class, Version.class );
-			}
-			finally {
-				closeable.close();
-			}
-		}
-		finally {
-			closeable.close();
-		}
+		validateResults( resultCollector, ApplicationServer.class, Version.class );
 	}
 
 	@Test
@@ -534,32 +498,24 @@ public class ScannerTest {
 		File war = buildWar();
 		addPackageToClasspath( war );
 
-		final VirtualFile warVirtualFile = VFS.getChild( war.getAbsolutePath() );
-		Closeable closeable = VFS.mountZip( warVirtualFile, warVirtualFile );
+		ArchiveDescriptor archiveDescriptor = VirtualFileSystemArchiveDescriptorFactory.INSTANCE.buildArchiveDescriptor(
+				war.toURI().toURL()
+		);
 
-		try {
-			ArchiveDescriptor archiveDescriptor = VirtualFileSystemArchiveDescriptorFactory.INSTANCE.buildArchiveDescriptor(
-					warVirtualFile.toURL()
-			);
+		AbstractScannerImpl.ResultCollector resultCollector = new AbstractScannerImpl.ResultCollector( new StandardScanOptions() );
+		archiveDescriptor.visitArchive(
+				new AbstractScannerImpl.ArchiveContextImpl(
+						new PersistenceUnitDescriptorAdapter(),
+						true,
+						resultCollector
+				)
+		);
 
-			AbstractScannerImpl.ResultCollector resultCollector = new AbstractScannerImpl.ResultCollector( new StandardScanOptions() );
-			archiveDescriptor.visitArchive(
-					new AbstractScannerImpl.ArchiveContextImpl(
-							new PersistenceUnitDescriptorAdapter(),
-							true,
-							resultCollector
-					)
-			);
-
-			validateResults(
-					resultCollector,
-					org.hibernate.jpa.test.pack.war.ApplicationServer.class,
-					org.hibernate.jpa.test.pack.war.Version.class
-			);
-		}
-		finally {
-			closeable.close();
-		}
+		validateResults(
+				resultCollector,
+				org.hibernate.jpa.test.pack.war.ApplicationServer.class,
+				org.hibernate.jpa.test.pack.war.Version.class
+		);
 	}
 
 	@Test
@@ -567,28 +523,20 @@ public class ScannerTest {
 		File defaultPar = buildDefaultPar();
 		addPackageToClasspath( defaultPar );
 
-		final VirtualFile virtualFile = VFS.getChild( defaultPar.getAbsolutePath() );
-		Closeable closeable = VFS.mountZip( virtualFile, virtualFile );
+		ArchiveDescriptor archiveDescriptor = VirtualFileSystemArchiveDescriptorFactory.INSTANCE.buildArchiveDescriptor(
+				defaultPar.toURI().toURL()
+		);
 
-		try {
-			ArchiveDescriptor archiveDescriptor = VirtualFileSystemArchiveDescriptorFactory.INSTANCE.buildArchiveDescriptor(
-					virtualFile.toURL()
-			);
+		AbstractScannerImpl.ResultCollector resultCollector = new AbstractScannerImpl.ResultCollector( new StandardScanOptions() );
+		archiveDescriptor.visitArchive(
+				new AbstractScannerImpl.ArchiveContextImpl(
+						new PersistenceUnitDescriptorAdapter(),
+						true,
+						resultCollector
+				)
+		);
 
-			AbstractScannerImpl.ResultCollector resultCollector = new AbstractScannerImpl.ResultCollector( new StandardScanOptions() );
-			archiveDescriptor.visitArchive(
-					new AbstractScannerImpl.ArchiveContextImpl(
-							new PersistenceUnitDescriptorAdapter(),
-							true,
-							resultCollector
-					)
-			);
-
-			validateResults( resultCollector, ApplicationServer.class, Version.class );
-		}
-		finally {
-			closeable.close();
-		}
+		validateResults( resultCollector, ApplicationServer.class, Version.class );
 	}
 
 	@Test
@@ -596,15 +544,8 @@ public class ScannerTest {
 		File explodedPar = buildExplodedPar();
 		addPackageToClasspath( explodedPar );
 
-		String dirPath = explodedPar.getAbsolutePath();
-		if ( dirPath.endsWith( "/" ) ) {
-			dirPath = dirPath.substring( 0, dirPath.length() - 1 );
-		}
-
-		final VirtualFile virtualFile = VFS.getChild( dirPath );
-
 		ArchiveDescriptor archiveDescriptor = VirtualFileSystemArchiveDescriptorFactory.INSTANCE.buildArchiveDescriptor(
-				virtualFile.toURL()
+				explodedPar.toURI().toURL()
 		);
 
 		AbstractScannerImpl.ResultCollector resultCollector = new AbstractScannerImpl.ResultCollector( new StandardScanOptions() );
