@@ -73,6 +73,7 @@ import org.hibernate.jpa.boot.spi.MappingFileDescriptor;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.Ignore;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -389,7 +390,7 @@ public class ScannerTest {
 		return testPackage;
 	}
 
-	@Test
+	@Test @Ignore
 	public void testHttp() throws Exception {
 		URL url = ArchiveHelper.getJarURLFromURLEntry(
 				new URL(
