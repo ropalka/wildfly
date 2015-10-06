@@ -224,7 +224,7 @@ public class WarStructureDeploymentProcessor implements DeploymentUnitProcessor 
                     Closeable closable = null;
                     final ResourceLoader loader = overlay == null
                             ? ResourceLoaders.newResourceLoader(archive.getName(), resourceRoot.getLoader(), relativeName)
-                            : ResourceLoaders.newResourceLoader(archive.getName(), overlay.getFile(), resourceRoot.getLoader());
+                            : ResourceLoaders.newResourceLoader(archive.getName(), overlay.getFile(), relativeName, resourceRoot.getLoader());
                     if(overlay != null) {
                         overlay.remountAsZip();
                     } else if (archive.isFile()) {

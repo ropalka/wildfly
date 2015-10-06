@@ -86,7 +86,7 @@ public class RaStructureProcessor implements DeploymentUnitProcessor {
                 MountedDeploymentOverlay overlay = overlays.get(archivePath);
                 final ResourceLoader loader = overlay == null
                         ? ResourceLoaders.newResourceLoader(archiveName, resourceRoot.getLoader(), archivePath)
-                        : ResourceLoaders.newResourceLoader(archiveName, overlay.getFile(), resourceRoot.getLoader());
+                        : ResourceLoaders.newResourceLoader(archiveName, overlay.getFile(), archivePath, resourceRoot.getLoader());
                 // TODO: close loaders on cleanup in undeploy()
                 final ResourceRoot childResource = new ResourceRoot(loader, null, null);
                 ModuleRootMarker.mark(childResource);

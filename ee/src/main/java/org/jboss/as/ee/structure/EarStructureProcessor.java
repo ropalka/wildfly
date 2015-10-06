@@ -136,7 +136,7 @@ public class EarStructureProcessor implements DeploymentUnitProcessor {
                         }
                         final ResourceLoader loader = overlay == null
                                 ? ResourceLoaders.newResourceLoader(child.getName(), deploymentRoot.getLoader(), relativeName)
-                                : ResourceLoaders.newResourceLoader(child.getName(), overlay.getFile(), deploymentRoot.getLoader());
+                                : ResourceLoaders.newResourceLoader(child.getName(), overlay.getFile(), relativeName, deploymentRoot.getLoader());
                         final ResourceRoot childResource = new ResourceRoot(loader, child, mountHandle);
                         if (child.getName().toLowerCase(Locale.ENGLISH).endsWith(JAR_EXTENSION)) {
                             ModuleRootMarker.mark(childResource);
