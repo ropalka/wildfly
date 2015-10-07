@@ -63,7 +63,8 @@
 &lt;module name="org.javassist"/&gt;
 &lt;module name="org.jboss.as.jpa.spi"/&gt;
 &lt;module name="org.jboss.logging"/&gt;
-&lt;module name="org.jboss.vfs"/&gt;
+&lt;module name="org.jboss.modules"/&gt;
+&lt;module name="org.jboss.as.server"/&gt;
 &lt;/dependencies&gt;
 &lt;/module&gt;
     </echo>
@@ -96,7 +97,8 @@
 &lt;module name="org.apache.commons.lang"/&gt;
 &lt;module name="org.jboss.as.jpa.spi"/&gt;
 &lt;module name="org.jboss.logging"/&gt;
-&lt;module name="org.jboss.vfs"/&gt;
+&lt;module name="org.jboss.modules"/&gt;
+&lt;module name="org.jboss.as.server"/&gt;
 &lt;module name="org.jboss.jandex"/&gt;
 &lt;/dependencies&gt;
 &lt;/module&gt;
