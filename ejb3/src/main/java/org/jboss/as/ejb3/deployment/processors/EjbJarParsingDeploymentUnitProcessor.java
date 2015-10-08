@@ -22,7 +22,6 @@
 
 package org.jboss.as.ejb3.deployment.processors;
 
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.EnumSet;
@@ -62,6 +61,7 @@ import org.jboss.as.server.deployment.DeploymentUnitProcessingException;
 import org.jboss.as.server.deployment.DeploymentUnitProcessor;
 import org.jboss.as.server.deployment.EjbDeploymentMarker;
 import org.jboss.as.server.deployment.module.ResourceRoot;
+import org.jboss.as.server.loaders.ResourceLoader;
 import org.jboss.metadata.ejb.parser.jboss.ejb3.IIOPMetaDataParser;
 import org.jboss.metadata.ejb.parser.jboss.ejb3.JBossEjb3MetaDataParser;
 import org.jboss.metadata.ejb.parser.jboss.ejb3.TransactionTimeoutMetaDataParser;
@@ -71,7 +71,7 @@ import org.jboss.metadata.ejb.spec.AbstractEnterpriseBeanMetaData;
 import org.jboss.metadata.ejb.spec.EjbJarMetaData;
 import org.jboss.metadata.ejb.spec.EjbType;
 import org.jboss.metadata.parser.util.MetaDataElementParser;
-import org.jboss.vfs.VirtualFile;
+import org.jboss.modules.Resource;
 
 /**
  * Processes a {@link DeploymentUnit} containing an ejb-jar.xml and creates {@link EjbJarMetaData}
@@ -84,19 +84,12 @@ import org.jboss.vfs.VirtualFile;
  * <p/>
  * <p/>
  * Author: Jaikiran Pai
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public class EjbJarParsingDeploymentUnitProcessor implements DeploymentUnitProcessor {
 
-    /**
-     * .war file extension
-     */
-    private static final String WAR_FILE_EXTENSION = ".war";
-
-    /**
-     * .jar file extension
-     */
-    private static final String JAR_FILE_EXTENSION = ".jar";
-
+    private static final String WAR_EXTENSION = ".war";
+    private static final String JAR_EXTENSION = ".jar";
     private static final String EJB_JAR_XML = "ejb-jar.xml";
     private static final String JBOSS_EJB3_XML = "jboss-ejb3.xml";
     private static final String META_INF = "META-INF";
@@ -190,53 +183,43 @@ public class EjbJarParsingDeploymentUnitProcessor implements DeploymentUnitProce
 
     }
 
-    private static VirtualFile getDescriptor(final VirtualFile deploymentRoot, final String descriptorName) {
-        // Locate the descriptor
-        final VirtualFile descriptor;
+    private static Resource getDescriptor(final ResourceLoader loader, final String descriptorName) {
+        Resource descriptor = null;
         // EJB 3.1 FR 20.4 Enterprise Beans Packaged in a .war
-        if (isWar(deploymentRoot)) {
+        if (isWar(loader)) {
             // it's a .war file, so look for the ejb-jar.xml in WEB-INF
-            descriptor = deploymentRoot.getChild(WEB_INF + "/" + descriptorName);
-        } else if (deploymentRoot.getName().toLowerCase(Locale.ENGLISH).endsWith(JAR_FILE_EXTENSION)) {
-            descriptor = deploymentRoot.getChild(META_INF + "/" + descriptorName);
-        } else {
-            // neither a .jar nor a .war. Return
-            return null;
-        }
-
-        if (descriptor == null || !descriptor.exists()) {
-            // no descriptor found, nothing to do!
-            return null;
+            descriptor = loader.getResource(WEB_INF + "/" + descriptorName);
+        } else if (loader.getRootName().toLowerCase(Locale.ENGLISH).endsWith(JAR_EXTENSION)) {
+            descriptor = loader.getResource(META_INF + "/" + descriptorName);
         }
         return descriptor;
     }
 
     /**
-     * Creates and returns a {@link XMLStreamReader} for the passed {@link VirtualFile ejb-jar.xml}
+     * Creates and returns a {@link XMLStreamReader} for the passed {@link Resource ejb-jar.xml}
      *
      * @param stream    The input stream
      * @param ejbJarXml
      * @return
      * @throws DeploymentUnitProcessingException
-     *
      */
-    private static XMLStreamReader getXMLStreamReader(InputStream stream, VirtualFile ejbJarXml, XMLResolver resolver) throws DeploymentUnitProcessingException {
+    private static XMLStreamReader getXMLStreamReader(InputStream stream, Resource ejbJarXml, XMLResolver resolver) throws DeploymentUnitProcessingException {
         try {
             final XMLInputFactory inputFactory = XMLInputFactory.newInstance();
             inputFactory.setXMLResolver(resolver);
             XMLStreamReader xmlReader = inputFactory.createXMLStreamReader(stream);
             return xmlReader;
         } catch (XMLStreamException xmlse) {
-            throw EjbLogger.ROOT_LOGGER.failedToParse(xmlse, "ejb-jar.xml: " + ejbJarXml.getPathName());
+            throw EjbLogger.ROOT_LOGGER.failedToParse(xmlse, "ejb-jar.xml: " + ejbJarXml.getName());
         }
     }
 
-    private static boolean isWar(final VirtualFile deploymentRoot) {
+    private static boolean isWar(final ResourceLoader loader) {
         // TODO: Is there a better way to do this?
-        return deploymentRoot.getName().toLowerCase(Locale.ENGLISH).endsWith(WAR_FILE_EXTENSION);
+        return loader.getRootName().toLowerCase(Locale.ENGLISH).endsWith(WAR_EXTENSION);
     }
 
-    private static InputStream open(final VirtualFile file) throws DeploymentUnitProcessingException {
+    private static InputStream open(final Resource file) throws DeploymentUnitProcessingException {
         try {
             return file.openStream();
         } catch (IOException e) {
@@ -247,15 +230,15 @@ public class EjbJarParsingDeploymentUnitProcessor implements DeploymentUnitProce
     private static EjbJarMetaData parseEjbJarXml(final DeploymentUnit deploymentUnit) throws DeploymentUnitProcessingException {
         final ResourceRoot deploymentRoot = deploymentUnit.getAttachment(Attachments.DEPLOYMENT_ROOT);
 
-        final VirtualFile alternateDescriptor = deploymentRoot.getAttachment(org.jboss.as.ee.structure.Attachments.ALTERNATE_EJB_DEPLOYMENT_DESCRIPTOR);
+        final Resource alternateDescriptor = deploymentRoot.getAttachment(org.jboss.as.ee.structure.Attachments.ALTERNATE_EJB_DEPLOYMENT_DESCRIPTOR);
         //this is a bit tri
 
         // Locate the descriptor
-        final VirtualFile descriptor;
+        final Resource descriptor;
         if (alternateDescriptor != null) {
             descriptor = alternateDescriptor;
         } else {
-            descriptor = getDescriptor(deploymentRoot.getRoot(), EJB_JAR_XML);
+            descriptor = getDescriptor(deploymentRoot.getLoader(), EJB_JAR_XML);
         }
 
         if (descriptor == null) {
@@ -271,7 +254,7 @@ public class EjbJarParsingDeploymentUnitProcessor implements DeploymentUnitProce
             EjbJarMetaData ejbJarMetaData = EjbJarMetaDataParser.parse(reader, dtdInfo, SpecDescriptorPropertyReplacement.propertyReplacer(deploymentUnit));
             return ejbJarMetaData;
         } catch (XMLStreamException xmlse) {
-            throw EjbLogger.ROOT_LOGGER.failedToParse(xmlse, "ejb-jar.xml: " + descriptor.getPathName());
+            throw EjbLogger.ROOT_LOGGER.failedToParse(xmlse, "ejb-jar.xml: " + descriptor.getName());
         } finally {
             try {
                 stream.close();
@@ -282,10 +265,10 @@ public class EjbJarParsingDeploymentUnitProcessor implements DeploymentUnitProce
     }
 
     private static EjbJarMetaData parseJBossEjb3Xml(final DeploymentUnit deploymentUnit) throws DeploymentUnitProcessingException {
-        final VirtualFile deploymentRoot = deploymentUnit.getAttachment(Attachments.DEPLOYMENT_ROOT).getRoot();
+        final ResourceLoader loader = deploymentUnit.getAttachment(Attachments.DEPLOYMENT_ROOT).getLoader();
 
         // Locate the descriptor
-        final VirtualFile descriptor = getDescriptor(deploymentRoot, JBOSS_EJB3_XML);
+        final Resource descriptor = getDescriptor(loader, JBOSS_EJB3_XML);
         if (descriptor == null) {
             // no descriptor found
             //but there may have been an ejb-jar element in jboss-all.xml
@@ -303,7 +286,7 @@ public class EjbJarParsingDeploymentUnitProcessor implements DeploymentUnitProce
             final EjbJarMetaData ejbJarMetaData = parser.parse(reader, dtdInfo, JBossDescriptorPropertyReplacement.propertyReplacer(deploymentUnit));
             return ejbJarMetaData;
         } catch (XMLStreamException xmlse) {
-            throw EjbLogger.ROOT_LOGGER.failedToParse(xmlse, JBOSS_EJB3_XML + ": " + descriptor.getPathName());
+            throw EjbLogger.ROOT_LOGGER.failedToParse(xmlse, JBOSS_EJB3_XML + ": " + descriptor.getName());
         } finally {
             try {
                 stream.close();

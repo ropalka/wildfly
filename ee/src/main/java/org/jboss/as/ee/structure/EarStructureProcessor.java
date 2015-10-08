@@ -227,7 +227,7 @@ public class EarStructureProcessor implements DeploymentUnitProcessor {
                                 childResource.putAttachment(org.jboss.as.ee.structure.Attachments.ALTERNATE_CONNECTOR_DEPLOYMENT_DESCRIPTOR, alternateDeploymentDescriptorResource);
                                 break;
                             case Ejb:
-                                childResource.putAttachment(org.jboss.as.ee.structure.Attachments.ALTERNATE_EJB_DEPLOYMENT_DESCRIPTOR, alternateDeploymentDescriptor);
+                                childResource.putAttachment(org.jboss.as.ee.structure.Attachments.ALTERNATE_EJB_DEPLOYMENT_DESCRIPTOR, alternateDeploymentDescriptorResource);
                                 break;
                             case Web:
                                 childResource.putAttachment(org.jboss.as.ee.structure.Attachments.ALTERNATE_WEB_DEPLOYMENT_DESCRIPTOR, alternateDeploymentDescriptor);

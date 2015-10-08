@@ -53,7 +53,7 @@ public final class Attachments {
      */
     public static final AttachmentKey<Resource> ALTERNATE_CLIENT_DEPLOYMENT_DESCRIPTOR = AttachmentKey.create(Resource.class);
     public static final AttachmentKey<VirtualFile> ALTERNATE_WEB_DEPLOYMENT_DESCRIPTOR = AttachmentKey.create(VirtualFile.class);
-    public static final AttachmentKey<VirtualFile> ALTERNATE_EJB_DEPLOYMENT_DESCRIPTOR = AttachmentKey.create(VirtualFile.class);
+    public static final AttachmentKey<Resource> ALTERNATE_EJB_DEPLOYMENT_DESCRIPTOR = AttachmentKey.create(Resource.class);
     public static final AttachmentKey<Resource> ALTERNATE_CONNECTOR_DEPLOYMENT_DESCRIPTOR = AttachmentKey.create(Resource.class);
 
     /**
