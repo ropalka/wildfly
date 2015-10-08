@@ -38,11 +38,11 @@ import org.jboss.logging.Logger;
 import org.jboss.logging.annotations.Message;
 import org.jboss.logging.annotations.MessageLogger;
 import org.jboss.logging.annotations.Param;
-import org.jboss.vfs.VirtualFile;
 
 /**
  * @author <a href="mailto:jperkins@redhat.com">James R. Perkins</a>
  * @author <a href="mailto:david.lloyd@redhat.com">David M. Lloyd</a>
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 @MessageLogger(projectCode = "WFLYAC", length = 4)
 public interface AppClientLogger extends BasicLogger {
@@ -270,7 +270,7 @@ public interface AppClientLogger extends BasicLogger {
      * @return a {@link DeploymentUnitProcessingException} for the error.
      */
     @Message(id = 15, value = "Failed to parse %s")
-    DeploymentUnitProcessingException failedToParseXml(@Cause Throwable cause, VirtualFile appXml);
+    DeploymentUnitProcessingException failedToParseXml(@Cause Throwable cause, String appXml);
 
     /**
      * Creates an exception indicating a failure to parse the xml file represented by the {@code appXml} parameter.
@@ -282,7 +282,7 @@ public interface AppClientLogger extends BasicLogger {
      * @return a {@link DeploymentUnitProcessingException} for the error.
      */
     @Message(id = 16, value = "Failed to parse %s at [%d,%d]")
-    DeploymentUnitProcessingException failedToParseXml(@Cause Throwable cause, VirtualFile appXml, int lineNumber, int columnNumber);
+    DeploymentUnitProcessingException failedToParseXml(@Cause Throwable cause, String appXml, int lineNumber, int columnNumber);
 
     /**
      * A message indicating the URL in the argument was malformed.

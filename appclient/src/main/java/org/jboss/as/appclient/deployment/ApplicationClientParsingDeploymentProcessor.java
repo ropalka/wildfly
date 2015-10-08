@@ -49,10 +49,11 @@ import org.jboss.metadata.appclient.spec.AppClientEnvironmentRefsGroupMetaData;
 import org.jboss.metadata.appclient.spec.ApplicationClientMetaData;
 import org.jboss.metadata.parser.util.NoopXMLResolver;
 import org.jboss.metadata.property.PropertyReplacer;
-import org.jboss.vfs.VirtualFile;
+import org.jboss.modules.Resource;
 
 /**
  * @author Stuart Douglas
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public class ApplicationClientParsingDeploymentProcessor implements DeploymentUnitProcessor {
 
@@ -101,22 +102,22 @@ public class ApplicationClientParsingDeploymentProcessor implements DeploymentUn
 
     private ApplicationClientMetaData parseAppClient(DeploymentUnit deploymentUnit, final PropertyReplacer propertyReplacer) throws DeploymentUnitProcessingException {
         final ResourceRoot deploymentRoot = deploymentUnit.getAttachment(Attachments.DEPLOYMENT_ROOT);
-        final VirtualFile alternateDescriptor = deploymentRoot.getAttachment(org.jboss.as.ee.structure.Attachments.ALTERNATE_CLIENT_DEPLOYMENT_DESCRIPTOR);
+        final Resource alternateDescriptor = deploymentRoot.getAttachment(org.jboss.as.ee.structure.Attachments.ALTERNATE_CLIENT_DEPLOYMENT_DESCRIPTOR);
         // Locate the descriptor
-        final VirtualFile descriptor;
+        final Resource descriptor;
         if (alternateDescriptor != null) {
             descriptor = alternateDescriptor;
         } else {
-            descriptor = deploymentRoot.getRoot().getChild(APP_XML);
+            descriptor = deploymentRoot.getLoader().getResource(APP_XML);
         }
-        if (descriptor.exists()) {
+        if (descriptor != null) {
             InputStream is = null;
             try {
                 is = descriptor.openStream();
                 ApplicationClientMetaData data = new ApplicationClientMetaDataParser().parse(getXMLStreamReader(is), propertyReplacer);
                 return data;
             } catch (XMLStreamException e) {
-                throw AppClientLogger.ROOT_LOGGER.failedToParseXml(e, descriptor, e.getLocation().getLineNumber(), e.getLocation().getColumnNumber());
+                throw AppClientLogger.ROOT_LOGGER.failedToParseXml(e, descriptor.getName(), e.getLocation().getLineNumber(), e.getLocation().getColumnNumber());
             } catch (IOException e) {
                 throw new DeploymentUnitProcessingException("Failed to parse " + descriptor, e);
             } finally {
@@ -134,19 +135,18 @@ public class ApplicationClientParsingDeploymentProcessor implements DeploymentUn
     }
 
     private JBossClientMetaData parseJBossClient(DeploymentUnit deploymentUnit, final PropertyReplacer propertyReplacer) throws DeploymentUnitProcessingException {
-        final VirtualFile deploymentRoot = deploymentUnit.getAttachment(Attachments.DEPLOYMENT_ROOT).getRoot();
-        final VirtualFile appXml = deploymentRoot.getChild(JBOSS_CLIENT_XML);
-        if (appXml.exists()) {
+        final Resource appXml = deploymentUnit.getAttachment(Attachments.DEPLOYMENT_ROOT).getLoader().getResource(JBOSS_CLIENT_XML);
+        if (appXml != null) {
             InputStream is = null;
             try {
                 is = appXml.openStream();
                 JBossClientMetaData data = new JBossClientMetaDataParser().parse(getXMLStreamReader(is), propertyReplacer);
                 return data;
             } catch (XMLStreamException e) {
-                throw AppClientLogger.ROOT_LOGGER.failedToParseXml(e, appXml, e.getLocation().getLineNumber(), e.getLocation().getColumnNumber());
+                throw AppClientLogger.ROOT_LOGGER.failedToParseXml(e, appXml.getName(), e.getLocation().getLineNumber(), e.getLocation().getColumnNumber());
 
             } catch (IOException e) {
-                throw AppClientLogger.ROOT_LOGGER.failedToParseXml(e, appXml);
+                throw AppClientLogger.ROOT_LOGGER.failedToParseXml(e, appXml.getName());
             } finally {
                 try {
                     if (is != null) {

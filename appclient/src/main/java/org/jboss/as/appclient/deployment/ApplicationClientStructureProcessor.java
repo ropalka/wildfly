@@ -21,7 +21,9 @@
  */
 package org.jboss.as.appclient.deployment;
 
-import java.io.Closeable;
+import static org.jboss.modules.PathUtils.canonicalize;
+import static org.jboss.modules.PathUtils.relativize;
+
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Locale;
@@ -37,12 +39,10 @@ import org.jboss.as.server.deployment.DeploymentUnitProcessingException;
 import org.jboss.as.server.deployment.DeploymentUnitProcessor;
 import org.jboss.as.server.deployment.SubDeploymentMarker;
 import org.jboss.as.server.deployment.module.ModuleRootMarker;
-import org.jboss.as.server.deployment.module.MountHandle;
 import org.jboss.as.server.deployment.module.ResourceRoot;
 import org.jboss.as.server.loaders.ResourceLoader;
 import org.jboss.as.server.loaders.ResourceLoaders;
-import org.jboss.vfs.VFS;
-import org.jboss.vfs.VirtualFile;
+import org.jboss.modules.Resource;
 
 /**
  * Processor that marks a sub-deployment as an application client based on the parameters passed on the command line
@@ -52,39 +52,40 @@ import org.jboss.vfs.VirtualFile;
  */
 public class ApplicationClientStructureProcessor implements DeploymentUnitProcessor {
 
+    private static final String EAR_EXTENSION = ".ear";
+    private static final String JAR_EXTENSION = ".jar";
     private final String deployment;
 
     public ApplicationClientStructureProcessor(final String deployment) {
-        this.deployment = deployment;
+        final String canonPath = relativize(canonicalize(deployment));
+        this.deployment = canonPath.endsWith("/") ? canonPath.substring(canonPath.length() - 1) : canonPath;
     }
 
     @Override
     public void deploy(final DeploymentPhaseContext phaseContext) throws DeploymentUnitProcessingException {
         final DeploymentUnit deploymentUnit = phaseContext.getDeploymentUnit();
+        final ResourceRoot root = deploymentUnit.getAttachment(Attachments.DEPLOYMENT_ROOT);
         String deploymentUnitName = deploymentUnit.getName().toLowerCase(Locale.ENGLISH);
-        if (deploymentUnitName.endsWith(".ear")) {
-            final Map<VirtualFile, ResourceRoot> existing = new HashMap<VirtualFile, ResourceRoot>();
+        if (deploymentUnitName.endsWith(EAR_EXTENSION)) {
+            final Map<String, ResourceRoot> existing = new HashMap<>();
             for (final ResourceRoot additional : deploymentUnit.getAttachmentList(Attachments.RESOURCE_ROOTS)) {
-                existing.put(additional.getRoot(), additional);
+                existing.put(additional.getLoader().getPath(), additional);
             }
 
-            final ResourceRoot root = deploymentUnit.getAttachment(Attachments.DEPLOYMENT_ROOT);
-            final VirtualFile appClientRoot = root.getRoot().getChild(deployment);
-            if (appClientRoot.exists()) {
-                if (existing.containsKey(appClientRoot)) {
+            final Resource appClientRoot = root.getLoader().getResource(deployment);
+            if (appClientRoot != null) {
+                if (existing.containsKey(appClientRoot.getName())) {
                     final ResourceRoot existingRoot = existing.get(appClientRoot);
                     SubDeploymentMarker.mark(existingRoot);
                     ModuleRootMarker.mark(existingRoot);
                 } else {
-                    final Closeable closable = appClientRoot.isFile() ? mount(appClientRoot) : null;
-                    final MountHandle mountHandle = new MountHandle(closable);
                     ResourceLoader loader;
                     try {
                         loader = ResourceLoaders.newResourceLoader(appClientRoot.getName(), root.getLoader(), deployment);
                     } catch (IOException e) {
                         throw AppClientLogger.ROOT_LOGGER.unableToReadAppclientResource(deployment, e);
                     }
-                    final ResourceRoot childResource = new ResourceRoot(loader, appClientRoot, mountHandle);
+                    final ResourceRoot childResource = new ResourceRoot(loader, null, null);
                     ModuleRootMarker.mark(childResource);
                     SubDeploymentMarker.mark(childResource);
                     deploymentUnit.addToAttachmentList(Attachments.RESOURCE_ROOTS, childResource);
@@ -93,27 +94,16 @@ public class ApplicationClientStructureProcessor implements DeploymentUnitProces
             } else {
                 throw AppClientLogger.ROOT_LOGGER.cannotFindAppClient(deployment);
             }
-        } else if (deploymentUnit.getParent() != null && deploymentUnitName.endsWith(".jar")) {
-            final ResourceRoot parentRoot = deploymentUnit.getParent().getAttachment(Attachments.DEPLOYMENT_ROOT);
-            final VirtualFile appClientRoot = parentRoot.getRoot().getChild(deployment);
-            final ResourceRoot root = deploymentUnit.getAttachment(Attachments.DEPLOYMENT_ROOT);
-            if (appClientRoot.equals(root.getRoot())) {
+        } else if (deploymentUnit.getParent() != null && deploymentUnitName.endsWith(JAR_EXTENSION)) {
+            if (root.getLoader().getPath().equals(deployment)) {
                 DeploymentTypeMarker.setType(DeploymentType.APPLICATION_CLIENT, deploymentUnit);
             }
 
         }
     }
 
-    private static Closeable mount(VirtualFile moduleFile) throws DeploymentUnitProcessingException {
-        try {
-            return VFS.mountZip(moduleFile, moduleFile);
-        } catch (IOException e) {
-            throw new DeploymentUnitProcessingException(e);
-        }
-    }
-
     @Override
     public void undeploy(final DeploymentUnit context) {
-
     }
+
 }
