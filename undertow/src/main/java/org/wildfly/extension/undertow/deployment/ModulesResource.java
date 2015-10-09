@@ -21,6 +21,8 @@
  */
 package org.wildfly.extension.undertow.deployment;
 
+import static org.jboss.as.server.loaders.Utils.getResourceName;
+
 import io.undertow.UndertowLogger;
 import io.undertow.io.IoCallback;
 import io.undertow.io.Sender;
@@ -29,36 +31,46 @@ import io.undertow.server.handlers.resource.Resource;
 import io.undertow.util.DateUtils;
 import io.undertow.util.ETag;
 import io.undertow.util.MimeMappings;
-import org.jboss.vfs.VirtualFile;
-import org.xnio.FileAccess;
+import org.jboss.as.server.loaders.ResourceLoader;
 import org.xnio.IoUtils;
 import org.xnio.Pooled;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
+import java.nio.channels.Channels;
+import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.List;
 
 /**
  * @author Stuart Douglas
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
-public class VirtualFileResource implements Resource {
+public class ModulesResource implements Resource {
 
-    private final File resourceManagerRoot;
-    private final VirtualFile file;
+    static final String OVERLAY_PREFIX = "META-INF/resources/";
+
+    private final ResourceLoader loader;
+    private final org.jboss.modules.Resource res;
+    private final File resFile;
+    private final File loaderFile;
     private final String path;
+    private final boolean isOverlay;
 
-    public VirtualFileResource(File resourceManagerRoot, final VirtualFile file, String path) {
-        this.resourceManagerRoot = resourceManagerRoot;
-        this.file = file;
+    public ModulesResource(final ResourceLoader loader, final org.jboss.modules.Resource res, final String path, final boolean isOverlay) {
+        this.loader = loader;
+        this.res = res;
+        this.resFile = res != null ? new File(res.getURL().getFile()) : null;
+        this.loaderFile = new File(loader.getRootURL().getFile());
         this.path = path;
+        this.isOverlay = isOverlay;
     }
 
     @Override
@@ -68,7 +80,7 @@ public class VirtualFileResource implements Resource {
 
     @Override
     public Date getLastModified() {
-        return new Date(file.getLastModified());
+        return resFile != null ? new Date(resFile.lastModified()) : null;
     }
 
     @Override
@@ -87,26 +99,35 @@ public class VirtualFileResource implements Resource {
 
     @Override
     public String getName() {
-        return file.getName();
+        if (path == null || path.equals("") || path.equals("/")) return path;
+        return getResourceName(path);
     }
 
     @Override
     public boolean isDirectory() {
-        return file.isDirectory();
+        return res == null;
     }
 
     @Override
     public List<Resource> list() {
-        final List<Resource> resources = new ArrayList<Resource>();
-        for (VirtualFile child : file.getChildren()) {
-            resources.add(new VirtualFileResource(resourceManagerRoot, child, path));
+        if (res != null) return Collections.emptyList();
+        final List<Resource> resources = new ArrayList<>();
+        final String prefix = isOverlay ? OVERLAY_PREFIX : "";
+        final Iterator<org.jboss.modules.Resource> children = loader.iterateResources(prefix + path, false);
+        org.jboss.modules.Resource child;
+        String childPath;
+        while (children.hasNext()) {
+            child = children.next();
+            childPath = isOverlay ? child.getName().substring(OVERLAY_PREFIX.length()) : child.getName();
+            resources.add(new ModulesResource(loader, child, childPath, isOverlay));
         }
         return resources;
     }
 
     @Override
     public String getContentType(final MimeMappings mimeMappings) {
-        final String fileName = file.getName();
+        if (res == null) return null;
+        final String fileName = getResourceName(path);
         int index = fileName.lastIndexOf('.');
         if (index != -1 && index != fileName.length() - 1) {
             return mimeMappings.getMimeType(fileName.substring(index + 1));
@@ -117,11 +138,11 @@ public class VirtualFileResource implements Resource {
     @Override
     public void serve(final Sender sender, final HttpServerExchange exchange, final IoCallback callback) {
         abstract class BaseFileTask implements Runnable {
-            protected volatile FileChannel fileChannel;
+            protected volatile ReadableByteChannel readChannel;
 
-            protected boolean openFile() {
+            protected boolean openChannel() {
                 try {
-                    fileChannel = exchange.getConnection().getWorker().getXnio().openFile(file.getPhysicalFile(), FileAccess.READ_ONLY);
+                    readChannel = Channels.newChannel(res.openStream());
                 } catch (FileNotFoundException e) {
                     exchange.setResponseCode(404);
                     callback.onException(exchange, sender, e);
@@ -141,8 +162,8 @@ public class VirtualFileResource implements Resource {
 
             @Override
             public void run() {
-                if (fileChannel == null) {
-                    if (!openFile()) {
+                if (readChannel == null) {
+                    if (!openChannel()) {
                         return;
                     }
                     pooled = exchange.getConnection().getBufferPool().allocate();
@@ -151,11 +172,11 @@ public class VirtualFileResource implements Resource {
                     ByteBuffer buffer = pooled.getResource();
                     try {
                         buffer.clear();
-                        int res = fileChannel.read(buffer);
+                        int res = readChannel.read(buffer);
                         if (res == -1) {
                             //we are done
                             pooled.free();
-                            IoUtils.safeClose(fileChannel);
+                            IoUtils.safeClose(readChannel);
                             callback.onComplete(exchange, sender);
                             return;
                         }
@@ -184,7 +205,7 @@ public class VirtualFileResource implements Resource {
                     pooled.free();
                     pooled = null;
                 }
-                IoUtils.safeClose(fileChannel);
+                IoUtils.safeClose(readChannel);
                 if (!exchange.isResponseStarted()) {
                     exchange.setResponseCode(500);
                 }
@@ -192,36 +213,7 @@ public class VirtualFileResource implements Resource {
             }
         }
 
-        class TransferTask extends BaseFileTask {
-            @Override
-            public void run() {
-                if (!openFile()) {
-                    return;
-                }
-
-                sender.transferFrom(fileChannel, new IoCallback() {
-                    @Override
-                    public void onComplete(HttpServerExchange exchange, Sender sender) {
-                        try {
-                            IoUtils.safeClose(fileChannel);
-                        } finally {
-                            callback.onComplete(exchange, sender);
-                        }
-                    }
-
-                    @Override
-                    public void onException(HttpServerExchange exchange, Sender sender, IOException exception) {
-                        try {
-                            IoUtils.safeClose(fileChannel);
-                        } finally {
-                            callback.onException(exchange, sender, exception);
-                        }
-                    }
-                });
-            }
-        }
-
-        BaseFileTask task = new TransferTask();
+        BaseFileTask task = new ServerTask();
         if (exchange.isInIoThread()) {
             exchange.dispatch(task);
         } else {
@@ -231,38 +223,32 @@ public class VirtualFileResource implements Resource {
 
     @Override
     public Long getContentLength() {
-        return file.getSize();
+        return res.getSize();
     }
 
     @Override
     public String getCacheKey() {
-        return file.toString();
+        return path;
     }
 
     @Override
     public File getFile() {
-        try {
-            return file.getPhysicalFile();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        return resFile;
     }
 
     @Override
     public File getResourceManagerRoot() {
-        return resourceManagerRoot;
+        return loaderFile;
     }
 
     @Override
     public URL getUrl() {
-        try {
-            return file.toURL();
-        } catch (MalformedURLException e) {
-            throw new RuntimeException(e);
-        }
+        return res != null ? res.getURL() : null;
     }
 
     public Path getResourceManagerRootPath() {
+        File rootPath = getResourceManagerRoot();
+        if (rootPath == null) return null;
         return getResourceManagerRoot().toPath();
     }
 

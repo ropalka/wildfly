@@ -285,7 +285,7 @@ public class BeanArchiveProcessor implements DeploymentUnitProcessor {
                     beansXml = metadata.getBeansXml();
                 }
 
-                bda = new BeanDeploymentArchiveImpl(beans, beansXml, module, resourceRoot.getRoot().getPathName(), BeanArchiveType.IMPLICIT, isRootBda);
+                bda = new BeanDeploymentArchiveImpl(beans, beansXml, module, resourceRoot.getLoader().getPath(), BeanArchiveType.IMPLICIT, isRootBda);
                 WeldLogger.DEPLOYMENT_LOGGER.beanArchiveDiscovered(bda);
             } else if (metadata.getBeansXml().getBeanDiscoveryMode().equals(BeanDiscoveryMode.NONE)) {
                 // scanning suppressed per spec in this archive

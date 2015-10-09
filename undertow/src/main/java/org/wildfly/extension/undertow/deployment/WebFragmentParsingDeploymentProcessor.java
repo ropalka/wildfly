@@ -73,7 +73,7 @@ public class WebFragmentParsingDeploymentProcessor implements DeploymentUnitProc
         }
         List<ResourceRoot> resourceRoots = deploymentUnit.getAttachmentList(Attachments.RESOURCE_ROOTS);
         for (ResourceRoot resourceRoot : resourceRoots) {
-            if (resourceRoot.getRoot().getName().toLowerCase(Locale.ENGLISH).endsWith(JAR_EXTENSION)) {
+            if (resourceRoot.getLoader().getRootName().toLowerCase(Locale.ENGLISH).endsWith(JAR_EXTENSION)) {
                 Resource webFragment = resourceRoot.getLoader().getResource(WEB_FRAGMENT_XML);
                 if (webFragment != null) {
                     InputStream is = null;

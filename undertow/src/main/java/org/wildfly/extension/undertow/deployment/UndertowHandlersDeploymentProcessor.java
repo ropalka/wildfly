@@ -36,7 +36,7 @@ import org.jboss.metadata.web.jboss.HttpHandlerMetaData;
 import org.jboss.metadata.web.jboss.JBossWebMetaData;
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleIdentifier;
-import org.jboss.vfs.VirtualFile;
+import org.jboss.modules.Resource;
 import org.wildfly.extension.undertow.logging.UndertowLogger;
 
 import java.io.IOException;
@@ -51,6 +51,7 @@ import java.util.Map;
  * DUP that handles undertow-handlers.conf, and handlers definded in jboss-web.xml
  *
  * @author Stuart Douglas
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public class UndertowHandlersDeploymentProcessor implements DeploymentUnitProcessor {
 
@@ -111,9 +112,9 @@ public class UndertowHandlersDeploymentProcessor implements DeploymentUnitProces
         ClassLoader oldCl = Thread.currentThread().getContextClassLoader();
         try {
             ResourceRoot root = deploymentUnit.getAttachment(Attachments.DEPLOYMENT_ROOT);
-            VirtualFile config = root.getRoot().getChild(WEB_INF);
+            Resource config = root.getLoader().getResource(WEB_INF);
             try {
-                if (config.exists()) {
+                if (config != null) {
                     handlerWrappers.addAll(PredicatedHandlersParser.parse(config.openStream(), module.getClassLoader()));
                 }
                 Enumeration<URL> paths = module.getClassLoader().getResources(META_INF);

@@ -40,6 +40,7 @@ import org.jboss.as.server.deployment.DeploymentUnit;
 import org.jboss.as.server.deployment.Services;
 import org.jboss.as.server.deployment.SubDeploymentMarker;
 import org.jboss.as.server.deployment.module.ResourceRoot;
+import org.jboss.as.server.loaders.ResourceLoader;
 import org.jboss.dmr.ModelNode;
 import org.jboss.msc.inject.Injector;
 import org.jboss.msc.service.Service;
@@ -60,6 +61,7 @@ import static org.jboss.as.controller.descriptions.ModelDescriptionConstants.DEP
 
 /**
  * @author John Bailey
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public class EEJndiViewExtension implements JndiViewExtension, Service<Void> {
     static final ServiceName SERVICE_NAME = ServiceName.JBOSS.append("jndi-view", "extension", "ee");
@@ -107,9 +109,8 @@ public class EEJndiViewExtension implements JndiViewExtension, Service<Void> {
                 if (DeploymentTypeMarker.isType(DeploymentType.EAR, deploymentUnit)) {
                     final List<ResourceRoot> roots = deploymentUnit.getAttachmentList(org.jboss.as.server.deployment.Attachments.RESOURCE_ROOTS);
                     if(roots != null) for(ResourceRoot root : roots) {
-                        if(SubDeploymentMarker.isSubDeployment(root)) {
-                            final ResourceRoot parentRoot = deploymentUnit.getAttachment(org.jboss.as.server.deployment.Attachments.DEPLOYMENT_ROOT);
-                            final String relativePath = root.getRoot().getPathNameRelativeTo(parentRoot.getRoot());
+                        if (SubDeploymentMarker.isSubDeployment(root)) {
+                            final String relativePath = getLoaderPath(root.getLoader());
                             final ServiceName subDeploymentServiceName = Services.deploymentUnitName(deploymentUnit.getName(), relativePath);
                             final ServiceController<?> subDeploymentController = serviceRegistry.getService(subDeploymentServiceName);
                             if(subDeploymentController != null) {
@@ -124,6 +125,21 @@ public class EEJndiViewExtension implements JndiViewExtension, Service<Void> {
             }
         }
     }
+
+    private static String getLoaderPath(final ResourceLoader loader) {
+        if (loader == null) return null;
+        ResourceLoader currentLoader = loader;
+        ResourceLoader parentLoader;
+        String fullPath = currentLoader.getPath();
+        while (currentLoader != null) {
+            parentLoader = currentLoader.getParent();
+            if (parentLoader == null || parentLoader.getPath() == null || parentLoader.getPath().equals("")) break;
+            fullPath = parentLoader.getPath() + "/" + fullPath;
+            currentLoader = parentLoader;
+        }
+        return fullPath;
+    }
+
 
     private void handleModule(final JndiViewExtensionContext context, final DeploymentUnit deploymentUnit, final ModelNode modulesNode, final ServiceRegistry serviceRegistry) throws OperationFailedException {
         final EEModuleDescription moduleDescription = deploymentUnit.getAttachment(org.jboss.as.ee.component.Attachments.EE_MODULE_DESCRIPTION);

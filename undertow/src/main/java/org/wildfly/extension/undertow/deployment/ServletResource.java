@@ -32,6 +32,7 @@ import io.undertow.util.MimeMappings;
 import java.io.File;
 import java.net.URL;
 import java.nio.file.Path;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
@@ -40,6 +41,7 @@ import java.util.List;
  * Resource implementation that wraps an underlying resource, and overrides the list() method to take overlays into account.
  *
  * @author Stuart Douglas
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public class ServletResource implements Resource, RangeAwareResource {
 
@@ -83,7 +85,7 @@ public class ServletResource implements Resource, RangeAwareResource {
 
     @Override
     public List<Resource> list() {
-        return resourceManager.list(getPath());
+        return underlying.isDirectory() ? resourceManager.list(getPath()) : Collections.emptyList();
     }
 
     @Override

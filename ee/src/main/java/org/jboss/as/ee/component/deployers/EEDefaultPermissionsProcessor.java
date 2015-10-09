@@ -24,7 +24,6 @@ package org.jboss.as.ee.component.deployers;
 
 import java.io.File;
 import java.io.FilePermission;
-import java.io.IOException;
 import java.security.Permission;
 import java.security.Permissions;
 import java.util.Enumeration;
@@ -45,6 +44,7 @@ import org.jboss.modules.security.PermissionFactory;
  * A processor which sets up the default Java EE permission set.
  *
  * @author <a href="mailto:david.lloyd@redhat.com">David M. Lloyd</a>
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public final class EEDefaultPermissionsProcessor implements DeploymentUnitProcessor {
     private static final Permissions DEFAULT_PERMISSIONS;
@@ -80,16 +80,11 @@ public final class EEDefaultPermissionsProcessor implements DeploymentUnitProces
 
         //make sure they can read the contents of the deployment
         ResourceRoot root = deploymentUnit.getAttachment(Attachments.DEPLOYMENT_ROOT);
-        try {
-            File file = root.getRoot().getPhysicalFile();
-            if(file != null && file.isDirectory()) {
-                FilePermission permission = new FilePermission(file.getAbsolutePath() + File.separatorChar + "-", "read");
-                permissions.add(new ImmediatePermissionFactory(permission));
-            }
-        } catch (IOException ex) {
-            throw new DeploymentUnitProcessingException(ex);
+        final File file = root.getLoader().getRoot();
+        if (file != null && file.isDirectory()) {
+            FilePermission permission = new FilePermission(file.getAbsolutePath() + File.separatorChar + "-", "read");
+            permissions.add(new ImmediatePermissionFactory(permission));
         }
-
     }
 
     public void undeploy(final DeploymentUnit context) {

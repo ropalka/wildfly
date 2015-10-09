@@ -22,12 +22,15 @@
 
 package org.wildfly.extension.undertow.deployment;
 
-import java.io.Closeable;
+import static org.jboss.as.server.loaders.Utils.getChildArchives;
+import static org.jboss.as.server.loaders.Utils.getResourceName;
+
 import java.io.File;
 import java.io.FilePermission;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -53,11 +56,7 @@ import org.jboss.as.web.common.SharedTldsMetaDataBuilder;
 import org.jboss.as.web.common.WarMetaData;
 import org.jboss.modules.filter.PathFilters;
 import org.jboss.modules.security.ImmediatePermissionFactory;
-import org.jboss.vfs.VFS;
-import org.jboss.vfs.VirtualFile;
-import org.jboss.vfs.VirtualFileFilter;
-import org.jboss.vfs.VisitorAttributes;
-import org.jboss.vfs.SuffixMatchFilter;
+import org.jboss.modules.Resource;
 import org.wildfly.extension.undertow.logging.UndertowLogger;
 
 /**
@@ -70,13 +69,10 @@ import org.wildfly.extension.undertow.logging.UndertowLogger;
 public class WarStructureDeploymentProcessor implements DeploymentUnitProcessor {
 
     private static final String TEMP_DIR = "jboss.server.temp.dir";
-
-    public static final String WEB_INF_LIB = "WEB-INF/lib";
-    public static final String WEB_INF_CLASSES = "WEB-INF/classes";
-
+    private static final String WEB_INF_LIB = "WEB-INF/lib";
+    private static final String WEB_INF_CLASSES = "WEB-INF/classes";
     private static final String WEB_INF_EXTERNAL_MOUNTS = "WEB-INF/undertow-external-mounts.conf";
-
-    public static final VirtualFileFilter DEFAULT_WEB_INF_LIB_FILTER = new SuffixMatchFilter(".jar", VisitorAttributes.DEFAULT);
+    private static final String JAR_EXTENSION = ".jar";
 
     private final SharedTldsMetaDataBuilder sharedTldsMetaData;
 
@@ -92,11 +88,7 @@ public class WarStructureDeploymentProcessor implements DeploymentUnitProcessor 
         }
 
         final ResourceRoot deploymentResourceRoot = deploymentUnit.getAttachment(Attachments.DEPLOYMENT_ROOT);
-
-        final VirtualFile deploymentRoot = deploymentResourceRoot.getRoot();
-        if (deploymentRoot == null) {
-            return;
-        }
+        final ResourceLoader loader = deploymentResourceRoot.getLoader();
 
         // set the child first behaviour
         final ModuleSpecification moduleSpecification = deploymentUnit.getAttachment(Attachments.MODULE_SPECIFICATION);
@@ -109,7 +101,7 @@ public class WarStructureDeploymentProcessor implements DeploymentUnitProcessor 
         PrivateSubDeploymentMarker.mark(deploymentUnit);
 
         // OSGi WebApp deployments (WAB) may use the deployment root if they don't use WEB-INF/classes already
-        if (!deploymentUnit.hasAttachment(Attachments.OSGI_MANIFEST) || deploymentRoot.getChild(WEB_INF_CLASSES).exists()) {
+        if (!deploymentUnit.hasAttachment(Attachments.OSGI_MANIFEST) || loader.getPaths().contains(WEB_INF_CLASSES)) {
             // we do not want to index the resource root, only WEB-INF/classes and WEB-INF/lib
             deploymentResourceRoot.putAttachment(Attachments.INDEX_RESOURCE_ROOT, false);
 
@@ -155,12 +147,12 @@ public class WarStructureDeploymentProcessor implements DeploymentUnitProcessor 
         tldsMetaData.setSharedTlds(sharedTldsMetaData);
         deploymentUnit.putAttachment(TldsMetaData.ATTACHMENT_KEY, tldsMetaData);
 
-        processExternalMounts(deploymentUnit, deploymentRoot);
+        processExternalMounts(deploymentUnit, loader);
     }
 
-    private void processExternalMounts(DeploymentUnit deploymentUnit, VirtualFile deploymentRoot) throws DeploymentUnitProcessingException {
-        VirtualFile mounts = deploymentRoot.getChild(WEB_INF_EXTERNAL_MOUNTS);
-        if(!mounts.exists()) {
+    private void processExternalMounts(final DeploymentUnit deploymentUnit, final ResourceLoader loader) throws DeploymentUnitProcessingException {
+        Resource mounts = loader.getResource(WEB_INF_EXTERNAL_MOUNTS);
+        if (mounts == null) {
             return;
         }
         try (InputStream data = mounts.openStream()) {
@@ -201,39 +193,26 @@ public class WarStructureDeploymentProcessor implements DeploymentUnitProcessor 
      * @throws java.io.IOException for any error
      */
     private List<ResourceRoot> createResourceRoots(final ResourceRoot resourceRoot, final DeploymentUnit deploymentUnit) throws IOException, DeploymentUnitProcessingException {
-        final VirtualFile deploymentRoot = resourceRoot.getRoot();
-        final List<ResourceRoot> entries = new ArrayList<ResourceRoot>();
+        final ResourceLoader rootLoader = resourceRoot.getLoader();
+        final List<ResourceRoot> entries = new ArrayList<>();
         // WEB-INF classes
-        final VirtualFile webinfClasses = deploymentRoot.getChild(WEB_INF_CLASSES);
-        if (webinfClasses.exists()) {
-            final ResourceLoader loader = ResourceLoaders.newResourceLoader(webinfClasses.getName(), resourceRoot.getLoader(), WEB_INF_CLASSES);
-            final ResourceRoot webInfClassesRoot = new ResourceRoot(loader, webinfClasses.getName(), webinfClasses, null);
+        if (rootLoader.getPaths().contains(WEB_INF_CLASSES)) {
+            final ResourceLoader loader = ResourceLoaders.newResourceLoader(getResourceName(WEB_INF_CLASSES), resourceRoot.getLoader(), WEB_INF_CLASSES);
+            final ResourceRoot webInfClassesRoot = new ResourceRoot(loader, null, null, null);
             ModuleRootMarker.mark(webInfClassesRoot);
             entries.add(webInfClassesRoot);
         }
         // WEB-INF lib
         Map<String, MountedDeploymentOverlay> overlays = deploymentUnit.getAttachment(Attachments.DEPLOYMENT_OVERLAY_LOCATIONS);
-        final VirtualFile webinfLib = deploymentRoot.getChild(WEB_INF_LIB);
-        if (webinfLib.exists()) {
-            final List<VirtualFile> archives = webinfLib.getChildren(DEFAULT_WEB_INF_LIB_FILTER);
-            for (final VirtualFile archive : archives) {
+        if (rootLoader.getPaths().contains(WEB_INF_LIB)) {
+            final Collection<String> archives = getChildArchives(rootLoader, WEB_INF_LIB, false, JAR_EXTENSION);
+            for (final String archive : archives) {
                 try {
-
-                    String relativeName = archive.getPathNameRelativeTo(deploymentRoot);
-                    MountedDeploymentOverlay overlay = overlays.get(relativeName);
-                    Closeable closable = null;
+                    MountedDeploymentOverlay overlay = overlays.get(archive);
                     final ResourceLoader loader = overlay == null
-                            ? ResourceLoaders.newResourceLoader(archive.getName(), resourceRoot.getLoader(), relativeName)
-                            : ResourceLoaders.newResourceLoader(archive.getName(), overlay.getFile(), relativeName, resourceRoot.getLoader());
-                    if(overlay != null) {
-                        overlay.remountAsZip();
-                    } else if (archive.isFile()) {
-                        closable = VFS.mountZip(archive, archive);
-                    } else {
-                        closable = null;
-                    }
-
-                    final ResourceRoot webInfArchiveRoot = new ResourceRoot(loader, archive.getName(), archive, new MountHandle(closable));
+                            ? ResourceLoaders.newResourceLoader(getResourceName(archive), resourceRoot.getLoader(), archive)
+                            : ResourceLoaders.newResourceLoader(getResourceName(archive), overlay.getFile(), archive, resourceRoot.getLoader());
+                    final ResourceRoot webInfArchiveRoot = new ResourceRoot(loader, null, null, null);
                     ModuleRootMarker.mark(webInfArchiveRoot);
                     entries.add(webInfArchiveRoot);
                 } catch (IOException e) {
@@ -243,4 +222,5 @@ public class WarStructureDeploymentProcessor implements DeploymentUnitProcessor 
         }
         return entries;
     }
+
 }

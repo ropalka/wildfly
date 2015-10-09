@@ -45,6 +45,7 @@ import org.jboss.as.server.deployment.DeploymentUnit;
 import org.jboss.as.server.deployment.DeploymentUnitProcessingException;
 import org.jboss.as.server.deployment.DeploymentUnitProcessor;
 import org.jboss.as.server.deployment.module.ResourceRoot;
+import org.jboss.as.server.loaders.ResourceLoader;
 import org.jboss.as.web.common.WarMetaData;
 import org.jboss.metadata.ear.spec.EarMetaData;
 import org.jboss.metadata.javaee.spec.EmptyMetaData;
@@ -61,7 +62,7 @@ import org.jboss.metadata.web.spec.Web31MetaData;
 import org.jboss.metadata.web.spec.WebCommonMetaData;
 import org.jboss.metadata.web.spec.WebFragmentMetaData;
 import org.jboss.metadata.web.spec.WebMetaData;
-import org.jboss.vfs.VirtualFile;
+import org.jboss.modules.Resource;
 import org.wildfly.extension.undertow.logging.UndertowLogger;
 
 /**
@@ -69,8 +70,12 @@ import org.wildfly.extension.undertow.logging.UndertowLogger;
  *
  * @author Remy Maucherat
  * @author Thomas.Diesler@jboss.com
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public class WarMetaDataProcessor implements DeploymentUnitProcessor {
+
+    private static final String SERVLET_CONTAINER_INITIALIZER = "META-INF/services/javax.servlet.ServletContainerInitializer";
+    private static final String JAR_EXTENSION = ".jar";
 
     @Override
     public void deploy(DeploymentPhaseContext phaseContext) throws DeploymentUnitProcessingException {
@@ -100,26 +105,26 @@ public class WarMetaDataProcessor implements DeploymentUnitProcessor {
         LinkedList<String> order = new LinkedList<String>();
         List<WebOrdering> orderings = new ArrayList<WebOrdering>();
         HashSet<String> jarsSet = new HashSet<String>();
-        Set<VirtualFile> overlays = new HashSet<VirtualFile>();
-        Map<String, VirtualFile> scis = new HashMap<String, VirtualFile>();
+        Map<String, Resource> scis = new HashMap<>();
+        Set<ResourceLoader> overlays = new HashSet<>();
         boolean fragmentFound = false;
         Map<String, WebFragmentMetaData> webFragments = warMetaData.getWebFragmentsMetaData();
         List<ResourceRoot> resourceRoots = deploymentUnit.getAttachmentList(Attachments.RESOURCE_ROOTS);
         for (ResourceRoot resourceRoot : resourceRoots) {
-            if (resourceRoot.getRoot().getName().toLowerCase(Locale.ENGLISH).endsWith(".jar")) {
+            if (resourceRoot.getLoader().getRootName().toLowerCase(Locale.ENGLISH).endsWith(JAR_EXTENSION)) {
                 jarsSet.add(resourceRoot.getRootName());
                 // Find overlays
-                VirtualFile overlay = resourceRoot.getRoot().getChild("META-INF/resources");
-                if (overlay.exists()) {
-                    overlays.add(overlay);
+                if (resourceRoot.getLoader().getPaths().contains("META-INF/resources")) {
+                    overlays.add(resourceRoot.getLoader());
                 }
                 // Find ServletContainerInitializer services
-                VirtualFile sci = resourceRoot.getRoot().getChild("META-INF/services/javax.servlet.ServletContainerInitializer");
-                if (sci.exists()) {
+                Resource sci = resourceRoot.getLoader().getResource(SERVLET_CONTAINER_INITIALIZER);
+                if (sci != null) {
                     scis.put(resourceRoot.getRootName(), sci);
                 }
             }
         }
+        warMetaData.setScis(scis);
 
         if (!isComplete) {
             HashSet<String> jarsWithoutFragmentsSet = new HashSet<String>();
@@ -234,7 +239,6 @@ public class WarMetaDataProcessor implements DeploymentUnitProcessor {
 
         warMetaData.setOrder(order);
         warMetaData.setOverlays(overlays);
-        warMetaData.setScis(scis);
 
         Map<String, WebMetaData> annotationsMetaData = warMetaData.getAnnotationsMetaData();
 

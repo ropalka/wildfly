@@ -45,10 +45,10 @@ import org.jboss.logging.annotations.MessageLogger;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.StartException;
-import org.jboss.vfs.VirtualFile;
 
 /**
  * @author <a href="mailto:jperkins@redhat.com">James R. Perkins</a>
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 @MessageLogger(projectCode = "WFLYUT", length = 4)
 public interface UndertowLogger extends BasicLogger {
@@ -238,7 +238,7 @@ public interface UndertowLogger extends BasicLogger {
     String invalidRelativeOrderingConflict(String jar);
 
     @Message(id = 48, value = "Failed to process WEB-INF/lib: %s")
-    String failToProcessWebInfLib(VirtualFile xmlFile);
+    String failToProcessWebInfLib(String lib);
 
     @Message(id = 49, value = "Error loading SCI from module: %s")
     DeploymentUnitProcessingException errorLoadingSCIFromModule(ModuleIdentifier identifier, @Cause Exception e);

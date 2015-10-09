@@ -40,7 +40,7 @@ public class Utils {
     }
 
     public static boolean isClassesRoot(ResourceRoot resourceRoot) {
-        return "classes".equals(resourceRoot.getRootName());
+        return "classes".equals(resourceRoot.getLoader().getRootName());
     }
 
     /**

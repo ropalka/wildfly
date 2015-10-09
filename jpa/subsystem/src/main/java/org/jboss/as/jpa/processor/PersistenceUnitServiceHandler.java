@@ -25,7 +25,6 @@ package org.jboss.as.jpa.processor;
 import static org.jboss.as.jpa.messages.JpaLogger.ROOT_LOGGER;
 import static org.jboss.as.server.Services.addServerExecutorDependency;
 
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -115,9 +114,10 @@ import org.jipijapa.plugin.spi.TwoPhaseBootstrapCapable;
  * Handle the installation of the Persistence Unit service
  *
  * @author Scott Marlow
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public class PersistenceUnitServiceHandler {
-
+    private static final String JAR_EXTENSION = ".jar";
     private static final String ENTITYMANAGERFACTORY_JNDI_PROPERTY = "jboss.entity.manager.factory.jndi.name";
     private static final String ENTITYMANAGER_JNDI_PROPERTY = "jboss.entity.manager.jndi.name";
     public static final ServiceName BEANMANAGER_NAME = ServiceName.of("beanmanager");
@@ -185,7 +185,7 @@ public class PersistenceUnitServiceHandler {
             // look for persistence.xml in war files in the META-INF/persistence.xml directory
             List<ResourceRoot> resourceRoots = deploymentUnit.getAttachmentList(Attachments.RESOURCE_ROOTS);
             for (ResourceRoot resourceRoot : resourceRoots) {
-                if (resourceRoot.getRoot().getName().toLowerCase(Locale.ENGLISH).endsWith(".jar")) {
+                if (resourceRoot.getLoader().getRootName().toLowerCase(Locale.ENGLISH).endsWith(JAR_EXTENSION)) {
                     if ((holder = resourceRoot.getAttachment(PersistenceUnitMetadataHolder.PERSISTENCE_UNITS)) != null
                         && holder.getPersistenceUnits().size() > 0) {
 
@@ -770,12 +770,8 @@ public class PersistenceUnitServiceHandler {
             for (ResourceRoot root : DeploymentUtils.allResourceRoots(deploymentUnit)) {
                 final Index index = root.getAttachment(Attachments.ANNOTATION_INDEX);
                 if (index != null) {
-                    try {
-                        ROOT_LOGGER.tracef("adding '%s' to annotation index map", root.getRoot().toURL());
-                        annotationIndexes.put(root.getRoot().toURL(), index);
-                    } catch (MalformedURLException e) {
-                        throw new RuntimeException(e);
-                    }
+                    ROOT_LOGGER.tracef("adding '%s' to annotation index map", root.getLoader().getRootURL());
+                    annotationIndexes.put(root.getLoader().getRootURL(), index);
                 }
             }
             deploymentUnit = deploymentUnit.getParent(); // get annotation indexes for top level also

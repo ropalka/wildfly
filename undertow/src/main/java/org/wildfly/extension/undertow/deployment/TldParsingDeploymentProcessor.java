@@ -22,10 +22,13 @@
 
 package org.wildfly.extension.undertow.deployment;
 
+import static org.jboss.as.server.loaders.Utils.getResourceName;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -42,6 +45,7 @@ import org.jboss.as.server.deployment.DeploymentUnit;
 import org.jboss.as.server.deployment.DeploymentUnitProcessingException;
 import org.jboss.as.server.deployment.DeploymentUnitProcessor;
 import org.jboss.as.server.deployment.module.ResourceRoot;
+import org.jboss.as.server.loaders.ResourceLoader;
 import org.wildfly.extension.undertow.logging.UndertowLogger;
 import org.jboss.as.web.common.WarMetaData;
 import org.jboss.metadata.parser.jsp.TldMetaDataParser;
@@ -51,18 +55,21 @@ import org.jboss.metadata.web.spec.JspConfigMetaData;
 import org.jboss.metadata.web.spec.ListenerMetaData;
 import org.jboss.metadata.web.spec.TaglibMetaData;
 import org.jboss.metadata.web.spec.TldMetaData;
-import org.jboss.vfs.VirtualFile;
+import org.jboss.modules.Resource;
 
 /**
  * @author Remy Maucherat
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public class TldParsingDeploymentProcessor implements DeploymentUnitProcessor {
 
+    private static final String JAR_EXTENSION = ".jar";
     private static final String TLD = ".tld";
     private static final String META_INF = "META-INF";
+    private static final String ROOT = "";
     private static final String WEB_INF = "WEB-INF";
-    private static final String CLASSES = "classes";
-    private static final String LIB = "lib";
+    private static final String WEB_INF_CLASSES = "WEB-INF/classes";
+    private static final String WEB_INF_LIB = "WEB-INF/lib";
     private static final String IMPLICIT_TLD = "implicit.tld";
 
     @Override
@@ -76,99 +83,49 @@ public class TldParsingDeploymentProcessor implements DeploymentUnitProcessor {
             return;
         }
 
-
         TldsMetaData tldsMetaData = deploymentUnit.getAttachment(TldsMetaData.ATTACHMENT_KEY);
         if (tldsMetaData == null) {
             tldsMetaData = new TldsMetaData();
             deploymentUnit.putAttachment(TldsMetaData.ATTACHMENT_KEY, tldsMetaData);
         }
-        Map<String, TldMetaData> tlds = new HashMap<String, TldMetaData>();
-        tldsMetaData.setTlds(tlds);
+
         final List<TldMetaData> uniqueTlds = new ArrayList<>();
+        final Map<String, TldMetaData> tlds = new HashMap<>();
+        tldsMetaData.setTlds(tlds);
 
-        final VirtualFile deploymentRoot = deploymentUnit.getAttachment(Attachments.DEPLOYMENT_ROOT).getRoot();
-        final List<VirtualFile> testRoots = new ArrayList<VirtualFile>();
-        testRoots.add(deploymentRoot);
-        testRoots.add(deploymentRoot.getChild(WEB_INF));
-        testRoots.add(deploymentRoot.getChild(META_INF));
-        for (ResourceRoot root : deploymentUnit.getAttachmentList(Attachments.RESOURCE_ROOTS)) {
-            testRoots.add(root.getRoot());
-            testRoots.add(root.getRoot().getChild(META_INF));
-        }
+        final ResourceLoader deploymentLoader = deploymentUnit.getAttachment(Attachments.DEPLOYMENT_ROOT).getLoader();
+        final List<ResourceRoot> resourceRoots = deploymentUnit.getAttachmentList(Attachments.RESOURCE_ROOTS);
+        final JspConfigMetaData merged = warMetaData.getMergedJBossWebMetaData().getJspConfig();
 
-        JspConfigMetaData merged = warMetaData.getMergedJBossWebMetaData().getJspConfig();
         if (merged != null && merged.getTaglibs() != null) {
             for (final TaglibMetaData tld : merged.getTaglibs()) {
-                boolean found = false;
-                for (final VirtualFile root : testRoots) {
-                    VirtualFile child = root.getChild(tld.getTaglibLocation());
-                    if (child.exists()) {
-                        String pathNameRelativeToRoot;
-                        try {
-                            pathNameRelativeToRoot = child.getPathNameRelativeTo(deploymentRoot);
-                        } catch (IllegalArgumentException e) {
-                            throw new DeploymentUnitProcessingException(UndertowLogger.ROOT_LOGGER.tldFileNotContainedInRoot(child.getPathName(),
-                                    deploymentRoot.getPathName()), e);
-                        }
-                        final TldMetaData value = parseTLD(child);
-                        value.setUri(tld.getTaglibUri());
-                        uniqueTlds.add(value);
-                        String key = "/" + pathNameRelativeToRoot;
-                        if (!tlds.containsKey(key)) {
-                            tlds.put(key, value);
-                        }
-                        if (!tlds.containsKey(tld.getTaglibUri())) {
-                            tlds.put(tld.getTaglibUri(), value);
-                        }
-                        found = true;
-                        break;
+                boolean found = findTld(tld, deploymentLoader, tlds, uniqueTlds, ROOT, WEB_INF, META_INF);
+                if (!found) {
+                    for (final ResourceRoot subResource : resourceRoots) {
+                        found = findTld(tld, subResource.getLoader(), tlds, uniqueTlds, ROOT, META_INF);
+                        if (found) break;
                     }
                 }
                 if (!found) {
                     UndertowLogger.ROOT_LOGGER.tldNotFound(tld.getTaglibLocation());
                 }
-
             }
         }
 
         // TLDs are located in WEB-INF or any subdir (except the top level "classes" and "lib")
         // and in JARs from WEB-INF/lib, in META-INF or any subdir
-        List<ResourceRoot> resourceRoots = deploymentUnit.getAttachmentList(Attachments.RESOURCE_ROOTS);
-        for (ResourceRoot resourceRoot : resourceRoots) {
-            if (resourceRoot.getRoot().getName().toLowerCase(Locale.ENGLISH).endsWith(".jar")) {
-                VirtualFile webFragment = resourceRoot.getRoot().getChild(META_INF);
-                if (webFragment.exists() && webFragment.isDirectory()) {
-                    processTlds(deploymentRoot, webFragment.getChildren(), tlds, uniqueTlds);
-                }
-            }
-        }
-        VirtualFile webInf = deploymentRoot.getChild(WEB_INF);
-        if (webInf.exists() && webInf.isDirectory()) {
-            for (VirtualFile file : webInf.getChildren()) {
-                if (file.isFile() && file.getName().toLowerCase(Locale.ENGLISH).endsWith(TLD)) {
-                    String pathNameRelativeToRoot;
-                    try {
-                        pathNameRelativeToRoot = file.getPathNameRelativeTo(deploymentRoot);
-                    } catch (IllegalArgumentException e) {
-                        throw new DeploymentUnitProcessingException(UndertowLogger.ROOT_LOGGER.tldFileNotContainedInRoot(file.getPathName(),
-                                deploymentRoot.getPathName()), e);
-                    }
-
-                    final TldMetaData value = parseTLD(file);
-                    uniqueTlds.add(value);
-                    String key = "/" + pathNameRelativeToRoot;
-                    if (!tlds.containsKey(key)) {
-                        tlds.put(key, value);
-                    }
-                } else if (file.isDirectory() && !CLASSES.equals(file.getName()) && !LIB.equals(file.getName())) {
-                    processTlds(deploymentRoot, file.getChildren(), tlds, uniqueTlds);
-                }
+        processTlds(deploymentLoader, WEB_INF, tlds, uniqueTlds, WEB_INF_CLASSES, WEB_INF_LIB);
+        ResourceLoader loader;
+        for (final ResourceRoot resourceRoot : resourceRoots) {
+            loader = resourceRoot.getLoader();
+            if (loader.getRootName().toLowerCase(Locale.ENGLISH).endsWith(JAR_EXTENSION)) {
+                processTlds(loader, META_INF, tlds, uniqueTlds);
             }
         }
 
         JBossWebMetaData mergedMd = warMetaData.getMergedJBossWebMetaData();
         if (mergedMd.getListeners() == null) {
-            mergedMd.setListeners(new ArrayList<ListenerMetaData>());
+            mergedMd.setListeners(new ArrayList<>());
         }
 
         final ArrayList<TldMetaData> allTlds = new ArrayList<>(uniqueTlds);
@@ -189,30 +146,68 @@ public class TldParsingDeploymentProcessor implements DeploymentUnitProcessor {
     public void undeploy(final DeploymentUnit context) {
     }
 
-    private void processTlds(VirtualFile root, List<VirtualFile> files, Map<String, TldMetaData> tlds, final List<TldMetaData> uniqueTlds)
-            throws DeploymentUnitProcessingException {
-        for (VirtualFile file : files) {
-            if (file.isFile() && file.getName().toLowerCase(Locale.ENGLISH).endsWith(TLD)) {
-                String pathNameRelativeToRoot;
-                try {
-                    pathNameRelativeToRoot = file.getPathNameRelativeTo(root);
-                } catch (IllegalArgumentException e) {
-                    throw new DeploymentUnitProcessingException(UndertowLogger.ROOT_LOGGER.tldFileNotContainedInRoot(file.getPathName(),
-                            root.getPathName()), e);
+    private boolean findTld(final TaglibMetaData tld, final ResourceLoader loader, final Map<String, TldMetaData> tlds, final List<TldMetaData> uniqueTlds, final String... paths) throws DeploymentUnitProcessingException {
+        boolean found = false;
+        Resource resource;
+        ResourceLoader parentLoader;
+        for (final String path : paths) {
+            resource = loader.getResource(path + "/" + tld.getTaglibLocation());
+            if (resource != null) {
+                final TldMetaData value = parseTLD(resource);
+                value.setUri(tld.getTaglibUri());
+                String key = "/" + loader.getRootName() + "/" + resource.getName();
+                parentLoader = loader.getParent();
+                while (parentLoader != null) {
+                    key = "/" + parentLoader.getRootName() + key;
+                    parentLoader = parentLoader.getParent();
                 }
-                final TldMetaData value = parseTLD(file);
-                String key = "/" + pathNameRelativeToRoot;
                 uniqueTlds.add(value);
                 if (!tlds.containsKey(key)) {
                     tlds.put(key, value);
                 }
-            } else if (file.isDirectory()) {
-                processTlds(root, file.getChildren(), tlds, uniqueTlds);
+                if (!tlds.containsKey(tld.getTaglibUri())) {
+                    tlds.put(tld.getTaglibUri(), value);
+                }
+                found = true;
+                break;
+            }
+        }
+        return found;
+    }
+
+    private void processTlds(final ResourceLoader loader, final String path, final Map<String, TldMetaData> tlds, final List<TldMetaData> uniqueTlds, final String... blackList) throws DeploymentUnitProcessingException {
+        final Iterator<Resource> candidates = loader.iterateResources(path, true);
+        Resource candidate;
+        boolean blacklisted;
+        ResourceLoader parentLoader;
+        while (candidates.hasNext()) {
+            candidate = candidates.next();
+            if (!getResourceName(candidate.getName()).toLowerCase(Locale.ENGLISH).endsWith(TLD)) continue;
+            blacklisted = false;
+            if (blackList != null) {
+                for (final String forbidden : blackList) {
+                    if (candidate.getName().startsWith(forbidden)) {
+                        blacklisted = true;
+                        break;
+                    }
+                }
+            }
+            if (blacklisted) continue;
+            final TldMetaData value = parseTLD(candidate);
+            String key = "/" + loader.getRootName() + "/" + candidate.getName();
+            parentLoader = loader.getParent();
+            while (parentLoader != null) {
+                key = "/" + parentLoader.getRootName() + key;
+                parentLoader = parentLoader.getParent();
+            }
+            uniqueTlds.add(value);
+            if (!tlds.containsKey(key)) {
+                tlds.put(key, value);
             }
         }
     }
 
-    private TldMetaData parseTLD(VirtualFile tld)
+    private TldMetaData parseTLD(final Resource tld)
             throws DeploymentUnitProcessingException {
         if (IMPLICIT_TLD.equals(tld.getName())) {
             // Implicit TLDs are different from regular TLDs
@@ -226,10 +221,10 @@ public class TldParsingDeploymentProcessor implements DeploymentUnitProcessor {
             XMLStreamReader xmlReader = inputFactory.createXMLStreamReader(is);
             return TldMetaDataParser.parse(xmlReader);
         } catch (XMLStreamException e) {
-            throw new DeploymentUnitProcessingException(UndertowLogger.ROOT_LOGGER.failToParseXMLDescriptor(tld.toString(), e.getLocation().getLineNumber(),
+            throw new DeploymentUnitProcessingException(UndertowLogger.ROOT_LOGGER.failToParseXMLDescriptor(tld.getName(), e.getLocation().getLineNumber(),
                     e.getLocation().getColumnNumber()), e);
         } catch (IOException e) {
-            throw new DeploymentUnitProcessingException(UndertowLogger.ROOT_LOGGER.failToParseXMLDescriptor(tld.toString()), e);
+            throw new DeploymentUnitProcessingException(UndertowLogger.ROOT_LOGGER.failToParseXMLDescriptor(tld.getName()), e);
         } finally {
             try {
                 if (is != null) {

@@ -82,6 +82,7 @@ import org.jboss.as.server.deployment.SetupAction;
 import org.jboss.as.server.suspend.ServerActivity;
 import org.jboss.as.server.suspend.ServerActivityCallback;
 import org.jboss.as.server.suspend.SuspendController;
+import org.jboss.as.server.loaders.ResourceLoader;
 import org.jboss.as.version.Version;
 import org.jboss.as.web.common.ExpressionFactoryWrapper;
 import org.jboss.as.web.common.ServletContextAttribute;
@@ -133,7 +134,6 @@ import org.jboss.security.authorization.modules.JACCAuthorizationModule;
 import org.jboss.security.config.ApplicationPolicy;
 import org.jboss.security.config.AuthorizationInfo;
 import org.jboss.security.config.SecurityConfiguration;
-import org.jboss.vfs.VirtualFile;
 import org.wildfly.extension.requestcontroller.ControlPoint;
 import org.wildfly.extension.undertow.Host;
 import org.wildfly.extension.undertow.JSPConfig;
@@ -197,6 +197,7 @@ import org.jboss.security.authentication.JBossCachedAuthenticationManager;
  * Service that builds up the undertow metadata.
  *
  * @author Stuart Douglas
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public class UndertowDeploymentInfoService implements Service<DeploymentInfo> {
 
@@ -215,13 +216,13 @@ public class UndertowDeploymentInfoService implements Service<DeploymentInfo> {
     private final List<TldMetaData> sharedTlds;
     private final Module module;
     private final ScisMetaData scisMetaData;
-    private final VirtualFile deploymentRoot;
+    private final ResourceLoader loader;
     private final String jaccContextId;
     private final String securityDomain;
     private final List<ServletContextAttribute> attributes;
     private final String contextPath;
     private final List<SetupAction> setupActions;
-    private final Set<VirtualFile> overlays;
+    private final Set<ResourceLoader> overlays;
     private final List<ExpressionFactoryWrapper> expressionFactoryWrappers;
     private final List<PredicatedHandler> predicatedHandlers;
     private final List<HandlerWrapper> initialHandlerChainWrappers;
@@ -247,14 +248,14 @@ public class UndertowDeploymentInfoService implements Service<DeploymentInfo> {
     private final File tempDir;
     private final List<File> externalResources;
 
-    private UndertowDeploymentInfoService(final JBossWebMetaData mergedMetaData, final String deploymentName, final TldsMetaData tldsMetaData, final List<TldMetaData> sharedTlds, final Module module, final ScisMetaData scisMetaData, final VirtualFile deploymentRoot, final String jaccContextId, final String securityDomain, final List<ServletContextAttribute> attributes, final String contextPath, final List<SetupAction> setupActions, final Set<VirtualFile> overlays, final List<ExpressionFactoryWrapper> expressionFactoryWrappers, List<PredicatedHandler> predicatedHandlers, List<HandlerWrapper> initialHandlerChainWrappers, List<HandlerWrapper> innerHandlerChainWrappers, List<HandlerWrapper> outerHandlerChainWrappers, List<ThreadSetupAction> threadSetupActions, boolean explodedDeployment, List<ServletExtension> servletExtensions, SharedSessionManagerConfig sharedSessionManagerConfig, String topLevelDeploymentName, WebSocketDeploymentInfo webSocketDeploymentInfo, File tempDir, List<File> externalResources) {
+    private UndertowDeploymentInfoService(final JBossWebMetaData mergedMetaData, final String deploymentName, final TldsMetaData tldsMetaData, final List<TldMetaData> sharedTlds, final Module module, final ScisMetaData scisMetaData, final ResourceLoader loader, final String jaccContextId, final String securityDomain, final List<ServletContextAttribute> attributes, final String contextPath, final List<SetupAction> setupActions, final Set<ResourceLoader> overlays, final List<ExpressionFactoryWrapper> expressionFactoryWrappers, List<PredicatedHandler> predicatedHandlers, List<HandlerWrapper> initialHandlerChainWrappers, List<HandlerWrapper> innerHandlerChainWrappers, List<HandlerWrapper> outerHandlerChainWrappers, List<ThreadSetupAction> threadSetupActions, boolean explodedDeployment, List<ServletExtension> servletExtensions, SharedSessionManagerConfig sharedSessionManagerConfig, String topLevelDeploymentName, WebSocketDeploymentInfo webSocketDeploymentInfo, File tempDir, List<File> externalResources) {
         this.mergedMetaData = mergedMetaData;
         this.deploymentName = deploymentName;
         this.tldsMetaData = tldsMetaData;
         this.sharedTlds = sharedTlds;
         this.module = module;
         this.scisMetaData = scisMetaData;
-        this.deploymentRoot = deploymentRoot;
+        this.loader = loader;
         this.jaccContextId = jaccContextId;
         this.securityDomain = securityDomain;
         this.attributes = attributes;
@@ -577,7 +578,7 @@ public class UndertowDeploymentInfoService implements Service<DeploymentInfo> {
             final ServletContainerService servletContainer = container.getValue();
             try {
                 //TODO: make the caching limits configurable
-                ResourceManager resourceManager = new ServletResourceManager(deploymentRoot, overlays, explodedDeployment, mergedMetaData.isSymbolicLinkingEnabled());
+                ResourceManager resourceManager = new ServletResourceManager(loader, overlays);
 
                 resourceManager = new CachingResourceManager(100, 10 * 1024 * 1024, servletContainer.getBufferCache(), resourceManager, explodedDeployment ? 2000 : -1);
                 if(externalResources != null && !externalResources.isEmpty()) {
@@ -1482,13 +1483,13 @@ public class UndertowDeploymentInfoService implements Service<DeploymentInfo> {
         private List<TldMetaData> sharedTlds;
         private Module module;
         private ScisMetaData scisMetaData;
-        private VirtualFile deploymentRoot;
+        private ResourceLoader loader;
         private String jaccContextId;
         private List<ServletContextAttribute> attributes;
         private String contextPath;
         private String securityDomain;
         private List<SetupAction> setupActions;
-        private Set<VirtualFile> overlays;
+        private Set<ResourceLoader> overlays;
         private List<ExpressionFactoryWrapper> expressionFactoryWrappers;
         private List<PredicatedHandler> predicatedHandlers;
         private List<HandlerWrapper> initialHandlerChainWrappers;
@@ -1532,8 +1533,8 @@ public class UndertowDeploymentInfoService implements Service<DeploymentInfo> {
             return this;
         }
 
-        public Builder setDeploymentRoot(final VirtualFile deploymentRoot) {
-            this.deploymentRoot = deploymentRoot;
+        public Builder setLoader(final ResourceLoader loader) {
+            this.loader = loader;
             return this;
         }
 
@@ -1562,7 +1563,7 @@ public class UndertowDeploymentInfoService implements Service<DeploymentInfo> {
             return this;
         }
 
-        public Builder setOverlays(final Set<VirtualFile> overlays) {
+        public Builder setOverlays(final Set<ResourceLoader> overlays) {
             this.overlays = overlays;
             return this;
         }
@@ -1641,7 +1642,7 @@ public class UndertowDeploymentInfoService implements Service<DeploymentInfo> {
         }
 
         public UndertowDeploymentInfoService createUndertowDeploymentInfoService() {
-            return new UndertowDeploymentInfoService(mergedMetaData, deploymentName, tldsMetaData, sharedTlds, module, scisMetaData, deploymentRoot, jaccContextId, securityDomain, attributes, contextPath, setupActions, overlays, expressionFactoryWrappers, predicatedHandlers, initialHandlerChainWrappers, innerHandlerChainWrappers, outerHandlerChainWrappers, threadSetupActions, explodedDeployment, servletExtensions, sharedSessionManagerConfig, topLevelDeploymentName, webSocketDeploymentInfo, tempDir, externalResources);
+            return new UndertowDeploymentInfoService(mergedMetaData, deploymentName, tldsMetaData, sharedTlds, module, scisMetaData, loader, jaccContextId, securityDomain, attributes, contextPath, setupActions, overlays, expressionFactoryWrappers, predicatedHandlers, initialHandlerChainWrappers, innerHandlerChainWrappers, outerHandlerChainWrappers, threadSetupActions, explodedDeployment, servletExtensions, sharedSessionManagerConfig, topLevelDeploymentName, webSocketDeploymentInfo, tempDir, externalResources);
         }
     }
 

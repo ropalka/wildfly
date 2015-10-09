@@ -29,14 +29,16 @@ import java.util.Map;
 import java.util.Set;
 
 import org.jboss.as.server.deployment.AttachmentKey;
+import org.jboss.as.server.loaders.ResourceLoader;
 import org.jboss.metadata.web.jboss.JBossWebMetaData;
 import org.jboss.metadata.web.spec.WebFragmentMetaData;
 import org.jboss.metadata.web.spec.WebMetaData;
 import org.jboss.msc.service.ServiceName;
-import org.jboss.vfs.VirtualFile;
+import org.jboss.modules.Resource;
 
 /**
  * @author Remy Maucherat
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public class WarMetaData {
 
@@ -79,12 +81,12 @@ public class WarMetaData {
     /**
      * Overlays.
      */
-    private volatile Set<VirtualFile> overlays;
+    private volatile Set<ResourceLoader> overlays;
 
     /**
      * SCIs.
      */
-    private volatile Map<String, VirtualFile> scis;
+    private volatile Map<String, Resource> scis;
 
     /**
      * Final merged metadata.
@@ -144,19 +146,19 @@ public class WarMetaData {
         this.noOrder = noOrder;
     }
 
-    public Set<VirtualFile> getOverlays() {
+    public Set<ResourceLoader> getOverlays() {
         return overlays;
     }
 
-    public void setOverlays(Set<VirtualFile> overlays) {
+    public void setOverlays(Set<ResourceLoader> overlays) {
         this.overlays = overlays;
     }
 
-    public Map<String, VirtualFile> getScis() {
+    public Map<String, Resource> getScis() {
         return scis;
     }
 
-    public void setScis(Map<String, VirtualFile> scis) {
+    public void setScis(Map<String, Resource> scis) {
         this.scis = scis;
     }
 

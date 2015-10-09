@@ -22,6 +22,8 @@
 
 package org.jboss.as.jpa.processor;
 
+import static org.jboss.as.server.loaders.Utils.getResourceName;
+
 import org.jboss.as.ee.structure.DeploymentType;
 import org.jboss.as.ee.structure.DeploymentTypeMarker;
 import org.jboss.as.ee.structure.SpecDescriptorPropertyReplacement;
@@ -80,7 +82,7 @@ public class PersistenceUnitParseProcessor implements DeploymentUnitProcessor {
 
     private static final String WEB_PERSISTENCE_XML = "WEB-INF/classes/META-INF/persistence.xml";
     private static final String META_INF_PERSISTENCE_XML = "META-INF/persistence.xml";
-    private static final String JAR_FILE_EXTENSION = ".jar";
+    private static final String JAR_EXTENSION = ".jar";
 
     private final boolean appClientContainerMode;
 
@@ -151,7 +153,7 @@ public class PersistenceUnitParseProcessor implements DeploymentUnitProcessor {
             // handled as subdeployments)
             List<ResourceRoot> resourceRoots = deploymentUnit.getAttachmentList(Attachments.RESOURCE_ROOTS);
             for (ResourceRoot resourceRoot : resourceRoots) {
-                if (resourceRoot.getRoot().getName().toLowerCase(Locale.ENGLISH).endsWith(JAR_FILE_EXTENSION)) {
+                if (resourceRoot.getLoader().getRootName().toLowerCase(Locale.ENGLISH).endsWith(JAR_EXTENSION)) {
                     listPUHolders = new ArrayList<>(1);
                     loader = resourceRoot.getLoader();
                     persistence_xml = loader.getResource(META_INF_PERSISTENCE_XML);
@@ -192,9 +194,10 @@ public class PersistenceUnitParseProcessor implements DeploymentUnitProcessor {
             for (ResourceRoot resourceRoot : resourceRoots) {
                 // look at lib/*.jar files that aren't subdeployments (subdeployments are passed
                 // to deploy(DeploymentPhaseContext)).
+                String libJar = "lib/" + getResourceName(resourceRoot.getLoader().getPath());
                 if (!SubDeploymentMarker.isSubDeployment(resourceRoot) &&
-                    resourceRoot.getRoot().getName().toLowerCase(Locale.ENGLISH).endsWith(JAR_FILE_EXTENSION) &&
-                    resourceRoot.getRoot().getParent().getName().equals(LIB_FOLDER)) {
+                    resourceRoot.getLoader().getRootName().toLowerCase(Locale.ENGLISH).endsWith(JAR_EXTENSION) &&
+                    resourceRoot.getLoader().getPath().endsWith(libJar)) {
                     listPUHolders = new ArrayList<>(1);
                     loader = resourceRoot.getLoader();
                     persistence_xml = loader.getResource(META_INF_PERSISTENCE_XML);
@@ -357,12 +360,10 @@ public class PersistenceUnitParseProcessor implements DeploymentUnitProcessor {
 
         do {
             final ResourceRoot deploymentRoot = deploymentUnit.getAttachment(Attachments.DEPLOYMENT_ROOT);
-            DeploymentUnit parentdeploymentUnit = deploymentUnit.getParent();
-            if (parentdeploymentUnit != null) {
-                ResourceRoot parentDeploymentRoot = parentdeploymentUnit.getAttachment(Attachments.DEPLOYMENT_ROOT);
-                parts.add(0, deploymentRoot.getRoot().getPathNameRelativeTo(parentDeploymentRoot.getRoot()));
+            if (deploymentUnit.getParent() != null) {
+                parts.add(0, deploymentRoot.getLoader().getPath());
             } else {
-                parts.add(0, deploymentRoot.getRoot().getName());
+                parts.add(0, deploymentRoot.getLoader().getRootName());
             }
         }
         while ((deploymentUnit = deploymentUnit.getParent()) != null);

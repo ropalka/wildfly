@@ -59,7 +59,7 @@ import org.jboss.jandex.MethodInfo;
 import org.jboss.jandex.MethodParameterInfo;
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleLoadException;
-import org.jboss.vfs.VirtualFile;
+import org.jboss.modules.Resource;
 
 /**
  * SCI deployment processor.
@@ -121,10 +121,10 @@ public class ServletContainerInitializerDeploymentProcessor implements Deploymen
         }
         // Find local ServletContainerInitializer services
         List<String> order = warMetaData.getOrder();
-        Map<String, VirtualFile> localScis = warMetaData.getScis();
+        Map<String, Resource> localScis = warMetaData.getScis();
         if (order != null && localScis != null) {
             for (String jar : order) {
-                VirtualFile sci = localScis.get(jar);
+                Resource sci = localScis.get(jar);
                 if (sci != null) {
                     scis.addAll(loadSci(classLoader, sci, jar, true, sciClasses));
                 }
@@ -178,7 +178,7 @@ public class ServletContainerInitializerDeploymentProcessor implements Deploymen
         context.removeAttachment(ScisMetaData.ATTACHMENT_KEY);
     }
 
-    private List<ServletContainerInitializer> loadSci(ClassLoader classLoader, VirtualFile sci, String jar, boolean error, Set<Class<? extends ServletContainerInitializer>> sciClasses) throws DeploymentUnitProcessingException {
+    private List<ServletContainerInitializer> loadSci(ClassLoader classLoader, Resource sci, String jar, boolean error, Set<Class<? extends ServletContainerInitializer>> sciClasses) throws DeploymentUnitProcessingException {
         final List<ServletContainerInitializer> scis = new ArrayList<ServletContainerInitializer>();
         InputStream is = null;
         try {
