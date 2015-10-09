@@ -33,10 +33,12 @@ import org.jboss.as.server.deployment.DeploymentUnit;
 import org.jboss.as.server.deployment.DeploymentUnitProcessingException;
 import org.jboss.as.server.deployment.DeploymentUnitProcessor;
 import org.jboss.as.server.deployment.module.ResourceRoot;
-import org.jboss.vfs.VirtualFile;
+import org.jboss.as.server.loaders.ResourceLoader;
+import org.jboss.modules.Resource;
 
 /**
  * @author John Bailey
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public class DeploymentPropertiesProcessor implements DeploymentUnitProcessor {
     private static final String DEPLOYMENT_PROPERTIES = "META-INF/jboss.properties";
@@ -47,13 +49,13 @@ public class DeploymentPropertiesProcessor implements DeploymentUnitProcessor {
             return;
         }
         final ResourceRoot deploymentRoot = deploymentUnit.getAttachment(org.jboss.as.server.deployment.Attachments.DEPLOYMENT_ROOT);
-        final VirtualFile deploymentFile = deploymentRoot.getRoot();
-        final VirtualFile propertiesFile = deploymentFile.getChild(DEPLOYMENT_PROPERTIES);
-        if (!propertiesFile.exists()) {
+        final ResourceLoader loader = deploymentRoot.getLoader();
+        final Resource propertiesFile = loader.getResource(DEPLOYMENT_PROPERTIES);
+        if (propertiesFile == null) {
             return;
         }
 
-        Properties properties = new Properties();
+        final Properties properties = new Properties();
         InputStream propertyFileStream = null;
         try {
             propertyFileStream = propertiesFile.openStream();
@@ -67,10 +69,10 @@ public class DeploymentPropertiesProcessor implements DeploymentUnitProcessor {
         deploymentUnit.putAttachment(Attachments.DEPLOYMENT_PROPERTIES, properties);
     }
 
-    public void undeploy(DeploymentUnit context) {
+    public void undeploy(final DeploymentUnit context) {
     }
 
-    static void safeClose(final Closeable c) {
+    private static void safeClose(final Closeable c) {
         if (c != null) {
             try {
                 c.close();

@@ -22,12 +22,7 @@
 
 package org.jboss.as.ee.structure;
 
-import java.io.Closeable;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
 
 import javax.xml.namespace.QName;
 import javax.xml.stream.XMLInputFactory;
@@ -41,10 +36,9 @@ import org.jboss.as.server.deployment.DeploymentUnit;
 import org.jboss.as.server.deployment.DeploymentUnitProcessingException;
 import org.jboss.as.server.deployment.DeploymentUnitProcessor;
 import org.jboss.as.server.deployment.module.ResourceRoot;
-import org.jboss.as.server.moduleservice.ServiceModuleLoader;
 import org.jboss.metadata.property.PropertyReplacer;
 import org.jboss.staxmapper.XMLMapper;
-import org.jboss.vfs.VirtualFile;
+import org.jboss.modules.Resource;
 
 /**
  * A deployment unit processor which parses jboss-ejb-client.xml in top level deployments.
@@ -54,6 +48,7 @@ import org.jboss.vfs.VirtualFile;
  * @author Jaikiran Pai
  * @author <a href=mailto:tadamski@redhat.com>Tomasz Adamski</a>
  * @author <a href="mailto:wfink@redhat.com">Wolf-Dieter Fink</a>
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public class EJBClientDescriptorParsingProcessor implements DeploymentUnitProcessor {
 
@@ -65,24 +60,21 @@ public class EJBClientDescriptorParsingProcessor implements DeploymentUnitProces
     private static final QName ROOT_1_2 = new QName(EJBClientDescriptor12Parser.NAMESPACE_1_2, "jboss-ejb-client");
     private static final QName ROOT_1_3 = new QName(EJBClientDescriptor13Parser.NAMESPACE_1_3, "jboss-ejb-client");
     private static final QName ROOT_NO_NAMESPACE = new QName("jboss-ejb-client");
-
     private static final XMLInputFactory INPUT_FACTORY = XMLInputFactory.newInstance();
 
     @Override
     public void deploy(DeploymentPhaseContext phaseContext) throws DeploymentUnitProcessingException {
         final DeploymentUnit deploymentUnit = phaseContext.getDeploymentUnit();
-
+        final ResourceRoot resourceRoot = deploymentUnit.getAttachment(org.jboss.as.server.deployment.Attachments.DEPLOYMENT_ROOT);
+        if (deploymentUnit.getParent() != null) {
+            EeLogger.ROOT_LOGGER.subdeploymentIgnored(resourceRoot.getLoader().getPath());
+            return;
+        }
         final XMLMapper mapper = createMapper(deploymentUnit);
-
-        final ResourceRoot resourceRoot = deploymentUnit
-                .getAttachment(org.jboss.as.server.deployment.Attachments.DEPLOYMENT_ROOT);
-        final ServiceModuleLoader moduleLoader = deploymentUnit
-                .getAttachment(org.jboss.as.server.deployment.Attachments.SERVICE_MODULE_LOADER);
-
-        VirtualFile descriptorFile = null;
+        Resource descriptorFile = null;
         for (final String loc : EJB_CLIENT_DESCRIPTOR_LOCATIONS) {
-            final VirtualFile file = resourceRoot.getRoot().getChild(loc);
-            if (file.exists()) {
+            final Resource file = resourceRoot.getLoader().getResource(loc);
+            if (file != null) {
                 descriptorFile = file;
                 break;
             }
@@ -90,17 +82,7 @@ public class EJBClientDescriptorParsingProcessor implements DeploymentUnitProces
         if (descriptorFile == null) {
             return;
         }
-        if (deploymentUnit.getParent() != null) {
-            EeLogger.ROOT_LOGGER.subdeploymentIgnored(descriptorFile.getPathName());
-            return;
-        }
-        final File ejbClientDeploymentDescriptorFile;
-        try {
-            ejbClientDeploymentDescriptorFile = descriptorFile.getPhysicalFile();
-        } catch (IOException e) {
-            throw EeLogger.ROOT_LOGGER.failedToProcessEJBClientDescriptor(e);
-        }
-        final EJBClientDescriptorMetaData ejbClientDescriptorMetaData = parse(ejbClientDeploymentDescriptorFile, mapper);
+        final EJBClientDescriptorMetaData ejbClientDescriptorMetaData = parse(descriptorFile, mapper);
         EeLogger.ROOT_LOGGER.debugf("Successfully parsed jboss-ejb-client.xml for deployment unit %s", deploymentUnit);
         // attach the metadata
         deploymentUnit.putAttachment(Attachments.EJB_CLIENT_METADATA, ejbClientDescriptorMetaData);
@@ -126,27 +108,12 @@ public class EJBClientDescriptorParsingProcessor implements DeploymentUnitProces
         return mapper;
     }
 
-    private EJBClientDescriptorMetaData parse(final File file, final XMLMapper mapper) throws DeploymentUnitProcessingException {
-        final FileInputStream fis;
-        try {
-            fis = new FileInputStream(file);
-        } catch (FileNotFoundException e) {
-            throw EeLogger.ROOT_LOGGER.failedToProcessEJBClientDescriptor(e);
-        }
-        try {
-            return parse(fis, file, mapper);
-        } finally {
-            safeClose(fis);
-        }
-    }
-
-    private EJBClientDescriptorMetaData parse(final InputStream source, final File file, final XMLMapper mapper)
-            throws DeploymentUnitProcessingException {
+    private EJBClientDescriptorMetaData parse(final Resource res, final XMLMapper mapper) throws DeploymentUnitProcessingException {
         try {
             final XMLInputFactory inputFactory = INPUT_FACTORY;
             setIfSupported(inputFactory, XMLInputFactory.IS_VALIDATING, Boolean.FALSE);
             setIfSupported(inputFactory, XMLInputFactory.SUPPORT_DTD, Boolean.FALSE);
-            final XMLStreamReader streamReader = inputFactory.createXMLStreamReader(source);
+            final XMLStreamReader streamReader = inputFactory.createXMLStreamReader(res.openStream());
             try {
                 final EJBClientDescriptorMetaData result = new EJBClientDescriptorMetaData();
                 mapper.parseDocument(result, streamReader);
@@ -154,8 +121,10 @@ public class EJBClientDescriptorParsingProcessor implements DeploymentUnitProces
             } finally {
                 safeClose(streamReader);
             }
+        } catch (IOException e) {
+            throw EeLogger.ROOT_LOGGER.failedToProcessEJBClientDescriptor(e);
         } catch (XMLStreamException e) {
-            throw EeLogger.ROOT_LOGGER.xmlErrorParsingEJBClientDescriptor(e, file.getAbsolutePath());
+            throw EeLogger.ROOT_LOGGER.xmlErrorParsingEJBClientDescriptor(e, res.getName());
         }
     }
 
@@ -163,15 +132,6 @@ public class EJBClientDescriptorParsingProcessor implements DeploymentUnitProces
         if (inputFactory.isPropertySupported(property)) {
             inputFactory.setProperty(property, value);
         }
-    }
-
-    private static void safeClose(final Closeable closeable) {
-        if (closeable != null)
-            try {
-                closeable.close();
-            } catch (IOException e) {
-                // ignore
-            }
     }
 
     private static void safeClose(final XMLStreamReader streamReader) {
@@ -182,4 +142,5 @@ public class EJBClientDescriptorParsingProcessor implements DeploymentUnitProces
                 // ignore
             }
     }
+
 }

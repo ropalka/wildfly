@@ -33,7 +33,6 @@ import org.jboss.as.server.deployment.module.ModuleRootMarker;
 import org.jboss.as.server.deployment.module.ResourceRoot;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Index;
-import org.jboss.vfs.VirtualFile;
 
 /**
  * Processor that only runs for ear deployments where no application.xml is provided. It examines jars in the ear to determine
@@ -42,6 +41,7 @@ import org.jboss.vfs.VirtualFile;
  * TODO: Move this to the EJB subsystem.
  *
  * @author Stuart Douglas
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public class EjbJarDeploymentProcessor implements DeploymentUnitProcessor {
 
@@ -49,9 +49,11 @@ public class EjbJarDeploymentProcessor implements DeploymentUnitProcessor {
     private static final DotName STATEFUL = DotName.createSimple("javax.ejb.Stateful");
     private static final DotName MESSAGE_DRIVEN = DotName.createSimple("javax.ejb.MessageDriven");
     private static final DotName SINGLETON = DotName.createSimple("javax.ejb.Singleton");
+    private static final String EJB_JAR_XML = "META-INF/ejb-jar.xml";
+    private static final String APPLICATION_XML = "META-INF/application.xml";
 
     @Override
-    public void deploy(DeploymentPhaseContext phaseContext) throws DeploymentUnitProcessingException {
+    public void deploy(final DeploymentPhaseContext phaseContext) throws DeploymentUnitProcessingException {
         final DeploymentUnit deploymentUnit = phaseContext.getDeploymentUnit();
         final ResourceRoot deploymentRoot = deploymentUnit.getAttachment(org.jboss.as.server.deployment.Attachments.DEPLOYMENT_ROOT);
         if (!DeploymentTypeMarker.isType(DeploymentType.EAR, deploymentUnit)) {
@@ -59,40 +61,42 @@ public class EjbJarDeploymentProcessor implements DeploymentUnitProcessor {
         }
         //we don't check for the metadata attachment
         //cause this could come from a jboss-app.xml instead
-        if(deploymentRoot.getRoot().getChild("META-INF/application.xml").exists()) {
+        if (deploymentRoot.getLoader().getResource(APPLICATION_XML) != null) {
             //if we have an application.xml we don't scan
             return;
         }
         // TODO: deal with application clients, we need the manifest information
-        List<ResourceRoot> potentialSubDeployments = deploymentUnit.getAttachmentList(Attachments.RESOURCE_ROOTS);
-        for (ResourceRoot resourceRoot : potentialSubDeployments) {
+        final List<ResourceRoot> potentialSubDeployments = deploymentUnit.getAttachmentList(Attachments.RESOURCE_ROOTS);
+        for (final ResourceRoot resourceRoot : potentialSubDeployments) {
             if (ModuleRootMarker.isModuleRoot(resourceRoot)) {
                 // module roots cannot be ejb jars
                 continue;
             }
-            VirtualFile ejbJarFile = resourceRoot.getRoot().getChild("META-INF/ejb-jar.xml");
-            if (ejbJarFile.exists()) {
+            if (resourceRoot.getLoader().getResource(EJB_JAR_XML) != null) {
                 SubDeploymentMarker.mark(resourceRoot);
                 ModuleRootMarker.mark(resourceRoot);
             } else {
                 final Index index = resourceRoot.getAttachment(Attachments.ANNOTATION_INDEX);
-                if (index != null) {
-                    if (!index.getAnnotations(STATEFUL).isEmpty() ||
-                            !index.getAnnotations(STATELESS).isEmpty() ||
-                            !index.getAnnotations(MESSAGE_DRIVEN).isEmpty() ||
-                            !index.getAnnotations(SINGLETON).isEmpty()) {
-                        //this is an EJB deployment
-                        //TODO: we need to mark EJB sub deployments so the sub deployers know they are EJB deployments
-                        SubDeploymentMarker.mark(resourceRoot);
-                        ModuleRootMarker.mark(resourceRoot);
-                    }
+                if (containsEjbAnnotations(index)) {
+                    //this is an EJB deployment
+                    SubDeploymentMarker.mark(resourceRoot);
+                    ModuleRootMarker.mark(resourceRoot);
                 }
             }
         }
     }
 
     @Override
-    public void undeploy(DeploymentUnit context) {
+    public void undeploy(final DeploymentUnit context) {
+    }
+
+    private static boolean containsEjbAnnotations(final Index index) {
+        if (index == null) return false;
+        if (!index.getAnnotations(STATEFUL).isEmpty()) return true;
+        if (!index.getAnnotations(STATELESS).isEmpty()) return true;
+        if (!index.getAnnotations(MESSAGE_DRIVEN).isEmpty()) return true;
+        if (!index.getAnnotations(SINGLETON).isEmpty()) return true;
+        return false;
     }
 
 }

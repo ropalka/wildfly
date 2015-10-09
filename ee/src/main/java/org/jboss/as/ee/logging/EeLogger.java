@@ -224,7 +224,7 @@ public interface EeLogger extends BasicLogger {
      * @return a {@link DeploymentUnitProcessingException} for the error.
      */
     @Message(id = 19, value = "Could not find alternate deployment descriptor %s specified for %s")
-    DeploymentUnitProcessingException alternateDeploymentDescriptor(VirtualFile deploymentDescriptor, VirtualFile moduleFile);
+    DeploymentUnitProcessingException alternateDeploymentDescriptor(String deploymentDescriptor, VirtualFile moduleFile);
 
     /**
      * Creates an exception indicating the annotation must provide the attribute.
@@ -607,7 +607,7 @@ public interface EeLogger extends BasicLogger {
      * @return a {@link DeploymentUnitProcessingException} for the error.
      */
     @Message(id = 53, value = "Failed to parse %s")
-    DeploymentUnitProcessingException failedToParse(@Cause Throwable cause, VirtualFile xmlFile);
+    DeploymentUnitProcessingException failedToParse(@Cause Throwable cause, String xmlFile);
 
     /**
      * Creates an exception indicating a failure to process the children for the EAR.

@@ -37,33 +37,34 @@ import org.jboss.as.server.deployment.DeploymentPhaseContext;
 import org.jboss.as.server.deployment.DeploymentUnit;
 import org.jboss.as.server.deployment.DeploymentUnitProcessingException;
 import org.jboss.as.server.deployment.DeploymentUnitProcessor;
+import org.jboss.as.server.loaders.ResourceLoader;
 import org.jboss.as.web.common.WarMetaData;
 import org.jboss.metadata.parser.jbossweb.JBossWebMetaDataParser;
 import org.jboss.metadata.parser.util.NoopXMLResolver;
 import org.jboss.metadata.web.jboss.JBossWebMetaData;
 import org.jboss.metadata.web.jboss.ValveMetaData;
-import org.jboss.vfs.VirtualFile;
+import org.jboss.modules.Resource;
 import org.wildfly.extension.undertow.logging.UndertowLogger;
-
 
 /**
  * @author Jean-Frederic Clere
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public class JBossWebParsingDeploymentProcessor implements DeploymentUnitProcessor {
 
     private static final String JBOSS_WEB_XML = "WEB-INF/jboss-web.xml";
 
     @Override
-    public void deploy(DeploymentPhaseContext phaseContext) throws DeploymentUnitProcessingException {
+    public void deploy(final DeploymentPhaseContext phaseContext) throws DeploymentUnitProcessingException {
         final DeploymentUnit deploymentUnit = phaseContext.getDeploymentUnit();
         if (!DeploymentTypeMarker.isType(DeploymentType.WAR, deploymentUnit)) {
             return; // Skip non web deployments
         }
-        final VirtualFile deploymentRoot = deploymentUnit.getAttachment(Attachments.DEPLOYMENT_ROOT).getRoot();
-        final VirtualFile jbossWebXml = deploymentRoot.getChild(JBOSS_WEB_XML);
-        WarMetaData warMetaData = deploymentUnit.getAttachment(WarMetaData.ATTACHMENT_KEY);
+        final ResourceLoader loader = deploymentUnit.getAttachment(Attachments.DEPLOYMENT_ROOT).getLoader(); // TODO: rename to loader
+        final Resource jbossWebXml = loader.getResource(JBOSS_WEB_XML);
+        final WarMetaData warMetaData = deploymentUnit.getAttachment(WarMetaData.ATTACHMENT_KEY);
         assert warMetaData != null;
-        if (jbossWebXml.exists()) {
+        if (jbossWebXml != null) {
             InputStream is = null;
             try {
                 is = jbossWebXml.openStream();
@@ -106,6 +107,7 @@ public class JBossWebParsingDeploymentProcessor implements DeploymentUnitProcess
     }
 
     @Override
-    public void undeploy(DeploymentUnit context) {
+    public void undeploy(final DeploymentUnit context) {
     }
+
 }

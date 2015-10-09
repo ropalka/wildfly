@@ -30,7 +30,7 @@ import org.jboss.as.server.deployment.SubDeploymentMarker;
 import org.jboss.as.server.deployment.module.ModuleRootMarker;
 import org.jboss.as.server.deployment.module.ResourceRoot;
 import org.jboss.metadata.ear.spec.ModuleMetaData;
-import org.jboss.vfs.VirtualFile;
+import org.jboss.modules.Resource;
 
 import java.util.List;
 import java.util.Locale;
@@ -44,6 +44,7 @@ import java.util.jar.Manifest;
  * <p/>
  *
  * @author Stuart Douglas
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public class ApplicationClientDeploymentProcessor implements DeploymentUnitProcessor {
 
@@ -60,8 +61,8 @@ public class ApplicationClientDeploymentProcessor implements DeploymentUnitProce
                     // module roots cannot be ejb jars
                     continue;
                 }
-                VirtualFile appclientClientXml = resourceRoot.getRoot().getChild(META_INF_APPLICATION_CLIENT_XML);
-                if (appclientClientXml.exists()) {
+                Resource appclientClientXml = resourceRoot.getLoader().getResource(META_INF_APPLICATION_CLIENT_XML);
+                if (appclientClientXml != null) {
                     SubDeploymentMarker.mark(resourceRoot);
                     ModuleRootMarker.mark(resourceRoot);
                 } else {
@@ -86,8 +87,8 @@ public class ApplicationClientDeploymentProcessor implements DeploymentUnitProce
                     DeploymentTypeMarker.setType(DeploymentType.APPLICATION_CLIENT, deploymentUnit);
                 }
             } else {
-                VirtualFile appclientClientXml = root.getRoot().getChild(META_INF_APPLICATION_CLIENT_XML);
-                if (appclientClientXml.exists()) {
+                Resource appclientClientXml = root.getLoader().getResource(META_INF_APPLICATION_CLIENT_XML);
+                if (appclientClientXml != null) {
                     DeploymentTypeMarker.setType(DeploymentType.APPLICATION_CLIENT, deploymentUnit);
                 } else {
                     final Manifest manifest = root.getAttachment(Attachments.MANIFEST);

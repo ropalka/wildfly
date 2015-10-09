@@ -214,20 +214,19 @@ public class EarStructureProcessor implements DeploymentUnitProcessor {
 
                     final String alternativeDD = module.getAlternativeDD();
                     if (alternativeDD != null && alternativeDD.trim().length() > 0) {
-                        final VirtualFile alternateDeploymentDescriptor = deploymentRoot.getRoot().getChild(alternativeDD);
-                        final Resource alternateDeploymentDescriptorResource = deploymentRoot.getLoader().getResource(alternativeDD);
-                        if (!alternateDeploymentDescriptor.exists() && alternateDeploymentDescriptorResource == null) {
-                            throw EeLogger.ROOT_LOGGER.alternateDeploymentDescriptor(alternateDeploymentDescriptor, moduleFile);
+                        final Resource alternateDeploymentDescriptor = deploymentRoot.getLoader().getResource(alternativeDD);
+                        if (alternateDeploymentDescriptor == null) {
+                            throw EeLogger.ROOT_LOGGER.alternateDeploymentDescriptor(alternativeDD, moduleFile);
                         }
                         switch (module.getType()) {
                             case Client:
-                                childResource.putAttachment(org.jboss.as.ee.structure.Attachments.ALTERNATE_CLIENT_DEPLOYMENT_DESCRIPTOR, alternateDeploymentDescriptorResource);
+                                childResource.putAttachment(org.jboss.as.ee.structure.Attachments.ALTERNATE_CLIENT_DEPLOYMENT_DESCRIPTOR, alternateDeploymentDescriptor);
                                 break;
                             case Connector:
-                                childResource.putAttachment(org.jboss.as.ee.structure.Attachments.ALTERNATE_CONNECTOR_DEPLOYMENT_DESCRIPTOR, alternateDeploymentDescriptorResource);
+                                childResource.putAttachment(org.jboss.as.ee.structure.Attachments.ALTERNATE_CONNECTOR_DEPLOYMENT_DESCRIPTOR, alternateDeploymentDescriptor);
                                 break;
                             case Ejb:
-                                childResource.putAttachment(org.jboss.as.ee.structure.Attachments.ALTERNATE_EJB_DEPLOYMENT_DESCRIPTOR, alternateDeploymentDescriptorResource);
+                                childResource.putAttachment(org.jboss.as.ee.structure.Attachments.ALTERNATE_EJB_DEPLOYMENT_DESCRIPTOR, alternateDeploymentDescriptor);
                                 break;
                             case Web:
                                 childResource.putAttachment(org.jboss.as.ee.structure.Attachments.ALTERNATE_WEB_DEPLOYMENT_DESCRIPTOR, alternateDeploymentDescriptor);

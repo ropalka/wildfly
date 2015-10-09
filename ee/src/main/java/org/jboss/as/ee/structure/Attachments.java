@@ -27,13 +27,13 @@ import org.jboss.as.server.deployment.AttachmentKey;
 import org.jboss.metadata.ear.spec.EarMetaData;
 import org.jboss.metadata.ear.spec.ModuleMetaData;
 import org.jboss.modules.Resource;
-import org.jboss.vfs.VirtualFile;
 
 /**
  * EE related attachments.
  *
  * @author John Bailey
  * @author Stuart Douglas
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public final class Attachments {
 
@@ -52,7 +52,7 @@ public final class Attachments {
      * The alternate deployment descriptor location
      */
     public static final AttachmentKey<Resource> ALTERNATE_CLIENT_DEPLOYMENT_DESCRIPTOR = AttachmentKey.create(Resource.class);
-    public static final AttachmentKey<VirtualFile> ALTERNATE_WEB_DEPLOYMENT_DESCRIPTOR = AttachmentKey.create(VirtualFile.class);
+    public static final AttachmentKey<Resource> ALTERNATE_WEB_DEPLOYMENT_DESCRIPTOR = AttachmentKey.create(Resource.class);
     public static final AttachmentKey<Resource> ALTERNATE_EJB_DEPLOYMENT_DESCRIPTOR = AttachmentKey.create(Resource.class);
     public static final AttachmentKey<Resource> ALTERNATE_CONNECTOR_DEPLOYMENT_DESCRIPTOR = AttachmentKey.create(Resource.class);
 

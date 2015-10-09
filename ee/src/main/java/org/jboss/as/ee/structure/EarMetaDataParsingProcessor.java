@@ -35,6 +35,7 @@ import org.jboss.as.server.deployment.DeploymentUnit;
 import org.jboss.as.server.deployment.DeploymentUnitProcessingException;
 import org.jboss.as.server.deployment.DeploymentUnitProcessor;
 import org.jboss.as.server.deployment.module.ResourceRoot;
+import org.jboss.as.server.loaders.ResourceLoader;
 import org.jboss.metadata.ear.jboss.JBossAppMetaData;
 import org.jboss.metadata.ear.spec.EarMetaData;
 import org.jboss.metadata.merge.JBossAppMetaDataMerger;
@@ -42,12 +43,13 @@ import org.jboss.metadata.parser.jboss.JBossAppMetaDataParser;
 import org.jboss.metadata.parser.spec.EarMetaDataParser;
 import org.jboss.metadata.parser.util.NoopXMLResolver;
 import org.jboss.metadata.property.PropertyReplacer;
-import org.jboss.vfs.VirtualFile;
+import org.jboss.modules.Resource;
 
 /**
  * Deployment processor responsible for parsing the application.xml file of an ear.
  *
  * @author John Bailey
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public class EarMetaDataParsingProcessor implements DeploymentUnitProcessor {
     private static final String APPLICATION_XML = "META-INF/application.xml";
@@ -60,10 +62,10 @@ public class EarMetaDataParsingProcessor implements DeploymentUnitProcessor {
         }
 
         final ResourceRoot deploymentRoot = deploymentUnit.getAttachment(org.jboss.as.server.deployment.Attachments.DEPLOYMENT_ROOT);
-        final VirtualFile deploymentFile = deploymentRoot.getRoot();
+        final ResourceLoader loader = deploymentRoot.getLoader();
 
-        EarMetaData earMetaData = handleSpecMetadata(deploymentFile, SpecDescriptorPropertyReplacement.propertyReplacer(deploymentUnit));
-        JBossAppMetaData jbossMetaData = handleJbossMetadata(deploymentFile, JBossDescriptorPropertyReplacement.propertyReplacer(deploymentUnit), deploymentUnit);
+        EarMetaData earMetaData = handleSpecMetadata(loader, SpecDescriptorPropertyReplacement.propertyReplacer(deploymentUnit));
+        JBossAppMetaData jbossMetaData = handleJbossMetadata(loader, JBossDescriptorPropertyReplacement.propertyReplacer(deploymentUnit), deploymentUnit);
         if (earMetaData == null && jbossMetaData == null) {
             return;
         }
@@ -87,9 +89,9 @@ public class EarMetaDataParsingProcessor implements DeploymentUnitProcessor {
 
     }
 
-    private EarMetaData handleSpecMetadata(VirtualFile deploymentFile, final PropertyReplacer propertyReplacer) throws DeploymentUnitProcessingException {
-        final VirtualFile applicationXmlFile = deploymentFile.getChild(APPLICATION_XML);
-        if (!applicationXmlFile.exists()) {
+    private EarMetaData handleSpecMetadata(final ResourceLoader loader, final PropertyReplacer propertyReplacer) throws DeploymentUnitProcessingException {
+        final Resource applicationXmlFile = loader.getResource(APPLICATION_XML);
+        if (applicationXmlFile == null) {
             return null;
         }
         InputStream inputStream = null;
@@ -101,16 +103,16 @@ public class EarMetaDataParsingProcessor implements DeploymentUnitProcessor {
             return EarMetaDataParser.INSTANCE.parse(xmlReader, propertyReplacer);
 
         } catch (Exception e) {
-            throw EeLogger.ROOT_LOGGER.failedToParse(e, applicationXmlFile);
+            throw EeLogger.ROOT_LOGGER.failedToParse(e, applicationXmlFile.getName());
         } finally {
             safeClose(inputStream);
         }
     }
 
 
-    private JBossAppMetaData handleJbossMetadata(VirtualFile deploymentFile, final PropertyReplacer propertyReplacer, final DeploymentUnit deploymentUnit) throws DeploymentUnitProcessingException {
-        final VirtualFile applicationXmlFile = deploymentFile.getChild(JBOSS_APP_XML);
-        if (!applicationXmlFile.exists()) {
+    private JBossAppMetaData handleJbossMetadata(final ResourceLoader loader, final PropertyReplacer propertyReplacer, final DeploymentUnit deploymentUnit) throws DeploymentUnitProcessingException {
+        final Resource applicationXmlFile = loader.getResource(JBOSS_APP_XML);
+        if (applicationXmlFile == null) {
             //may have been in jboss-all.xml
             return deploymentUnit.getAttachment(AppJBossAllParser.ATTACHMENT_KEY);
         }
@@ -123,7 +125,7 @@ public class EarMetaDataParsingProcessor implements DeploymentUnitProcessor {
             return JBossAppMetaDataParser.INSTANCE.parse(xmlReader, propertyReplacer);
 
         } catch (Exception e) {
-            throw EeLogger.ROOT_LOGGER.failedToParse(e, applicationXmlFile);
+            throw EeLogger.ROOT_LOGGER.failedToParse(e, applicationXmlFile.getName());
         } finally {
             safeClose(inputStream);
         }

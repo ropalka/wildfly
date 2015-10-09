@@ -44,7 +44,7 @@ import org.jboss.metadata.parser.util.MetaDataElementParser;
 import org.jboss.metadata.parser.util.XMLResourceResolver;
 import org.jboss.metadata.parser.util.XMLSchemaValidator;
 import org.jboss.metadata.web.spec.WebMetaData;
-import org.jboss.vfs.VirtualFile;
+import org.jboss.modules.Resource;
 import org.wildfly.extension.undertow.logging.UndertowLogger;
 import org.wildfly.security.manager.WildFlySecurityManager;
 import org.xml.sax.SAXException;
@@ -52,6 +52,7 @@ import org.xml.sax.SAXException;
 /**
  * @author Jean-Frederic Clere
  * @author Thomas.Diesler@jboss.com
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public class WebParsingDeploymentProcessor implements DeploymentUnitProcessor {
 
@@ -73,17 +74,12 @@ public class WebParsingDeploymentProcessor implements DeploymentUnitProcessor {
                 return; // Skip non web deployments
             }
             final ResourceRoot deploymentRoot = deploymentUnit.getAttachment(Attachments.DEPLOYMENT_ROOT);
-            final VirtualFile alternateDescriptor = deploymentRoot.getAttachment(org.jboss.as.ee.structure.Attachments.ALTERNATE_WEB_DEPLOYMENT_DESCRIPTOR);
+            final Resource alternateDescriptor = deploymentRoot.getAttachment(org.jboss.as.ee.structure.Attachments.ALTERNATE_WEB_DEPLOYMENT_DESCRIPTOR);
             // Locate the descriptor
-            final VirtualFile webXml;
-            if (alternateDescriptor != null) {
-                webXml = alternateDescriptor;
-            } else {
-                webXml = deploymentRoot.getRoot().getChild(WEB_XML);
-            }
+            final Resource webXml = alternateDescriptor != null ? alternateDescriptor : deploymentRoot.getLoader().getResource(WEB_XML);
             final WarMetaData warMetaData = deploymentUnit.getAttachment(WarMetaData.ATTACHMENT_KEY);
             assert warMetaData != null;
-            if (webXml.exists()) {
+            if (webXml != null) {
                 InputStream is = null;
                 try {
                     is = webXml.openStream();
@@ -147,4 +143,5 @@ public class WebParsingDeploymentProcessor implements DeploymentUnitProcessor {
     @Override
     public void undeploy(final DeploymentUnit context) {
     }
+
 }

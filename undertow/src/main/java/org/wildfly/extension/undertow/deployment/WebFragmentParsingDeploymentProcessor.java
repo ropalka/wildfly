@@ -46,34 +46,36 @@ import org.jboss.as.web.common.WarMetaData;
 import org.jboss.metadata.parser.servlet.WebFragmentMetaDataParser;
 import org.jboss.metadata.parser.util.NoopXMLResolver;
 import org.jboss.metadata.web.spec.WebFragmentMetaData;
-import org.jboss.vfs.VirtualFile;
+import org.jboss.modules.Resource;
 import org.wildfly.extension.undertow.logging.UndertowLogger;
 
 /**
  * @author Remy Maucherat
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public class WebFragmentParsingDeploymentProcessor implements DeploymentUnitProcessor {
 
     private static final String WEB_FRAGMENT_XML = "META-INF/web-fragment.xml";
+    private static final String JAR_EXTENSION = ".jar";
 
     @Override
-    public void deploy(DeploymentPhaseContext phaseContext) throws DeploymentUnitProcessingException {
+    public void deploy(final DeploymentPhaseContext phaseContext) throws DeploymentUnitProcessingException {
         final DeploymentUnit deploymentUnit = phaseContext.getDeploymentUnit();
         if (!DeploymentTypeMarker.isType(DeploymentType.WAR, deploymentUnit)) {
             return; // Skip non web deployments
         }
-        WarMetaData warMetaData = deploymentUnit.getAttachment(WarMetaData.ATTACHMENT_KEY);
+        final WarMetaData warMetaData = deploymentUnit.getAttachment(WarMetaData.ATTACHMENT_KEY);
         assert warMetaData != null;
         Map<String, WebFragmentMetaData> webFragments = warMetaData.getWebFragmentsMetaData();
         if (webFragments == null) {
-            webFragments = new HashMap<String, WebFragmentMetaData>();
+            webFragments = new HashMap<>();
             warMetaData.setWebFragmentsMetaData(webFragments);
         }
         List<ResourceRoot> resourceRoots = deploymentUnit.getAttachmentList(Attachments.RESOURCE_ROOTS);
         for (ResourceRoot resourceRoot : resourceRoots) {
-            if (resourceRoot.getRoot().getName().toLowerCase(Locale.ENGLISH).endsWith(".jar")) {
-                VirtualFile webFragment = resourceRoot.getRoot().getChild(WEB_FRAGMENT_XML);
-                if (webFragment.exists() && webFragment.isFile()) {
+            if (resourceRoot.getRoot().getName().toLowerCase(Locale.ENGLISH).endsWith(JAR_EXTENSION)) {
+                Resource webFragment = resourceRoot.getLoader().getResource(WEB_FRAGMENT_XML);
+                if (webFragment != null) {
                     InputStream is = null;
                     try {
                         is = webFragment.openStream();
@@ -107,4 +109,5 @@ public class WebFragmentParsingDeploymentProcessor implements DeploymentUnitProc
     @Override
     public void undeploy(final DeploymentUnit context) {
     }
+
 }
