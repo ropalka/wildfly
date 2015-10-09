@@ -88,7 +88,7 @@ public class MessageDestinationInjectionSource extends InjectionSource {
         final DeploymentUnit deploymentUnit = phaseContext.getDeploymentUnit();
         final EEApplicationDescription applicationDescription = deploymentUnit.getAttachment(EE_APPLICATION_DESCRIPTION);
         final ResourceRoot deploymentRoot = deploymentUnit.getAttachment(Attachments.DEPLOYMENT_ROOT);
-        final Set<String> names = applicationDescription.resolveMessageDestination(messageDestinationName, deploymentRoot.getRoot());
+        final Set<String> names = applicationDescription.resolveMessageDestination(messageDestinationName, deploymentRoot.getLoader());
 
         if (names.isEmpty()) {
             error = EeLogger.ROOT_LOGGER.noMessageDestination(messageDestinationName, bindingName);

@@ -25,7 +25,6 @@ package org.jboss.as.weld.deployment;
 import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.util.Enumeration;
@@ -35,11 +34,8 @@ import java.util.zip.ZipException;
 import java.util.zip.ZipFile;
 
 import org.jboss.as.weld.logging.WeldLogger;
-import org.jboss.vfs.VFS;
-import org.jboss.vfs.VirtualFile;
 
 public class UrlScanner {
-
 
     public boolean handleBeansXml(final URL url, final List<String> discoveredClasses) {
         String urlPath = url.toExternalForm();
@@ -72,23 +68,10 @@ public class UrlScanner {
             }
             handle(urlPath, discoveredClasses);
             return true;
-        } else if ("vfs".equals(urlType)) {
-            try {
-                VirtualFile vfsRoot = VFS.getChild(url.toURI()).getParent().getParent();
-                handle(vfsRoot, discoveredClasses);
-                return true;
-            } catch (URISyntaxException e) {
-                throw new RuntimeException(e);
-            }
         } else {
             WeldLogger.DEPLOYMENT_LOGGER.doNotUnderstandProtocol(url);
             return false;
         }
-    }
-
-    private void handle(VirtualFile urlPath, List<String> discoveredClasses) {
-        WeldLogger.DEPLOYMENT_LOGGER.tracef("scanning: %s", urlPath);
-        handleDirectory(urlPath, null, discoveredClasses);
     }
 
     private void handle(String urlPath, List<String> discoveredClasses) {
@@ -146,22 +129,6 @@ public class UrlScanner {
         }
     }
 
-    private void handleDirectory(VirtualFile file, String path, List<String> discoveredClasses) {
-
-
-        WeldLogger.DEPLOYMENT_LOGGER.tracef("handling directory: %s", file);
-
-        for (VirtualFile child : file.getChildren()) {
-            String newPath = (path == null) ? child.getName() : (path + '/' + child.getName());
-
-            if (child.isDirectory()) {
-                handleDirectory(child, newPath, discoveredClasses);
-            } else {
-                handleFile(newPath, discoveredClasses);
-            }
-        }
-    }
-
     protected void handleFile(String name, List<String> discoveredClasses) {
         if (name.endsWith(".class")) {
             discoveredClasses.add(filenameToClassname(name));
@@ -174,4 +141,5 @@ public class UrlScanner {
     public static String filenameToClassname(String filename) {
         return filename.substring(0, filename.lastIndexOf(".class")).replace('/', '.').replace('\\', '.');
     }
+
 }

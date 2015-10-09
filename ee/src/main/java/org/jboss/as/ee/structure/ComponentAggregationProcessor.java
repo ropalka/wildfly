@@ -44,6 +44,7 @@ import static org.jboss.as.server.deployment.Attachments.SUB_DEPLOYMENTS;
 /**
  * @author <a href="mailto:david.lloyd@redhat.com">David M. Lloyd</a>
  * @author Stuart Douglas
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public final class ComponentAggregationProcessor implements DeploymentUnitProcessor {
 
@@ -69,7 +70,7 @@ public final class ComponentAggregationProcessor implements DeploymentUnitProces
             deploymentUnit.putAttachment(org.jboss.as.ee.component.Attachments.EE_APPLICATION_DESCRIPTION, applicationDescription);
 
             for (final Map.Entry<String, String> messageDestination : moduleDescription.getMessageDestinations().entrySet()) {
-                applicationDescription.addMessageDestination(messageDestination.getKey(), messageDestination.getValue(), deploymentUnit.getAttachment(org.jboss.as.server.deployment.Attachments.DEPLOYMENT_ROOT).getRoot());
+                applicationDescription.addMessageDestination(messageDestination.getKey(), messageDestination.getValue(), deploymentUnit.getAttachment(org.jboss.as.server.deployment.Attachments.DEPLOYMENT_ROOT).getLoader());
             }
 
             /*
@@ -86,13 +87,13 @@ public final class ComponentAggregationProcessor implements DeploymentUnitProces
                     continue;
                 }
                 for (final ComponentDescription componentDescription : subDeploymentModuleDescription.getComponentDescriptions()) {
-                    applicationDescription.addComponent(componentDescription, deploymentRoot.getRoot());
+                    applicationDescription.addComponent(componentDescription, deploymentRoot.getLoader());
                 }
                 for (final Map.Entry<String, String> messageDestination : subDeploymentModuleDescription.getMessageDestinations().entrySet()) {
-                    applicationDescription.addMessageDestination(messageDestination.getKey(), messageDestination.getValue(), deploymentRoot.getRoot());
+                    applicationDescription.addMessageDestination(messageDestination.getKey(), messageDestination.getValue(), deploymentRoot.getLoader());
                 }
                 for (final ComponentDescription componentDescription : subdeployment.getAttachmentList(org.jboss.as.ee.component.Attachments.ADDITIONAL_RESOLVABLE_COMPONENTS)) {
-                    applicationDescription.addComponent(componentDescription, deploymentRoot.getRoot());
+                    applicationDescription.addComponent(componentDescription, deploymentRoot.getLoader());
                 }
 
                 subdeployment.putAttachment(EE_APPLICATION_DESCRIPTION, applicationDescription);
@@ -108,13 +109,13 @@ public final class ComponentAggregationProcessor implements DeploymentUnitProces
             final ResourceRoot deploymentRoot = deploymentUnit.getAttachment(org.jboss.as.server.deployment.Attachments.DEPLOYMENT_ROOT);
 
             for (final ComponentDescription componentDescription : moduleDescription.getComponentDescriptions()) {
-                applicationDescription.addComponent(componentDescription, deploymentRoot.getRoot());
+                applicationDescription.addComponent(componentDescription, deploymentRoot.getLoader());
             }
             for (final Map.Entry<String, String> messageDestination : moduleDescription.getMessageDestinations().entrySet()) {
-                applicationDescription.addMessageDestination(messageDestination.getKey(), messageDestination.getValue(), deploymentRoot.getRoot());
+                applicationDescription.addMessageDestination(messageDestination.getKey(), messageDestination.getValue(), deploymentRoot.getLoader());
             }
             for (final ComponentDescription componentDescription : deploymentUnit.getAttachmentList(org.jboss.as.ee.component.Attachments.ADDITIONAL_RESOLVABLE_COMPONENTS)) {
-                applicationDescription.addComponent(componentDescription, deploymentRoot.getRoot());
+                applicationDescription.addComponent(componentDescription, deploymentRoot.getLoader());
             }
         }
     }

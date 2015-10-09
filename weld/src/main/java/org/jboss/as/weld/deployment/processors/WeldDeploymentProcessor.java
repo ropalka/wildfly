@@ -200,7 +200,7 @@ public class WeldDeploymentProcessor implements DeploymentUnitProcessor {
 
             //we have to do this here as the aggregate components are not available in earlier phases
             final ResourceRoot subDeploymentRoot = subDeployment.getAttachment(Attachments.DEPLOYMENT_ROOT);
-            final EjbInjectionServices ejbInjectionServices = new WeldEjbInjectionServices(deploymentUnit.getServiceRegistry(), eeModuleDescription, eeApplicationDescription, subDeploymentRoot.getRoot(), subDeploymentModule);
+            final EjbInjectionServices ejbInjectionServices = new WeldEjbInjectionServices(deploymentUnit.getServiceRegistry(), eeModuleDescription, eeApplicationDescription, subDeploymentRoot.getLoader(), subDeploymentModule);
             bdm.addService(EjbInjectionServices.class, ejbInjectionServices);
 
             final ResourceInjectionServices resourceInjectionServices = new WeldResourceInjectionServices(deploymentUnit.getServiceRegistry(), eeModuleDescription, subDeploymentModule);
@@ -227,7 +227,7 @@ public class WeldDeploymentProcessor implements DeploymentUnitProcessor {
         }
 
         final EjbInjectionServices ejbInjectionServices = new WeldEjbInjectionServices(deploymentUnit.getServiceRegistry(),
-                eeModuleDescription, eeApplicationDescription, deploymentRoot.getRoot(), module);
+                eeModuleDescription, eeApplicationDescription, deploymentRoot.getLoader(), module);
         final ResourceInjectionServices resourceInjectionServices = new WeldResourceInjectionServices(deploymentUnit.getServiceRegistry(), eeModuleDescription, module);
         final WeldClassFileServices classFileServices = (rootIndex != null ? new WeldClassFileServices(rootIndex, module.getClassLoader()) : null);
 

@@ -168,9 +168,9 @@ public class EjbInjectionSource extends InjectionSource {
         final ResourceRoot deploymentRoot = deploymentUnit.getAttachment(Attachments.DEPLOYMENT_ROOT);
         final Set<ViewDescription> componentsForViewName;
         if (beanName != null) {
-            componentsForViewName = applicationDescription.getComponents(beanName, typeName, deploymentRoot.getRoot());
+            componentsForViewName = applicationDescription.getComponents(beanName, typeName, deploymentRoot.getLoader());
         } else {
-            componentsForViewName = applicationDescription.getComponentsForViewName(typeName, deploymentRoot.getRoot());
+            componentsForViewName = applicationDescription.getComponentsForViewName(typeName, deploymentRoot.getLoader());
         }
         return componentsForViewName;
     }

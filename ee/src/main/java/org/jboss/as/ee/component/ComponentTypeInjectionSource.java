@@ -52,7 +52,7 @@ public final class ComponentTypeInjectionSource extends InjectionSource {
         final DeploymentUnit deploymentUnit = phaseContext.getDeploymentUnit();
         final EEApplicationDescription applicationDescription = deploymentUnit.getAttachment(EE_APPLICATION_DESCRIPTION);
         final ResourceRoot deploymentRoot = deploymentUnit.getAttachment(org.jboss.as.server.deployment.Attachments.DEPLOYMENT_ROOT);
-        final Set<ViewDescription> componentsForViewName = applicationDescription.getComponentsForViewName(typeName, deploymentRoot.getRoot());
+        final Set<ViewDescription> componentsForViewName = applicationDescription.getComponentsForViewName(typeName, deploymentRoot.getLoader());
         final Iterator<ViewDescription> iterator = componentsForViewName.iterator();
         if (!iterator.hasNext()) {
             throw EeLogger.ROOT_LOGGER.componentNotFound(typeName);

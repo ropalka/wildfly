@@ -69,7 +69,6 @@ import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Index;
 import org.jboss.modules.Module;
-import org.jboss.vfs.VirtualFile;
 import org.jboss.weld.bootstrap.spi.BeanDiscoveryMode;
 import org.jboss.weld.bootstrap.spi.BeansXml;
 import org.jboss.weld.injection.spi.JaxwsInjectionServices;
@@ -88,6 +87,7 @@ import com.google.common.collect.Multimap;
  *
  * @author Stuart Douglas
  * @author Jozef Hartinger
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public class BeanArchiveProcessor implements DeploymentUnitProcessor {
 
@@ -332,8 +332,7 @@ public class BeanArchiveProcessor implements DeploymentUnitProcessor {
 
             String beanArchiveId = getDeploymentUnitId(deploymentUnit);
             if (beanArchiveMetadata.getResourceRoot() != null) {
-                final VirtualFile deploymentRootResource = deploymentUnit.getAttachment(Attachments.DEPLOYMENT_ROOT).getRoot();
-                beanArchiveId += "/" + beanArchiveMetadata.getResourceRoot().getRoot().getPathNameRelativeTo(deploymentRootResource);
+                beanArchiveId += "/" + beanArchiveMetadata.getResourceRoot().getLoader().getPath();
             }
             return new BeanDeploymentArchiveImpl(classNames, beanArchiveMetadata.getBeansXml(), module, beanArchiveId, BeanArchiveType.EXPLICIT, root);
         }

@@ -41,12 +41,12 @@ import org.jboss.as.ee.component.ViewDescription;
 import org.jboss.as.naming.ManagedReference;
 import org.jboss.as.naming.deployment.ContextNames;
 import org.jboss.as.naming.deployment.ContextNames.BindInfo;
+import org.jboss.as.server.loaders.ResourceLoader;
 import org.jboss.as.weld.logging.WeldLogger;
 import org.jboss.as.weld.util.ResourceInjectionUtilities;
 import org.jboss.modules.Module;
 import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceRegistry;
-import org.jboss.vfs.VirtualFile;
 import org.jboss.weld.injection.spi.EjbInjectionServices;
 import org.jboss.weld.injection.spi.ResourceReference;
 import org.jboss.weld.injection.spi.ResourceReferenceFactory;
@@ -58,15 +58,15 @@ import org.jboss.weld.util.reflection.Reflections;
  * Implementation of EjbInjectionServices.
  *
  * @author Stuart Douglas
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public class WeldEjbInjectionServices extends AbstractResourceInjectionServices implements EjbInjectionServices {
 
     private final EEApplicationDescription applicationDescription;
 
-    private final VirtualFile deploymentRoot;
+    private final ResourceLoader loader;
 
-
-    public WeldEjbInjectionServices(ServiceRegistry serviceRegistry, EEModuleDescription moduleDescription, final EEApplicationDescription applicationDescription, final VirtualFile deploymentRoot, Module module) {
+    public WeldEjbInjectionServices(ServiceRegistry serviceRegistry, EEModuleDescription moduleDescription, final EEApplicationDescription applicationDescription, final ResourceLoader loader, Module module) {
         super(serviceRegistry, moduleDescription, module);
         if (serviceRegistry == null) {
             throw WeldLogger.ROOT_LOGGER.parameterCannotBeNull("serviceRegistry");
@@ -77,12 +77,12 @@ public class WeldEjbInjectionServices extends AbstractResourceInjectionServices 
         if (applicationDescription == null) {
             throw WeldLogger.ROOT_LOGGER.parameterCannotBeNull("applicationDescription");
         }
-        if (deploymentRoot == null) {
-            throw WeldLogger.ROOT_LOGGER.parameterCannotBeNull("deploymentRoot");
+        if (loader == null) {
+            throw WeldLogger.ROOT_LOGGER.parameterCannotBeNull("loader");
         }
 
         this.applicationDescription = applicationDescription;
-        this.deploymentRoot = deploymentRoot;
+        this.loader = loader;
     }
 
     @Override
@@ -158,15 +158,15 @@ public class WeldEjbInjectionServices extends AbstractResourceInjectionServices 
         final Set<ViewDescription> viewService;
         if (ejb.beanName().isEmpty()) {
             if (ejb.beanInterface() != Object.class) {
-                viewService = applicationDescription.getComponentsForViewName(ejb.beanInterface().getName(), deploymentRoot);
+                viewService = applicationDescription.getComponentsForViewName(ejb.beanInterface().getName(), loader);
             } else {
-                viewService = applicationDescription.getComponentsForViewName(getType(injectionPoint.getType()).getName(), deploymentRoot);
+                viewService = applicationDescription.getComponentsForViewName(getType(injectionPoint.getType()).getName(), loader);
             }
         } else {
             if (ejb.beanInterface() != Object.class) {
-                viewService = applicationDescription.getComponents(ejb.beanName(), ejb.beanInterface().getName(), deploymentRoot);
+                viewService = applicationDescription.getComponents(ejb.beanName(), ejb.beanInterface().getName(), loader);
             } else {
-                viewService = applicationDescription.getComponents(ejb.beanName(), getType(injectionPoint.getType()).getName(), deploymentRoot);
+                viewService = applicationDescription.getComponents(ejb.beanName(), getType(injectionPoint.getType()).getName(), loader);
             }
         }
         if(injectionPoint.getAnnotated().isAnnotationPresent(Produces.class)) {

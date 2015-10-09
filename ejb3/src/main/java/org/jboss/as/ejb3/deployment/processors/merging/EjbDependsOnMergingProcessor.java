@@ -93,7 +93,7 @@ public class EjbDependsOnMergingProcessor extends AbstractMergingProcessor<EJBCo
     private void setupDependencies(final EJBComponentDescription description, final EEApplicationDescription applicationDescription, final ResourceRoot deploymentRoot, final String[] annotationValues) throws DeploymentUnitProcessingException {
         for (final String annotationValue : annotationValues) {
 
-            final Set<ComponentDescription> components = applicationDescription.getComponents(annotationValue, deploymentRoot.getRoot());
+            final Set<ComponentDescription> components = applicationDescription.getComponents(annotationValue, deploymentRoot.getLoader());
             if (components.isEmpty()) {
                 throw EjbLogger.ROOT_LOGGER.failToFindEjbRefByDependsOn(annotationValue, description.getComponentClassName());
             } else if (components.size() != 1) {

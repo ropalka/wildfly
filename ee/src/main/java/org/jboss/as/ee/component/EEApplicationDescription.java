@@ -22,6 +22,9 @@
 
 package org.jboss.as.ee.component;
 
+import static org.jboss.modules.PathUtils.canonicalize;
+import static org.jboss.modules.PathUtils.relativize;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -30,10 +33,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.jboss.vfs.VirtualFile;
+import org.jboss.as.server.loaders.ResourceLoader;
 
 /**
  * @author John Bailey
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public class EEApplicationDescription {
     //these are only written to by a single top level processor, so do not need to be synchronized
@@ -47,22 +51,22 @@ public class EEApplicationDescription {
      * Add a component to this application.
      *
      * @param description    the component description
-     * @param deploymentRoot
+     * @param loader
      */
-    public void addComponent(final ComponentDescription description, final VirtualFile deploymentRoot) {
+    public void addComponent(final ComponentDescription description, final ResourceLoader loader) {
         for (final ViewDescription viewDescription : description.getViews()) {
             List<ViewInformation> viewComponents = componentsByViewName.get(viewDescription.getViewClassName());
             if (viewComponents == null) {
-                viewComponents = new ArrayList<ViewInformation>(1);
+                viewComponents = new ArrayList<>(1);
                 componentsByViewName.put(viewDescription.getViewClassName(), viewComponents);
             }
-            viewComponents.add(new ViewInformation(viewDescription, deploymentRoot, description.getComponentName()));
+            viewComponents.add(new ViewInformation(viewDescription, loader, description.getComponentName()));
         }
         List<Description> components = componentsByName.get(description.getComponentName());
         if (components == null) {
             componentsByName.put(description.getComponentName(), components = new ArrayList<Description>(1));
         }
-        components.add(new Description(description, deploymentRoot));
+        components.add(new Description(description, loader));
     }
 
     /**
@@ -70,14 +74,14 @@ public class EEApplicationDescription {
      *
      * @param name           The message destination name
      * @param resolvedName   The resolved JNDI name
-     * @param deploymentRoot The deployment root
+     * @param loader         The deployment loader
      */
-    public void addMessageDestination(final String name, final String resolvedName, final VirtualFile deploymentRoot) {
+    public void addMessageDestination(final String name, final String resolvedName, final ResourceLoader loader) {
         List<MessageDestinationMapping> components = messageDestinationJndiMapping.get(name);
         if (components == null) {
-            messageDestinationJndiMapping.put(name, components = new ArrayList<MessageDestinationMapping>(1));
+            messageDestinationJndiMapping.put(name, components = new ArrayList<>(1));
         }
-        components.add(new MessageDestinationMapping(resolvedName, deploymentRoot));
+        components.add(new MessageDestinationMapping(resolvedName, loader));
     }
 
     /**
@@ -86,7 +90,7 @@ public class EEApplicationDescription {
      * @param viewType The view type
      * @return All views of the given type
      */
-    public Set<ViewDescription> getComponentsForViewName(final String viewType, final VirtualFile deploymentRoot) {
+    public Set<ViewDescription> getComponentsForViewName(final String viewType, final ResourceLoader loader) {
         final List<ViewInformation> info = componentsByViewName.get(viewType);
 
         if (info == null) {
@@ -95,7 +99,7 @@ public class EEApplicationDescription {
         final Set<ViewDescription> ret = new HashSet<ViewDescription>();
         final Set<ViewDescription> currentDep = new HashSet<ViewDescription>();
         for (ViewInformation i : info) {
-            if (deploymentRoot.equals(i.deploymentRoot)) {
+            if (loader == i.loader) {
                 currentDep.add(i.viewDescription);
             }
             ret.add(i.viewDescription);
@@ -110,17 +114,15 @@ public class EEApplicationDescription {
      * Get all components in the application that have the given name
      *
      * @param componentName  The name of the component
-     * @param deploymentRoot The deployment root of the component doing the lookup
+     * @param loader         The loader of the component doing the lookup
      * @return A set of all views for the given component name and type
      */
-    public Set<ComponentDescription> getComponents(final String componentName, final VirtualFile deploymentRoot) {
+    public Set<ComponentDescription> getComponents(final String componentName, final ResourceLoader loader) {
         if (componentName.contains("#")) {
             final String[] parts = componentName.split("#");
             String path = parts[0];
-            if (!path.startsWith("../")) {
-                path = "../" + path;
-            }
-            final VirtualFile virtualPath = deploymentRoot.getChild(path);
+            path = relativize(canonicalize(path));
+            path = path.endsWith("/") ? path.substring(0, path.length() - 1) : path;
             final String name = parts[1];
             final List<Description> info = componentsByName.get(name);
             if (info == null) {
@@ -129,7 +131,7 @@ public class EEApplicationDescription {
             final Set<ComponentDescription> ret = new HashSet<ComponentDescription>();
             for (Description i : info) {
                 //now we need to check the path
-                if (virtualPath.equals(i.deploymentRoot)) {
+                if (path.equals(i.loader.getPath())) {
                     ret.add(i.componentDescription);
                 }
             }
@@ -143,7 +145,7 @@ public class EEApplicationDescription {
             final Set<ComponentDescription> thisDeployment = new HashSet<ComponentDescription>();
             for (Description i : info) {
                 all.add(i.componentDescription);
-                if (i.deploymentRoot.equals(deploymentRoot)) {
+                if (i.loader == loader) {
                     thisDeployment.add(i.componentDescription);
                 }
             }
@@ -160,10 +162,10 @@ public class EEApplicationDescription {
      *
      * @param componentName  The name of the component
      * @param viewName       The view type
-     * @param deploymentRoot The deployment root of the component doing the lookup
+     * @param loader         The loader of the component doing the lookup
      * @return A set of all views for the given component name and type
      */
-    public Set<ViewDescription> getComponents(final String componentName, final String viewName, final VirtualFile deploymentRoot) {
+    public Set<ViewDescription> getComponents(final String componentName, final String viewName, final ResourceLoader loader) {
         final List<ViewInformation> info = componentsByViewName.get(viewName);
         if (info == null) {
             return Collections.<ViewDescription>emptySet();
@@ -171,16 +173,14 @@ public class EEApplicationDescription {
         if (componentName.contains("#")) {
             final String[] parts = componentName.split("#");
             String path = parts[0];
-            if (!path.startsWith("../")) {
-                path = "../" + path;
-            }
-            final VirtualFile virtualPath = deploymentRoot.getChild(path);
+            path = relativize(canonicalize(path));
+            path = path.endsWith("/") ? path.substring(0, path.length() - 1) : path;
             final String name = parts[1];
             final Set<ViewDescription> ret = new HashSet<ViewDescription>();
             for (ViewInformation i : info) {
                 if (i.beanName.equals(name)) {
                     //now we need to check the path
-                    if (virtualPath.equals(i.deploymentRoot)) {
+                    if (path.equals(i.loader.getPath())) {
                         ret.add(i.viewDescription);
                     }
                 }
@@ -192,7 +192,7 @@ public class EEApplicationDescription {
             for (ViewInformation i : info) {
                 if (i.beanName.equals(componentName)) {
                     all.add(i.viewDescription);
-                    if (i.deploymentRoot.equals(deploymentRoot)) {
+                    if (i.loader == loader) {
                         thisDeployment.add(i.viewDescription);
                     }
                 }
@@ -207,22 +207,20 @@ public class EEApplicationDescription {
     /**
      * Resolves a message destination name into a JNDI name
      */
-    public Set<String> resolveMessageDestination(final String messageDestName, final VirtualFile deploymentRoot) {
+    public Set<String> resolveMessageDestination(final String messageDestName, final ResourceLoader loader) {
 
         if (messageDestName.contains("#")) {
             final String[] parts = messageDestName.split("#");
             String path = parts[0];
-            if (!path.startsWith("../")) {
-                path = "../" + path;
-            }
-            final VirtualFile virtualPath = deploymentRoot.getChild(path);
+            path = relativize(canonicalize(path));
+            path = path.endsWith("/") ? path.substring(0, path.length() - 1) : path;
             final String name = parts[1];
             final Set<String> ret = new HashSet<String>();
             final List<MessageDestinationMapping> data = messageDestinationJndiMapping.get(name);
             if (data != null) {
                 for (final MessageDestinationMapping i : data) {
                     //now we need to check the path
-                    if (virtualPath.equals(i.deploymentRoot)) {
+                    if (path.equals(i.loader.getPath())) {
                         ret.add(i.jndiName);
                     }
                 }
@@ -235,7 +233,7 @@ public class EEApplicationDescription {
             if (data != null) {
                 for (final MessageDestinationMapping i : data) {
                     all.add(i.jndiName);
-                    if (i.deploymentRoot.equals(deploymentRoot)) {
+                    if (i.loader == loader) {
                         thisDeployment.add(i.jndiName);
                     }
                 }
@@ -249,33 +247,33 @@ public class EEApplicationDescription {
 
     private static class ViewInformation {
         private final ViewDescription viewDescription;
-        private final VirtualFile deploymentRoot;
+        private final ResourceLoader loader;
         private final String beanName;
 
-        public ViewInformation(final ViewDescription viewDescription, final VirtualFile deploymentRoot, final String beanName) {
+        public ViewInformation(final ViewDescription viewDescription, final ResourceLoader loader, final String beanName) {
             this.viewDescription = viewDescription;
-            this.deploymentRoot = deploymentRoot;
+            this.loader = loader;
             this.beanName = beanName;
         }
     }
 
     private static class Description {
         private final ComponentDescription componentDescription;
-        private final VirtualFile deploymentRoot;
+        private final ResourceLoader loader;
 
-        public Description(final ComponentDescription componentDescription, final VirtualFile deploymentRoot) {
+        public Description(final ComponentDescription componentDescription, final ResourceLoader loader) {
             this.componentDescription = componentDescription;
-            this.deploymentRoot = deploymentRoot;
+            this.loader = loader;
         }
     }
 
     private static final class MessageDestinationMapping {
         private final String jndiName;
-        private final VirtualFile deploymentRoot;
+        private final ResourceLoader loader;
 
-        public MessageDestinationMapping(final String jndiName, final VirtualFile deploymentRoot) {
+        public MessageDestinationMapping(final String jndiName, final ResourceLoader loader) {
             this.jndiName = jndiName;
-            this.deploymentRoot = deploymentRoot;
+            this.loader = loader;
         }
     }
 
