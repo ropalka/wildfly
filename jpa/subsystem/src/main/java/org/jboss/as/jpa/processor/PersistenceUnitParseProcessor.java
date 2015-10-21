@@ -81,7 +81,6 @@ public class PersistenceUnitParseProcessor implements DeploymentUnitProcessor {
     private static final String WEB_PERSISTENCE_XML = "WEB-INF/classes/META-INF/persistence.xml";
     private static final String META_INF_PERSISTENCE_XML = "META-INF/persistence.xml";
     private static final String JAR_FILE_EXTENSION = ".jar";
-    private static final String LIB_FOLDER = "lib";
 
     private final boolean appClientContainerMode;
 
@@ -299,9 +298,9 @@ public class PersistenceUnitParseProcessor implements DeploymentUnitProcessor {
              * Such JAR files are specified relative to the directory or jar file that contains the root of the persis-tence unit.
              */
             try {
-                loader = jar.startsWith("../") ? loader.getParent() : loader;
+                loader = loader.getParent() != null ? loader.getParent() : loader;
                 final String normalizedJarPath = PathUtils.relativize(PathUtils.canonicalize(jar));
-                if (loader == null || (!loader.getPaths().contains(normalizedJarPath) && loader.getResource(normalizedJarPath) == null)) {
+                if (!loader.getPaths().contains(normalizedJarPath) && loader.getResource(normalizedJarPath) == null) {
                     throw JpaLogger.ROOT_LOGGER.archiveNotFound(jar);
                 }
                 String jarURL = loader.getRootURL().toString();

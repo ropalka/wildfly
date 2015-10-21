@@ -110,32 +110,6 @@ public class ClassFileTransformerTestCase {
     }
 
     @Test
-    public void test_persistenceUnitInfoURLS() throws Exception {
-        try {
-            assertTrue("testing that PersistenceUnitInfo.getPersistenceUnitRootUrl() url is vfs based, failed because getPersistenceUnitRootUrl is " +
-                    TestPersistenceProvider.getPersistenceUnitInfo("mypc").getPersistenceUnitRootUrl().getProtocol(),
-                    "vfs".equals(TestPersistenceProvider.getPersistenceUnitInfo("mypc").getPersistenceUnitRootUrl().getProtocol()));
-            InputStream inputStream = TestPersistenceProvider.getPersistenceUnitInfo("mypc").getPersistenceUnitRootUrl().openStream();
-            assertNotNull("getPersistenceUnitRootUrl().openStream() returned non-null value", inputStream);
-
-            assertTrue("getPersistenceUnitRootUrl returned a JarInputStream" , inputStream instanceof JarInputStream);
-
-            JarInputStream jarInputStream = (JarInputStream)inputStream;
-            ZipEntry entry = jarInputStream.getNextEntry();
-            assertNotNull("got zip entry from getPersistenceUnitRootUrl", entry);
-
-            while(entry != null && ! entry.getName().contains("persistence.xml")) {
-                entry = jarInputStream.getNextEntry();
-            }
-            assertNotNull("didn't find persistence.xml in getPersistenceUnitRootUrl, details=" +
-                    urlOpenStreamDetails(TestPersistenceProvider.getPersistenceUnitInfo("mypc").getPersistenceUnitRootUrl().openStream()),
-                    entry);
-        } finally {
-            TestPersistenceProvider.clearLastPersistenceUnitInfo();
-        }
-    }
-
-    @Test
     public void test_persistenceProviderAdapterInitialized() {
         try {
         assertTrue("persistence unit adapter was initialized", TestAdapter.wasInitialized());
