@@ -74,8 +74,8 @@ public class ApplicationClientStructureProcessor implements DeploymentUnitProces
 
             final Resource appClientRoot = root.getLoader().getResource(deployment);
             if (appClientRoot != null) {
-                if (existing.containsKey(appClientRoot.getName())) {
-                    final ResourceRoot existingRoot = existing.get(appClientRoot);
+                if (existing.containsKey(deployment)) {
+                    final ResourceRoot existingRoot = existing.get(deployment);
                     SubDeploymentMarker.mark(existingRoot);
                     ModuleRootMarker.mark(existingRoot);
                 } else {
