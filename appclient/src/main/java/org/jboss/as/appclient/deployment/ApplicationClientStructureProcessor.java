@@ -85,7 +85,7 @@ public class ApplicationClientStructureProcessor implements DeploymentUnitProces
                     } catch (IOException e) {
                         throw AppClientLogger.ROOT_LOGGER.unableToReadAppclientResource(deployment, e);
                     }
-                    final ResourceRoot childResource = new ResourceRoot(loader, null, null);
+                    final ResourceRoot childResource = new ResourceRoot(loader);
                     ModuleRootMarker.mark(childResource);
                     SubDeploymentMarker.mark(childResource);
                     deploymentUnit.addToAttachmentList(Attachments.RESOURCE_ROOTS, childResource);

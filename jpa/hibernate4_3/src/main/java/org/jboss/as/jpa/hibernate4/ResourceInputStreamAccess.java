@@ -59,7 +59,7 @@ public class ResourceInputStreamAccess implements InputStreamAccess {
             return resource.openStream();
         }
         catch (final IOException e) {
-            throw JPA_LOGGER.cannotOpenVFSStream(e, name);
+            throw JPA_LOGGER.cannotOpenStream(e, name);
         }
     }
 

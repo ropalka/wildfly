@@ -28,7 +28,6 @@ import static org.jboss.as.server.loaders.Utils.resourceOrPathExists;
 import static org.jboss.modules.PathUtils.canonicalize;
 import static org.jboss.modules.PathUtils.relativize;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.HashSet;
@@ -106,7 +105,7 @@ public final class EarStructureProcessor implements DeploymentUnitProcessor {
                 final Collection<String> libArchives = getChildArchives(loader, libDirName, false, SUBDEPLOYMENT_EXTENSIONS);
                 for (final String child : libArchives) {
                     final ResourceLoader childLoader = ResourceLoaders.newResourceLoader(getResourceName(child), deploymentRoot.getLoader(), child);
-                    final ResourceRoot childResource = new ResourceRoot(childLoader, null, null);
+                    final ResourceRoot childResource = new ResourceRoot(childLoader);
                     if (getResourceName(child).toLowerCase(Locale.ENGLISH).endsWith(JAR_EXTENSION)) {
                         ModuleRootMarker.mark(childResource);
                         deploymentUnit.addToAttachmentList(Attachments.RESOURCE_ROOTS, childResource);
@@ -207,7 +206,7 @@ public final class EarStructureProcessor implements DeploymentUnitProcessor {
      */
     private ResourceRoot createResourceRoot(final ResourceRoot deploymentRoot, final DeploymentUnit deploymentUnit, final String file, final boolean markAsSubDeployment) throws IOException {
         final ResourceLoader loader = ResourceLoaders.newResourceLoader(getResourceName(file), deploymentRoot.getLoader(), file);
-        final ResourceRoot resourceRoot = new ResourceRoot(loader, null, null);
+        final ResourceRoot resourceRoot = new ResourceRoot(loader);
         deploymentUnit.addToAttachmentList(Attachments.RESOURCE_ROOTS, resourceRoot);
         if (markAsSubDeployment) {
             SubDeploymentMarker.mark(resourceRoot);
@@ -220,7 +219,7 @@ public final class EarStructureProcessor implements DeploymentUnitProcessor {
         return resourceRoot;
     }
 
-    public static void safeClose(final Closeable c) {
+    public static void safeClose(final AutoCloseable c) {
         if (c != null) {
             try {
                 c.close();
@@ -234,7 +233,7 @@ public final class EarStructureProcessor implements DeploymentUnitProcessor {
         final List<ResourceRoot> children = context.removeAttachment(Attachments.RESOURCE_ROOTS);
         if (children != null) {
             for (ResourceRoot childRoot : children) {
-                safeClose(childRoot.getMountHandle());
+                safeClose(childRoot.getLoader());
             }
         }
     }

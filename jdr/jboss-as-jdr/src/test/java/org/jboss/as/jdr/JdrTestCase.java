@@ -25,7 +25,7 @@ import org.jboss.as.jdr.commands.JdrEnvironment;
 import org.jboss.as.jdr.util.JdrZipFile;
 import org.jboss.as.jdr.util.PatternSanitizer;
 import org.jboss.as.jdr.util.XMLSanitizer;
-import org.jboss.as.jdr.vfs.Filters;
+import org.jboss.as.jdr.util.Filters;
 import org.junit.Test;
 
 import java.io.ByteArrayInputStream;

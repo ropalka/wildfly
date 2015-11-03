@@ -124,7 +124,7 @@ public class WarAnnotationDeploymentProcessor implements DeploymentUnitProcessor
         // Process lib/*.jar
         for (final Entry<ResourceRoot, Index> entry : indexes.entrySet()) {
             final Index jarIndex = entry.getValue();
-            annotationsMetaData.put(entry.getKey().getRootName(), processAnnotations(jarIndex));
+            annotationsMetaData.put(entry.getKey().getLoader().getRootName(), processAnnotations(jarIndex));
         }
 
         Map<ModuleIdentifier, CompositeIndex> additionalModelAnnotations = deploymentUnit.getAttachment(Attachments.ADDITIONAL_ANNOTATION_INDEXES_BY_MODULE);

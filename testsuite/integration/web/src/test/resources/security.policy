@@ -10,15 +10,6 @@ grant codeBase "file:${{java.ext.dirs}}/*" {
     permission java.security.AllPermission;
 };
 
-// Grant read PropertyPermission for all properties to test application
-grant codeBase "vfs:/content/read-props.war/-" {
-  permission java.util.PropertyPermission "*", "read";
-};
-//workaround for vfs on windows https://bugzilla.redhat.com/show_bug.cgi?id=1082518
-grant codeBase "vfs:/${user.dir}/content/read-props.war/-" {
-  permission java.util.PropertyPermission "*", "read";
-};
-
 //add permisions for WebSocket tests
 grant{
   permission java.net.SocketPermission "*", "listen,resolve";

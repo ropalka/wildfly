@@ -123,7 +123,7 @@ public class PersistenceUnitParseProcessor implements DeploymentUnitProcessor {
             // deploymentUnit.putAttachment(PersistenceUnitMetadataHolder.PERSISTENCE_UNITS, holder);
             deploymentRoot.putAttachment(PersistenceUnitMetadataHolder.PERSISTENCE_UNITS, holder);
             markDU(holder, deploymentUnit);
-            ROOT_LOGGER.tracef("parsed persistence unit definitions for jar %s", deploymentRoot.getRootName());
+            ROOT_LOGGER.tracef("parsed persistence unit definitions for jar %s", deploymentRoot.getLoader().getRootName());
 
             incrementPersistenceUnitCount(deploymentUnit, holder.getPersistenceUnits().size());
             addApplicationDependenciesOnProvider( deploymentUnit, holder);
@@ -165,7 +165,7 @@ public class PersistenceUnitParseProcessor implements DeploymentUnitProcessor {
                     puCount += holder.getPersistenceUnits().size();
                 }
             }
-            ROOT_LOGGER.tracef("parsed persistence unit definitions for war %s", deploymentRoot.getRootName());
+            ROOT_LOGGER.tracef("parsed persistence unit definitions for war %s", deploymentRoot.getLoader().getRootName());
 
             incrementPersistenceUnitCount(deploymentUnit, puCount);
         }
@@ -209,7 +209,7 @@ public class PersistenceUnitParseProcessor implements DeploymentUnitProcessor {
                     puCount += holder.getPersistenceUnits().size();
                 }
             }
-            ROOT_LOGGER.tracef("parsed persistence unit definitions for ear %s", deploymentRoot.getRootName());
+            ROOT_LOGGER.tracef("parsed persistence unit definitions for ear %s", deploymentRoot.getLoader().getRootName());
             incrementPersistenceUnitCount(deploymentUnit, puCount);
         }
     }

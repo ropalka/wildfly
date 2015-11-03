@@ -75,7 +75,7 @@ public class BeansXmlProcessor implements DeploymentUnitProcessor {
         List<ResourceRoot> structure = deploymentUnit.getAttachmentList(Attachments.RESOURCE_ROOTS);
         for (ResourceRoot resourceRoot : structure) {
             if (ModuleRootMarker.isModuleRoot(resourceRoot) && !SubDeploymentMarker.isSubDeployment(resourceRoot)) {
-                if (resourceRoot.getRootName().equals("classes")) {
+                if (resourceRoot.getLoader().getRootName().equals("classes")) {
                     // hack for dealing with war modules
                     classesRoot = resourceRoot;
                     deploymentUnit.putAttachment(WeldAttachments.CLASSES_RESOURCE_ROOT, resourceRoot);

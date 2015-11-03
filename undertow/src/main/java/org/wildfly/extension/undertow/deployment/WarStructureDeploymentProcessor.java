@@ -192,7 +192,7 @@ public final class WarStructureDeploymentProcessor implements DeploymentUnitProc
         // WEB-INF classes
         if (rootLoader.getPaths().contains(WEB_INF_CLASSES)) {
             final ResourceLoader loader = ResourceLoaders.newResourceLoader(getResourceName(WEB_INF_CLASSES), resourceRoot.getLoader(), WEB_INF_CLASSES);
-            final ResourceRoot webInfClassesRoot = new ResourceRoot(loader, null, null, null);
+            final ResourceRoot webInfClassesRoot = new ResourceRoot(loader);
             ModuleRootMarker.mark(webInfClassesRoot);
             entries.add(webInfClassesRoot);
         }
@@ -202,7 +202,7 @@ public final class WarStructureDeploymentProcessor implements DeploymentUnitProc
             for (final String archive : archives) {
                 try {
                     final ResourceLoader loader = ResourceLoaders.newResourceLoader(getResourceName(archive), resourceRoot.getLoader(), archive);
-                    final ResourceRoot webInfArchiveRoot = new ResourceRoot(loader, null, null, null);
+                    final ResourceRoot webInfArchiveRoot = new ResourceRoot(loader);
                     ModuleRootMarker.mark(webInfArchiveRoot);
                     entries.add(webInfArchiveRoot);
                 } catch (IOException e) {

@@ -1,7 +1,5 @@
 package org.jboss.as.jdr.util;
 
-import org.jboss.as.jdr.vfs.Filters;
-
 /**
  * Provides the most commonly used sanitizers with their most common configurations.
  */

@@ -25,7 +25,7 @@ import org.hibernate.jpa.boot.scan.spi.AbstractScannerImpl;
 import org.hibernate.jpa.boot.scan.spi.Scanner;
 
 /**
- * Annotation scanner for Hibernate.  Essentially just passes along the VFS-based ArchiveDescriptorFactory
+ * Annotation scanner for Hibernate.
  *
  * @author Steve Ebersole
  */

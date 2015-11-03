@@ -66,7 +66,6 @@
         <module name="org.jboss.msc"/>
         <module name="org.jboss.staxmapper"/>
         <module name="org.jboss.threads"/>
-        <module name="org.jboss.vfs"/>
         <module name="org.picketbox"/>
         <module name="org.jgroups" optional="true"/>
         <module name="org.wildfly.clustering.jgroups.api" optional="true"/>

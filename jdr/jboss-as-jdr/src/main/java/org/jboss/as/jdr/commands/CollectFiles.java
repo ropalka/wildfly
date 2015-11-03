@@ -23,7 +23,7 @@ package org.jboss.as.jdr.commands;
 
 import org.jboss.as.jdr.util.Utils;
 import org.jboss.as.jdr.util.Sanitizer;
-import org.jboss.as.jdr.vfs.Filters;
+import org.jboss.as.jdr.util.Filters;
 
 import java.io.File;
 import java.io.FileFilter;

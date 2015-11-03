@@ -438,7 +438,7 @@ public class RaOperationUtil {
                 }
 
                 final ResourceLoader loader = ResourceLoaders.newResourceLoader(new File(path.getPath().split("META-INF")[0]));
-                final ResourceRoot resourceRoot = new ResourceRoot(loader, null, null);
+                final ResourceRoot resourceRoot = new ResourceRoot(loader);
 
                 ConnectorXmlDescriptor connectorXmlDescriptor = RaDeploymentParsingProcessor.process(resolveProperties, loader, null, name);
                 IronJacamarXmlDescriptor ironJacamarXmlDescriptor = IronJacamarDeploymentParsingProcessor.process(loader, resolveProperties);

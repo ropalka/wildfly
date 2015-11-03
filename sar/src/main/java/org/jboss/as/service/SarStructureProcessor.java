@@ -3,7 +3,6 @@ package org.jboss.as.service;
 import static org.jboss.as.server.loaders.Utils.getResourceName;
 import static org.jboss.as.server.loaders.Utils.getChildArchives;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
@@ -54,7 +53,7 @@ public final class SarStructureProcessor implements DeploymentUnitProcessor {
                 archiveName = getResourceName(archivePath);
                 final ResourceLoader loader = ResourceLoaders.newResourceLoader(archiveName, resourceRoot.getLoader(), archivePath);
                 // TODO: close loaders on cleanup in undeploy()
-                final ResourceRoot childResource = new ResourceRoot(loader, null, null);
+                final ResourceRoot childResource = new ResourceRoot(loader);
                 ModuleRootMarker.mark(childResource);
                 deploymentUnit.addToAttachmentList(Attachments.RESOURCE_ROOTS, childResource);
                 resourceRoot.addToAttachmentList(Attachments.INDEX_IGNORE_PATHS, archivePath);
@@ -70,12 +69,12 @@ public final class SarStructureProcessor implements DeploymentUnitProcessor {
         final List<ResourceRoot> childRoots = context.removeAttachment(Attachments.RESOURCE_ROOTS);
         if (childRoots != null) {
             for (ResourceRoot childRoot : childRoots) {
-                safeClose(childRoot.getMountHandle());
+                safeClose(childRoot.getLoader());
             }
         }
     }
 
-    static void safeClose(final Closeable c) {
+    static void safeClose(final AutoCloseable c) {
         if (c != null) {
             try {
                 c.close();

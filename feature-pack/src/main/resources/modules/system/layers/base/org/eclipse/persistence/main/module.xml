@@ -46,6 +46,5 @@
         <module name="org.javassist"/>
         <module name="org.jboss.as.jpa.spi"/>
         <module name="org.jboss.logging"/>
-        <module name="org.jboss.vfs"/>
     </dependencies>
 </module>

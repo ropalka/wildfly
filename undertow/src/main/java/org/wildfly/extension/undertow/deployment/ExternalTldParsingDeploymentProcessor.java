@@ -95,9 +95,6 @@ public class ExternalTldParsingDeploymentProcessor implements DeploymentUnitProc
                     if(tlds.containsKey(resource.getName())) {
                         continue;
                     }
-                    if(resource.getURL().getProtocol().equals("vfs")) {
-                        continue;
-                    }
                     final TldMetaData value = parseTLD(resource);
                     if(sharedTldUris.contains(value.getUri())) {
                         //don't re-include shared TLD's

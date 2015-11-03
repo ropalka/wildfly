@@ -158,7 +158,7 @@ public class PersistenceUnitServiceHandler {
                 holder.getPersistenceUnits().size() > 0) {
                 ArrayList<PersistenceUnitMetadataHolder> puList = new ArrayList<PersistenceUnitMetadataHolder>(1);
                 puList.add(holder);
-                ROOT_LOGGER.tracef("install persistence unit definition for jar %s", deploymentRoot.getRootName());
+                ROOT_LOGGER.tracef("install persistence unit definition for jar %s", deploymentRoot.getLoader().getRootName());
                 // assemble and install the PU service
                 addPuService(phaseContext, puList, startEarly, platform);
             }
@@ -179,7 +179,7 @@ public class PersistenceUnitServiceHandler {
                 holder.getPersistenceUnits().size() > 0) {
                 // assemble and install the PU service
                 puList.add(holder);
-                deploymentRootName = deploymentRoot.getRootName();
+                deploymentRootName = deploymentRoot.getLoader().getRootName();
             }
 
             // look for persistence.xml in war files in the META-INF/persistence.xml directory
@@ -221,7 +221,7 @@ public class PersistenceUnitServiceHandler {
                         puList.add(holder);
                     }
 
-                    ROOT_LOGGER.tracef("install persistence unit definitions for ear %s", root.getRootName());
+                    ROOT_LOGGER.tracef("install persistence unit definitions for ear %s", root.getLoader().getRootName());
                     addPuService(phaseContext, puList, startEarly, platform);
                 }
             }

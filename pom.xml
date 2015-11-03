@@ -5021,10 +5021,6 @@
                         <artifactId>jboss-seam-int-microcontainer</artifactId>
                     </exclusion>
                     <exclusion>
-                        <groupId>org.jboss.deployers</groupId>
-                        <artifactId>jboss-deployers-vfs</artifactId>
-                    </exclusion>
-                    <exclusion>
                         <groupId>org.jboss</groupId>
                         <artifactId>jboss-common-core</artifactId>
                     </exclusion>
@@ -5035,10 +5031,6 @@
                     <exclusion>
                         <groupId>org.jboss.cl</groupId>
                         <artifactId>jboss-classloader</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>org.jboss.deployers</groupId>
-                        <artifactId>jboss-deployers-vfs-spi</artifactId>
                     </exclusion>
                     <exclusion>
                         <groupId>org.jboss.kernel</groupId>

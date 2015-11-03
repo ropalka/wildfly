@@ -71,7 +71,7 @@ public class EarContextRootProcessor implements DeploymentUnitProcessor {
 
         final ModulesMetaData modulesMetaData = earMetaData.getModules();
         if(modulesMetaData != null) for(ModuleMetaData moduleMetaData : modulesMetaData) {
-            if(Web.equals(moduleMetaData.getType()) && moduleMetaData.getFileName().equals(deploymentRoot.getRootName())) {
+            if(Web.equals(moduleMetaData.getType()) && moduleMetaData.getFileName().equals(deploymentRoot.getLoader().getRootName())) {
                 String contextRoot = WebModuleMetaData.class.cast(moduleMetaData.getValue()).getContextRoot();
 
                 if(contextRoot == null && (warMetaData.getJBossWebMetaData() == null || warMetaData.getJBossWebMetaData().getContextRoot() == null)) {

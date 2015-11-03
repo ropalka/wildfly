@@ -1,7 +1,5 @@
 package org.jboss.as.jdr.util;
 
-import org.jboss.as.jdr.vfs.Filters;
-
 import java.io.File;
 import java.io.FileFilter;
 

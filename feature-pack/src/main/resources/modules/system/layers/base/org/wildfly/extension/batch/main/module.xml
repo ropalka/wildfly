@@ -47,7 +47,6 @@
         <module name="org.jboss.modules"/>
         <module name="org.jboss.msc"/>
         <module name="org.jboss.staxmapper"/>
-        <module name="org.jboss.vfs"/>
         <module name="org.wildfly.extension.request-controller"/>
         <module name="org.wildfly.extension.batch.jberet"/>
         <module name="org.wildfly.jberet" services="import"/>

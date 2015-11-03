@@ -112,7 +112,7 @@ public class WarMetaDataProcessor implements DeploymentUnitProcessor {
         List<ResourceRoot> resourceRoots = deploymentUnit.getAttachmentList(Attachments.RESOURCE_ROOTS);
         for (ResourceRoot resourceRoot : resourceRoots) {
             if (resourceRoot.getLoader().getRootName().toLowerCase(Locale.ENGLISH).endsWith(JAR_EXTENSION)) {
-                jarsSet.add(resourceRoot.getRootName());
+                jarsSet.add(resourceRoot.getLoader().getRootName());
                 // Find overlays
                 if (resourceRoot.getLoader().getPaths().contains("META-INF/resources")) {
                     overlays.add(resourceRoot.getLoader());
@@ -120,7 +120,7 @@ public class WarMetaDataProcessor implements DeploymentUnitProcessor {
                 // Find ServletContainerInitializer services
                 Resource sci = resourceRoot.getLoader().getResource(SERVLET_CONTAINER_INITIALIZER);
                 if (sci != null) {
-                    scis.put(resourceRoot.getRootName(), sci);
+                    scis.put(resourceRoot.getLoader().getRootName(), sci);
                 }
             }
         }

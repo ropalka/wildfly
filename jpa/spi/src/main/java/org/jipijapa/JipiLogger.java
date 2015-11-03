@@ -99,14 +99,14 @@ public interface JipiLogger extends BasicLogger {
     IllegalArgumentException nullVar(String varName);
 
     /**
-     * Could not open VFS stream
+     * Could not open resource stream
      *
      * @param cause the cause of the error.
-     * @param name of VFS file
+     * @param name of resource
      * @return a {@link RuntimeException} for the error.
      */
-    @Message(id = 20250, value = "Unable to open VirtualFile-based InputStream %s")
-    RuntimeException cannotOpenVFSStream(@Cause Throwable cause, String name);
+    @Message(id = 20250, value = "Unable to open resource InputStream %s")
+    RuntimeException cannotOpenStream(@Cause Throwable cause, String name);
 
     /**
      * URI format is incorrect, which results in a syntax error

@@ -76,12 +76,12 @@ public class IronJacamarDeploymentParsingProcessor implements DeploymentUnitProc
         }
     }
 
-    public static IronJacamarXmlDescriptor process(final ResourceLoader deploymentRoot, final boolean resolveProperties) throws DeploymentUnitProcessingException {
+    public static IronJacamarXmlDescriptor process(final ResourceLoader loader, final boolean resolveProperties) throws DeploymentUnitProcessingException {
         IronJacamarXmlDescriptor xmlDescriptor = null;
-        final String deploymentRootName = deploymentRoot.getRootName().toLowerCase(Locale.ENGLISH);
+        final String deploymentRootName = loader.getRootName().toLowerCase(Locale.ENGLISH);
         Resource serviceXmlFile = null;
         if (deploymentRootName.endsWith(RaStructureProcessor.RAR_EXTENSION)) {
-            serviceXmlFile = deploymentRoot.getResource("/META-INF/ironjacamar.xml");
+            serviceXmlFile = loader.getResource("/META-INF/ironjacamar.xml");
         }
 
         if (serviceXmlFile == null)

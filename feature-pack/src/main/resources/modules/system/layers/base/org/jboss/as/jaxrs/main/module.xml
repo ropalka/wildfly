@@ -66,6 +66,5 @@
         <module name="org.jboss.resteasy.resteasy-validator-provider-11" optional="true"/>
         <module name="org.jboss.resteasy.resteasy-yaml-provider" optional="true"/>
         <module name="org.jboss.staxmapper"/>
-        <module name="org.jboss.vfs"/>
     </dependencies>
 </module>

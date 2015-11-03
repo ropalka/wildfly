@@ -82,7 +82,7 @@ public class JaxrsSpringProcessor implements DeploymentUnitProcessor {
                 throw JaxrsLogger.JAXRS_LOGGER.noSpringIntegrationJar();
             }
             ResourceLoader loader = ResourceLoaders.newResourceLoader(file);
-            resourceRoot = new ResourceRoot(loader, null, null);
+            resourceRoot = new ResourceRoot(loader);
             return resourceRoot;
         } catch (Exception e) {
             throw new DeploymentUnitProcessingException(e);

@@ -99,7 +99,6 @@
         <module name="org.jboss.remoting"/>
         <module name="org.jboss.staxmapper"/>
         <!-- For parser DUP -->
-        <module name="org.jboss.vfs"/>
         <module name="org.picketbox"/>
 
         <module name="org.omg.api"/>

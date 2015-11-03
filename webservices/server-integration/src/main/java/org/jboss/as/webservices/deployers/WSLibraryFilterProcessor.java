@@ -67,7 +67,7 @@ public class WSLibraryFilterProcessor implements DeploymentUnitProcessor {
                 if (resourceRoots != null) {
                     for (ResourceRoot root : resourceRoots) {
                         if (hasClassesFromPackage(root.getAttachment(ANNOTATION_INDEX), "org.apache.cxf")) {
-                            throw WSLogger.ROOT_LOGGER.invalidLibraryInDeployment("Apache CXF", root.getRootName());
+                            throw WSLogger.ROOT_LOGGER.invalidLibraryInDeployment("Apache CXF", root.getLoader().getRootName());
                         }
                     }
                 }
