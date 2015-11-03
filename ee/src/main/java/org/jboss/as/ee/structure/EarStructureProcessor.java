@@ -22,10 +22,15 @@
 
 package org.jboss.as.ee.structure;
 
+import static org.jboss.as.server.loaders.Utils.getChildArchives;
+import static org.jboss.as.server.loaders.Utils.getResourceName;
+import static org.jboss.as.server.loaders.Utils.resourceOrPathExists;
+import static org.jboss.modules.PathUtils.canonicalize;
+import static org.jboss.modules.PathUtils.relativize;
+
 import java.io.Closeable;
-import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
@@ -42,7 +47,6 @@ import org.jboss.as.server.deployment.MountedDeploymentOverlay;
 import org.jboss.as.server.deployment.SubDeploymentMarker;
 import org.jboss.as.server.deployment.SubExplodedDeploymentMarker;
 import org.jboss.as.server.deployment.module.ModuleRootMarker;
-import org.jboss.as.server.deployment.module.MountHandle;
 import org.jboss.as.server.deployment.module.ResourceRoot;
 import org.jboss.as.server.loaders.ResourceLoader;
 import org.jboss.as.server.loaders.ResourceLoaders;
@@ -50,10 +54,6 @@ import org.jboss.metadata.ear.spec.EarMetaData;
 import org.jboss.metadata.ear.spec.ModuleMetaData;
 import org.jboss.metadata.ear.spec.ModuleMetaData.ModuleType;
 import org.jboss.modules.Resource;
-import org.jboss.vfs.VFS;
-import org.jboss.vfs.VirtualFile;
-import org.jboss.vfs.VisitorAttributes;
-import org.jboss.vfs.SuffixMatchFilter;
 
 /**
  * Deployment processor responsible for detecting EAR deployments and putting setting up the basic structure.
@@ -68,21 +68,7 @@ public class EarStructureProcessor implements DeploymentUnitProcessor {
     private static final String WAR_EXTENSION = ".war";
     private static final String SAR_EXTENSION = ".sar";
     private static final String RAR_EXTENSION = ".rar";
-    private static final List<String> CHILD_ARCHIVE_EXTENSIONS = new ArrayList<String>();
-
-    static {
-        CHILD_ARCHIVE_EXTENSIONS.add(JAR_EXTENSION);
-        CHILD_ARCHIVE_EXTENSIONS.add(WAR_EXTENSION);
-        CHILD_ARCHIVE_EXTENSIONS.add(SAR_EXTENSION);
-        CHILD_ARCHIVE_EXTENSIONS.add(RAR_EXTENSION);
-    }
-
-    private static final SuffixMatchFilter CHILD_ARCHIVE_FILTER = new SuffixMatchFilter(CHILD_ARCHIVE_EXTENSIONS, new VisitorAttributes() {
-
-        public boolean isLeavesOnly() {
-            return false;
-        }
-    });
+    private static final String[] SUBDEPLOYMENT_EXTENSIONS = { JAR_EXTENSION, WAR_EXTENSION, SAR_EXTENSION, RAR_EXTENSION };
 
     private static final String DEFAULT_LIB_DIR = "lib";
 
@@ -94,7 +80,7 @@ public class EarStructureProcessor implements DeploymentUnitProcessor {
         }
 
         final ResourceRoot deploymentRoot = phaseContext.getDeploymentUnit().getAttachment(Attachments.DEPLOYMENT_ROOT);
-        final VirtualFile virtualFile = deploymentRoot.getRoot();
+        final ResourceLoader loader = deploymentRoot.getLoader();
 
         //  Make sure we don't index or add this as a module root
         deploymentRoot.putAttachment(Attachments.INDEX_RESOURCE_ROOT, false);
@@ -102,7 +88,7 @@ public class EarStructureProcessor implements DeploymentUnitProcessor {
 
         String libDirName = DEFAULT_LIB_DIR;
         //its possible that the ear metadata could come for jboss-app.xml
-        final boolean appXmlPresent = deploymentRoot.getRoot().getChild("META-INF/application.xml").exists();
+        final boolean appXmlPresent = loader.getResource("META-INF/application.xml") != null;
         final EarMetaData earMetaData = deploymentUnit.getAttachment(org.jboss.as.ee.structure.Attachments.EAR_METADATA);
         if (earMetaData != null) {
             final String xmlLibDirName = earMetaData.getLibraryDirectory();
@@ -110,102 +96,64 @@ public class EarStructureProcessor implements DeploymentUnitProcessor {
                 if (xmlLibDirName.length() == 1 && xmlLibDirName.charAt(0) == '/') {
                     throw EeLogger.ROOT_LOGGER.rootAsLibraryDirectory();
                 }
-                libDirName = xmlLibDirName;
+                if (!xmlLibDirName.isEmpty()) {
+                    libDirName = relativize(canonicalize(xmlLibDirName));
+                    if (libDirName.endsWith("/")) libDirName = libDirName.substring(0, libDirName.length() - 1);
+                }
             }
         }
 
         // Process all the children
         Map<String, MountedDeploymentOverlay> overlays = deploymentUnit.getAttachment(Attachments.DEPLOYMENT_OVERLAY_LOCATIONS);
         try {
-            final VirtualFile libDir;
             // process the lib directory
-            if (!libDirName.isEmpty()) {
-                libDir = virtualFile.getChild(libDirName);
-                if (libDir.exists()) {
-                    List<VirtualFile> libArchives = libDir.getChildren(CHILD_ARCHIVE_FILTER);
-                    for (final VirtualFile child : libArchives) {
-                        String relativeName = child.getPathNameRelativeTo(deploymentRoot.getRoot());
-                        MountedDeploymentOverlay overlay = overlays.get(relativeName);
-                        final MountHandle mountHandle;
-                        if(overlay != null) {
-                            overlay.remountAsZip();
-                            mountHandle = new MountHandle(null);
-                        } else {
-                            final Closeable closable = child.isFile() ? mount(child, false) : null;
-                            mountHandle = new MountHandle(closable);
-                        }
-                        final ResourceLoader loader = overlay == null
-                                ? ResourceLoaders.newResourceLoader(child.getName(), deploymentRoot.getLoader(), relativeName)
-                                : ResourceLoaders.newResourceLoader(child.getName(), overlay.getFile(), relativeName, deploymentRoot.getLoader());
-                        final ResourceRoot childResource = new ResourceRoot(loader, child, mountHandle);
-                        if (child.getName().toLowerCase(Locale.ENGLISH).endsWith(JAR_EXTENSION)) {
-                            ModuleRootMarker.mark(childResource);
-                            deploymentUnit.addToAttachmentList(Attachments.RESOURCE_ROOTS, childResource);
-                        }
+            if (loader.getPaths().contains(libDirName)) {
+                final Collection<String> libArchives = getChildArchives(loader, libDirName, false, SUBDEPLOYMENT_EXTENSIONS);
+                for (final String child : libArchives) {
+                    MountedDeploymentOverlay overlay = overlays.get(child);
+                    final ResourceLoader childLoader = overlay == null
+                            ? ResourceLoaders.newResourceLoader(getResourceName(child), deploymentRoot.getLoader(), child)
+                            : ResourceLoaders.newResourceLoader(getResourceName(child), overlay.getFile(), child, loader);
+                    final ResourceRoot childResource = new ResourceRoot(childLoader, null, null);
+                    if (getResourceName(child).toLowerCase(Locale.ENGLISH).endsWith(JAR_EXTENSION)) {
+                        ModuleRootMarker.mark(childResource);
+                        deploymentUnit.addToAttachmentList(Attachments.RESOURCE_ROOTS, childResource);
                     }
                 }
-            } else {
-                libDir = null;
             }
             // scan the ear looking for wars and jars
-            final List<VirtualFile> childArchives = new ArrayList<VirtualFile>(virtualFile.getChildren(new SuffixMatchFilter(
-                    CHILD_ARCHIVE_EXTENSIONS, new VisitorAttributes() {
-                @Override
-                public boolean isLeavesOnly() {
-                    return false;
-                }
-
-                @Override
-                public boolean isRecurse(VirtualFile file) {
-                    // don't recurse into /lib
-                    if (file.equals(libDir)) {
-                        return false;
-                    }
-                    for (String suffix : CHILD_ARCHIVE_EXTENSIONS) {
-                        if (file.getName().endsWith(suffix)) {
-                            // don't recurse into sub deployments
-                            return false;
-                        }
-                    }
-                    return true;
-                }
-            })));
+            final Collection<String> childArchives = getChildArchives(loader, true, SUBDEPLOYMENT_EXTENSIONS);
 
             // if there is no application.xml then look in the ear root for modules
             if (!appXmlPresent) {
-                for (final VirtualFile child : childArchives) {
-                    final boolean isWarFile = child.getName().toLowerCase(Locale.ENGLISH).endsWith(WAR_EXTENSION);
-                    final boolean isRarFile = child.getName().toLowerCase(Locale.ENGLISH).endsWith(RAR_EXTENSION);
-                    this.createResourceRoot(deploymentRoot, deploymentUnit, child, isWarFile || isRarFile, isWarFile);
+                for (final String child : childArchives) {
+                    if (child.startsWith(libDirName + "/")) continue;
+                    final boolean isWarFile = getResourceName(child).toLowerCase(Locale.ENGLISH).endsWith(WAR_EXTENSION);
+                    final boolean isRarFile = getResourceName(child).toLowerCase(Locale.ENGLISH).endsWith(RAR_EXTENSION);
+                    this.createResourceRoot(deploymentRoot, deploymentUnit, child, isWarFile || isRarFile);
                 }
             } else {
-                final Set<VirtualFile> subDeploymentFiles = new HashSet<VirtualFile>();
+                final Set<String> subDeploymentFiles = new HashSet<>();
                 // otherwise read from application.xml
                 for (final ModuleMetaData module : earMetaData.getModules()) {
-
-                    if(module.getFileName().endsWith(".xml")) {
-                        throw EeLogger.ROOT_LOGGER.unsupportedModuleType(module.getFileName());
+                    final String childArchiveName = module.getFileName();
+                    if (module.getFileName().endsWith(".xml")) {
+                        throw EeLogger.ROOT_LOGGER.unsupportedModuleType(childArchiveName);
                     }
 
-                    final VirtualFile moduleFile = virtualFile.getChild(module.getFileName());
-                    if (!moduleFile.exists()) {
-                        throw EeLogger.ROOT_LOGGER.cannotProcessEarModule(virtualFile, module.getFileName());
+                    if (!resourceOrPathExists(loader, childArchiveName)) {
+                        throw EeLogger.ROOT_LOGGER.cannotProcessEarModule(loader.getRootName(), childArchiveName);
                     }
 
-                    if (libDir != null) {
-                        VirtualFile moduleParentFile = moduleFile.getParent();
-                        if (moduleParentFile != null) {
-                            if (libDir.equals(moduleParentFile)) {
-                                throw EeLogger.ROOT_LOGGER.earModuleChildOfLibraryDirectory(libDirName, module.getFileName());
-                            }
-                        }
+                    if (childArchiveName.startsWith(libDirName)) {
+                        throw EeLogger.ROOT_LOGGER.earModuleChildOfLibraryDirectory(libDirName, module.getFileName());
                     }
 
                     // maintain this in a collection of subdeployment virtual files, to be used later
-                    subDeploymentFiles.add(moduleFile);
+                    subDeploymentFiles.add(childArchiveName);
 
                     final boolean webArchive = module.getType() == ModuleType.Web;
-                    final ResourceRoot childResource = this.createResourceRoot(deploymentRoot, deploymentUnit, moduleFile, true, webArchive);
+                    final ResourceRoot childResource = this.createResourceRoot(deploymentRoot, deploymentUnit, childArchiveName, true);
                     childResource.putAttachment(org.jboss.as.ee.structure.Attachments.MODULE_META_DATA, module);
 
                     if (!webArchive) {
@@ -216,7 +164,7 @@ public class EarStructureProcessor implements DeploymentUnitProcessor {
                     if (alternativeDD != null && alternativeDD.trim().length() > 0) {
                         final Resource alternateDeploymentDescriptor = deploymentRoot.getLoader().getResource(alternativeDD);
                         if (alternateDeploymentDescriptor == null) {
-                            throw EeLogger.ROOT_LOGGER.alternateDeploymentDescriptor(alternativeDD, moduleFile);
+                            throw EeLogger.ROOT_LOGGER.alternateDeploymentDescriptor(alternativeDD, childArchiveName);
                         }
                         switch (module.getType()) {
                             case Client:
@@ -238,29 +186,23 @@ public class EarStructureProcessor implements DeploymentUnitProcessor {
                     }
                 }
                 // now check the rest of the archive for any other jar/sar files
-                for (final VirtualFile child : childArchives) {
-                    if (subDeploymentFiles.contains(child)) {
-                        continue;
-                    }
-                    final String fileName = child.getName().toLowerCase(Locale.ENGLISH);
+                for (final String child : childArchives) {
+                    if (child.startsWith(libDirName + "/")) continue;
+                    if (subDeploymentFiles.contains(child)) continue;
+                    final String fileName = getResourceName(child).toLowerCase(Locale.ENGLISH);
                     if (fileName.endsWith(SAR_EXTENSION) || fileName.endsWith(JAR_EXTENSION)) {
-                        this.createResourceRoot(deploymentRoot, deploymentUnit, child, false, false);
+                        this.createResourceRoot(deploymentRoot, deploymentUnit, child, false);
                     }
                 }
             }
 
         } catch (IOException e) {
-            throw EeLogger.ROOT_LOGGER.failedToProcessChild(e, virtualFile);
+            throw EeLogger.ROOT_LOGGER.failedToProcessChild(e, loader.getRootName());
         }
     }
 
-    private static Closeable mount(VirtualFile moduleFile, boolean explode) throws IOException {
-        return explode ? VFS.mountZipExpanded(moduleFile, moduleFile)
-                : VFS.mountZip(moduleFile, moduleFile);
-    }
-
     /**
-     * Creates a {@link ResourceRoot} for the passed {@link VirtualFile file} and adds it to the list of {@link ResourceRoot}s
+     * Creates a {@link ResourceRoot} for the passed {@link String file} and adds it to the list of {@link ResourceRoot}s
      * in the {@link DeploymentUnit deploymentUnit}
      *
      * @param deploymentRoot      The deployment resource root
@@ -268,35 +210,22 @@ public class EarStructureProcessor implements DeploymentUnitProcessor {
      * @param file                The file for which the resource root will be created
      * @param markAsSubDeployment If this is true, then the {@link ResourceRoot} that is created will be marked as a subdeployment
      *                            through a call to {@link SubDeploymentMarker#mark(org.jboss.as.server.deployment.module.ResourceRoot)}
-     * @param explodeDuringMount  If this is true then the {@link VirtualFile file} will be exploded during mount,
-     *                            while creating the {@link ResourceRoot}
      * @return Returns the created {@link ResourceRoot}
      * @throws IOException
      */
-    private ResourceRoot createResourceRoot(final ResourceRoot deploymentRoot, final DeploymentUnit deploymentUnit, final VirtualFile file, final boolean markAsSubDeployment, final boolean explodeDuringMount) throws IOException {
-        final boolean war = file.getName().toLowerCase(Locale.ENGLISH).endsWith(WAR_EXTENSION);
-        final Closeable closable = file.isFile() ? mount(file, explodeDuringMount) : exportExplodedWar(war, file, deploymentUnit);
-        final MountHandle mountHandle = new MountHandle(closable);
-        final String relativeName = file.getPathNameRelativeTo(deploymentRoot.getRoot());
-        final ResourceLoader loader = ResourceLoaders.newResourceLoader(file.getName(), deploymentRoot.getLoader(), relativeName);
-        final ResourceRoot resourceRoot = new ResourceRoot(loader, file, mountHandle);
+    private ResourceRoot createResourceRoot(final ResourceRoot deploymentRoot, final DeploymentUnit deploymentUnit, final String file, final boolean markAsSubDeployment) throws IOException {
+        final ResourceLoader loader = ResourceLoaders.newResourceLoader(getResourceName(file), deploymentRoot.getLoader(), file);
+        final ResourceRoot resourceRoot = new ResourceRoot(loader, null, null);
         deploymentUnit.addToAttachmentList(Attachments.RESOURCE_ROOTS, resourceRoot);
         if (markAsSubDeployment) {
             SubDeploymentMarker.mark(resourceRoot);
         }
+        final boolean war = getResourceName(file).toLowerCase(Locale.ENGLISH).endsWith(WAR_EXTENSION);
         if (war) {
             resourceRoot.putAttachment(Attachments.INDEX_RESOURCE_ROOT, false);
             SubExplodedDeploymentMarker.mark(resourceRoot);
         }
         return resourceRoot;
-    }
-
-    private Closeable exportExplodedWar(final boolean war, final VirtualFile file, final DeploymentUnit deploymentUnit) throws IOException {
-        if (isExplodedWarInArchiveEar(war, file, deploymentUnit)) {
-            File warContent = file.getPhysicalFile();
-            return VFS.mountReal(warContent, file);
-        }
-        return null;
     }
 
     public static void safeClose(final Closeable c) {
@@ -308,11 +237,6 @@ public class EarStructureProcessor implements DeploymentUnitProcessor {
             }
         }
     }
-
-    private boolean isExplodedWarInArchiveEar(final boolean war, final VirtualFile file, final DeploymentUnit deploymentUnit) {
-        return war && !file.isFile() && deploymentUnit.hasAttachment(Attachments.DEPLOYMENT_CONTENTS) && deploymentUnit.getAttachment(Attachments.DEPLOYMENT_CONTENTS).isFile();
-    }
-
 
     public void undeploy(DeploymentUnit context) {
         final List<ResourceRoot> children = context.removeAttachment(Attachments.RESOURCE_ROOTS);

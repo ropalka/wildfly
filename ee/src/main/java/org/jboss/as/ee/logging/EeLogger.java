@@ -54,7 +54,6 @@ import org.jboss.logging.annotations.Message;
 import org.jboss.logging.annotations.MessageLogger;
 import org.jboss.logging.annotations.Param;
 import org.jboss.msc.service.ServiceName;
-import org.jboss.vfs.VirtualFile;
 
 /**
  * @author <a href="mailto:jperkins@redhat.com">James R. Perkins</a>
@@ -69,17 +68,6 @@ public interface EeLogger extends BasicLogger {
     EeLogger ROOT_LOGGER = Logger.getMessageLogger(EeLogger.class, "org.jboss.as.ee");
 
     /**
-     * Logs a warning message indicating the transaction datasource, represented by the {@code className} parameter,
-     * could not be proxied and will not be enlisted in the transactions automatically.
-     *
-     * @param cause     the cause of the error.
-     * @param className the datasource class name.
-     */
-    @LogMessage(level = WARN)
-    @Message(id = 1, value = "Transactional datasource %s could not be proxied and will not be enlisted in transactions automatically")
-    void cannotProxyTransactionalDatasource(@Cause Throwable cause, String className);
-
-    /**
      * Logs a warning message indicating the resource-env-ref could not be resolved.
      *
      * @param elementName the name of the element.
@@ -88,37 +76,6 @@ public interface EeLogger extends BasicLogger {
     @LogMessage(level = WARN)
     @Message(id = 2, value = "Could not resolve %s %s")
     void cannotResolve(String elementName, String name);
-
-    /**
-     * Logs a warning message indicating the class path entry, represented by the {@code entry} parameter, was not found
-     * in the file.
-     *
-     * @param entry the class path entry.
-     * @param file  the file.
-     */
-    @LogMessage(level = WARN)
-    @Message(id = 3, value = "Class Path entry %s in %s does not point to a valid jar for a Class-Path reference.")
-    void classPathEntryNotAJar(String entry, VirtualFile file);
-
-    /**
-     * Logs a warning message indicating the class path entry in file may not point to a sub deployment.
-     *
-     * @param file the file.
-     */
-    @LogMessage(level = WARN)
-    @Message(id = 4, value = "Class Path entry in %s may not point to a sub deployment.")
-    void classPathEntryASubDeployment(VirtualFile file);
-
-    /**
-     * Logs a warning message indicating the class path entry, represented by the {@code entry} parameter, was not found
-     * in the file.
-     *
-     * @param entry the class path entry.
-     * @param file  the file.
-     */
-    @LogMessage(level = WARN)
-    @Message(id = 5, value = "Class Path entry %s in %s not found.")
-    void classPathEntryNotFound(String entry, VirtualFile file);
 
     /**
      * Logs a warning message indicating a failure to destroy the component instance.
@@ -224,7 +181,7 @@ public interface EeLogger extends BasicLogger {
      * @return a {@link DeploymentUnitProcessingException} for the error.
      */
     @Message(id = 19, value = "Could not find alternate deployment descriptor %s specified for %s")
-    DeploymentUnitProcessingException alternateDeploymentDescriptor(String deploymentDescriptor, VirtualFile moduleFile);
+    DeploymentUnitProcessingException alternateDeploymentDescriptor(String deploymentDescriptor, String moduleFile);
 
     /**
      * Creates an exception indicating the annotation must provide the attribute.
@@ -368,7 +325,7 @@ public interface EeLogger extends BasicLogger {
      * @return a {@link DeploymentUnitProcessingException} for the error.
      */
     @Message(id = 31, value = "Unable to process modules in application.xml for EAR [%s], module file %s not found")
-    DeploymentUnitProcessingException cannotProcessEarModule(VirtualFile earFile, String moduleFile);
+    DeploymentUnitProcessingException cannotProcessEarModule(String earFile, String moduleFile);
 
     /**
      * Creates an exception indicating the inability to parse the resource-ref URI.
@@ -618,7 +575,7 @@ public interface EeLogger extends BasicLogger {
      * @return a {@link DeploymentUnitProcessingException} for the error.
      */
     @Message(id = 54, value = "Failed to process children for EAR [%s]")
-    DeploymentUnitProcessingException failedToProcessChild(@Cause Throwable cause, VirtualFile earFile);
+    DeploymentUnitProcessingException failedToProcessChild(@Cause Throwable cause, String earFile);
 
     /**
      * A message indicating a failure to read the entries in the application.
