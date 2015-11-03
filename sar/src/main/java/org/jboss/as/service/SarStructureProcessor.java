@@ -8,14 +8,12 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 
 import org.jboss.as.server.deployment.Attachments;
 import org.jboss.as.server.deployment.DeploymentPhaseContext;
 import org.jboss.as.server.deployment.DeploymentUnit;
 import org.jboss.as.server.deployment.DeploymentUnitProcessingException;
 import org.jboss.as.server.deployment.DeploymentUnitProcessor;
-import org.jboss.as.server.deployment.MountedDeploymentOverlay;
 import org.jboss.as.server.deployment.module.ModuleRootMarker;
 import org.jboss.as.server.deployment.module.ResourceRoot;
 import org.jboss.as.server.loaders.ResourceLoader;
@@ -26,7 +24,7 @@ import org.jboss.as.service.logging.SarLogger;
  * @author Tomasz Adamski
  * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
-public class SarStructureProcessor implements DeploymentUnitProcessor {
+public final class SarStructureProcessor implements DeploymentUnitProcessor {
 
     private static final String SAR_EXTENSION = ".sar";
     private static final String JAR_EXTENSION = ".jar";
@@ -49,16 +47,12 @@ public class SarStructureProcessor implements DeploymentUnitProcessor {
         }
 
         ModuleRootMarker.mark(resourceRoot, true);
-        Map<String, MountedDeploymentOverlay> overlays = deploymentUnit.getAttachment(Attachments.DEPLOYMENT_OVERLAY_LOCATIONS);
         try {
             final Collection<String> childArchives = getChildArchives(parentLoader, true, JAR_EXTENSION);
             String archiveName;
             for (final String archivePath : childArchives) {
                 archiveName = getResourceName(archivePath);
-                MountedDeploymentOverlay overlay = overlays.get(archivePath);
-                final ResourceLoader loader = overlay == null
-                        ? ResourceLoaders.newResourceLoader(archiveName, resourceRoot.getLoader(), archivePath)
-                        : ResourceLoaders.newResourceLoader(archiveName, overlay.getFile(), archivePath, resourceRoot.getLoader());
+                final ResourceLoader loader = ResourceLoaders.newResourceLoader(archiveName, resourceRoot.getLoader(), archivePath);
                 // TODO: close loaders on cleanup in undeploy()
                 final ResourceRoot childResource = new ResourceRoot(loader, null, null);
                 ModuleRootMarker.mark(childResource);

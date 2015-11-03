@@ -32,7 +32,6 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 
 import io.undertow.util.FileUtils;
 import org.jboss.as.controller.services.path.PathManager;
@@ -43,12 +42,10 @@ import org.jboss.as.server.deployment.DeploymentPhaseContext;
 import org.jboss.as.server.deployment.DeploymentUnit;
 import org.jboss.as.server.deployment.DeploymentUnitProcessingException;
 import org.jboss.as.server.deployment.DeploymentUnitProcessor;
-import org.jboss.as.server.deployment.MountedDeploymentOverlay;
 import org.jboss.as.server.deployment.PrivateSubDeploymentMarker;
 import org.jboss.as.server.deployment.module.FilterSpecification;
 import org.jboss.as.server.deployment.module.ModuleRootMarker;
 import org.jboss.as.server.deployment.module.ModuleSpecification;
-import org.jboss.as.server.deployment.module.MountHandle;
 import org.jboss.as.server.deployment.module.ResourceRoot;
 import org.jboss.as.server.loaders.ResourceLoader;
 import org.jboss.as.server.loaders.ResourceLoaders;
@@ -66,7 +63,7 @@ import org.wildfly.extension.undertow.logging.UndertowLogger;
  * @author Thomas.Diesler@jboss.com
  * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
-public class WarStructureDeploymentProcessor implements DeploymentUnitProcessor {
+public final class WarStructureDeploymentProcessor implements DeploymentUnitProcessor {
 
     private static final String TEMP_DIR = "jboss.server.temp.dir";
     private static final String WEB_INF_LIB = "WEB-INF/lib";
@@ -112,11 +109,9 @@ public class WarStructureDeploymentProcessor implements DeploymentUnitProcessor 
             ModuleRootMarker.mark(deploymentResourceRoot, true);
         }
 
-        // TODO: This needs to be ported to add additional resource roots the standard way
-        final MountHandle mountHandle = deploymentResourceRoot.getMountHandle();
         try {
             // add standard resource roots, this should eventually replace ClassPathEntry
-            final List<ResourceRoot> resourceRoots = createResourceRoots(deploymentResourceRoot, deploymentUnit);
+            final List<ResourceRoot> resourceRoots = createResourceRoots(deploymentResourceRoot);
             for (ResourceRoot root : resourceRoots) {
                 deploymentUnit.addToAttachmentList(Attachments.RESOURCE_ROOTS, root);
             }
@@ -187,12 +182,11 @@ public class WarStructureDeploymentProcessor implements DeploymentUnitProcessor 
     /**
      * Create the resource roots for a .war deployment
      *
-     *
      * @param resourceRoot the deployment resource root
      * @return the resource roots
      * @throws java.io.IOException for any error
      */
-    private List<ResourceRoot> createResourceRoots(final ResourceRoot resourceRoot, final DeploymentUnit deploymentUnit) throws IOException, DeploymentUnitProcessingException {
+    private List<ResourceRoot> createResourceRoots(final ResourceRoot resourceRoot) throws IOException, DeploymentUnitProcessingException {
         final ResourceLoader rootLoader = resourceRoot.getLoader();
         final List<ResourceRoot> entries = new ArrayList<>();
         // WEB-INF classes
@@ -203,15 +197,11 @@ public class WarStructureDeploymentProcessor implements DeploymentUnitProcessor 
             entries.add(webInfClassesRoot);
         }
         // WEB-INF lib
-        Map<String, MountedDeploymentOverlay> overlays = deploymentUnit.getAttachment(Attachments.DEPLOYMENT_OVERLAY_LOCATIONS);
         if (rootLoader.getPaths().contains(WEB_INF_LIB)) {
             final Collection<String> archives = getChildArchives(rootLoader, WEB_INF_LIB, false, JAR_EXTENSION);
             for (final String archive : archives) {
                 try {
-                    MountedDeploymentOverlay overlay = overlays.get(archive);
-                    final ResourceLoader loader = overlay == null
-                            ? ResourceLoaders.newResourceLoader(getResourceName(archive), resourceRoot.getLoader(), archive)
-                            : ResourceLoaders.newResourceLoader(getResourceName(archive), overlay.getFile(), archive, resourceRoot.getLoader());
+                    final ResourceLoader loader = ResourceLoaders.newResourceLoader(getResourceName(archive), resourceRoot.getLoader(), archive);
                     final ResourceRoot webInfArchiveRoot = new ResourceRoot(loader, null, null, null);
                     ModuleRootMarker.mark(webInfArchiveRoot);
                     entries.add(webInfArchiveRoot);

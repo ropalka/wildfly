@@ -34,7 +34,6 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Set;
 
 import org.jboss.as.ee.logging.EeLogger;
@@ -43,7 +42,6 @@ import org.jboss.as.server.deployment.DeploymentPhaseContext;
 import org.jboss.as.server.deployment.DeploymentUnit;
 import org.jboss.as.server.deployment.DeploymentUnitProcessingException;
 import org.jboss.as.server.deployment.DeploymentUnitProcessor;
-import org.jboss.as.server.deployment.MountedDeploymentOverlay;
 import org.jboss.as.server.deployment.SubDeploymentMarker;
 import org.jboss.as.server.deployment.SubExplodedDeploymentMarker;
 import org.jboss.as.server.deployment.module.ModuleRootMarker;
@@ -62,16 +60,14 @@ import org.jboss.modules.Resource;
  * @author Stuart Douglas
  * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
-public class EarStructureProcessor implements DeploymentUnitProcessor {
+public final class EarStructureProcessor implements DeploymentUnitProcessor {
 
     private static final String JAR_EXTENSION = ".jar";
     private static final String WAR_EXTENSION = ".war";
     private static final String SAR_EXTENSION = ".sar";
     private static final String RAR_EXTENSION = ".rar";
     private static final String[] SUBDEPLOYMENT_EXTENSIONS = { JAR_EXTENSION, WAR_EXTENSION, SAR_EXTENSION, RAR_EXTENSION };
-
     private static final String DEFAULT_LIB_DIR = "lib";
-
 
     public void deploy(final DeploymentPhaseContext phaseContext) throws DeploymentUnitProcessingException {
         final DeploymentUnit deploymentUnit = phaseContext.getDeploymentUnit();
@@ -104,16 +100,12 @@ public class EarStructureProcessor implements DeploymentUnitProcessor {
         }
 
         // Process all the children
-        Map<String, MountedDeploymentOverlay> overlays = deploymentUnit.getAttachment(Attachments.DEPLOYMENT_OVERLAY_LOCATIONS);
         try {
             // process the lib directory
             if (loader.getPaths().contains(libDirName)) {
                 final Collection<String> libArchives = getChildArchives(loader, libDirName, false, SUBDEPLOYMENT_EXTENSIONS);
                 for (final String child : libArchives) {
-                    MountedDeploymentOverlay overlay = overlays.get(child);
-                    final ResourceLoader childLoader = overlay == null
-                            ? ResourceLoaders.newResourceLoader(getResourceName(child), deploymentRoot.getLoader(), child)
-                            : ResourceLoaders.newResourceLoader(getResourceName(child), overlay.getFile(), child, loader);
+                    final ResourceLoader childLoader = ResourceLoaders.newResourceLoader(getResourceName(child), deploymentRoot.getLoader(), child);
                     final ResourceRoot childResource = new ResourceRoot(childLoader, null, null);
                     if (getResourceName(child).toLowerCase(Locale.ENGLISH).endsWith(JAR_EXTENSION)) {
                         ModuleRootMarker.mark(childResource);
