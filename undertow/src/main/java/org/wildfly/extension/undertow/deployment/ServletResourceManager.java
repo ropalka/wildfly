@@ -73,7 +73,8 @@ public class ServletResourceManager implements ResourceManager {
 
     @Override
     public Resource getResource(final String path) throws IOException {
-        final String normalizedPath = relativize(canonicalize(path));
+        String normalizedPath = relativize(canonicalize(path));
+        if (normalizedPath.endsWith("/")) normalizedPath = normalizedPath.substring(0, normalizedPath.length() - 1);
         final org.jboss.modules.Resource res = loader.getResource(normalizedPath);
         if (res != null) {
             return new ServletResource(this, new ModulesResource(loader, res, normalizedPath, false));
@@ -101,7 +102,8 @@ public class ServletResourceManager implements ResourceManager {
      * @return The list of children
      */
     final List<Resource> list(final String path) {
-        final String normalizedPath = relativize(canonicalize(path));
+        String normalizedPath = relativize(canonicalize(path));
+        if (normalizedPath.endsWith("/")) normalizedPath = normalizedPath.substring(0, normalizedPath.length() - 1);
         final List<Resource> ret = new ArrayList<>();
         // process loader
         Iterator<org.jboss.modules.Resource> resources = loader.iterateResources(normalizedPath, false);
