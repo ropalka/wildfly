@@ -22,8 +22,7 @@
 
 package org.jboss.as.ee.component;
 
-import static org.jboss.modules.PathUtils.canonicalize;
-import static org.jboss.modules.PathUtils.relativize;
+import static org.jboss.as.server.loaders.Utils.normalizePath;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -121,8 +120,7 @@ public class EEApplicationDescription {
         if (componentName.contains("#")) {
             final String[] parts = componentName.split("#");
             String path = parts[0];
-            path = relativize(canonicalize(path));
-            path = path.endsWith("/") ? path.substring(0, path.length() - 1) : path;
+            path = normalizePath(path);
             final String name = parts[1];
             final List<Description> info = componentsByName.get(name);
             if (info == null) {
@@ -173,8 +171,7 @@ public class EEApplicationDescription {
         if (componentName.contains("#")) {
             final String[] parts = componentName.split("#");
             String path = parts[0];
-            path = relativize(canonicalize(path));
-            path = path.endsWith("/") ? path.substring(0, path.length() - 1) : path;
+            path = normalizePath(path);
             final String name = parts[1];
             final Set<ViewDescription> ret = new HashSet<ViewDescription>();
             for (ViewInformation i : info) {
@@ -212,8 +209,7 @@ public class EEApplicationDescription {
         if (messageDestName.contains("#")) {
             final String[] parts = messageDestName.split("#");
             String path = parts[0];
-            path = relativize(canonicalize(path));
-            path = path.endsWith("/") ? path.substring(0, path.length() - 1) : path;
+            path = normalizePath(path);
             final String name = parts[1];
             final Set<String> ret = new HashSet<String>();
             final List<MessageDestinationMapping> data = messageDestinationJndiMapping.get(name);

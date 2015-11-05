@@ -21,8 +21,7 @@
  */
 package org.wildfly.extension.undertow.deployment;
 
-import static org.jboss.modules.PathUtils.canonicalize;
-import static org.jboss.modules.PathUtils.relativize;
+import static org.jboss.as.server.loaders.Utils.normalizePath;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -73,8 +72,7 @@ public class ServletResourceManager implements ResourceManager {
 
     @Override
     public Resource getResource(final String path) throws IOException {
-        String normalizedPath = relativize(canonicalize(path));
-        if (normalizedPath.endsWith("/")) normalizedPath = normalizedPath.substring(0, normalizedPath.length() - 1);
+        final String normalizedPath = "".equals(path) ? "" : normalizePath(path);
         final org.jboss.modules.Resource res = loader.getResource(normalizedPath);
         if (res != null) {
             return new ServletResource(this, new ModulesResource(loader, res, normalizedPath, false));
@@ -102,8 +100,7 @@ public class ServletResourceManager implements ResourceManager {
      * @return The list of children
      */
     final List<Resource> list(final String path) {
-        String normalizedPath = relativize(canonicalize(path));
-        if (normalizedPath.endsWith("/")) normalizedPath = normalizedPath.substring(0, normalizedPath.length() - 1);
+        final String normalizedPath = "".equals(path) ? "" : normalizePath(path);
         final List<Resource> ret = new ArrayList<>();
         // process loader
         Iterator<org.jboss.modules.Resource> resources = loader.iterateResources(normalizedPath, false);

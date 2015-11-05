@@ -23,8 +23,7 @@
 package org.jboss.as.jpa.container;
 
 import static org.jboss.as.jpa.messages.JpaLogger.ROOT_LOGGER;
-import static org.jboss.modules.PathUtils.canonicalize;
-import static org.jboss.modules.PathUtils.relativize;
+import static org.jboss.as.server.loaders.Utils.normalizePath;
 
 import java.util.List;
 
@@ -211,7 +210,7 @@ public class PersistenceUnitSearch {
     }
 
     private static PersistenceUnitMetadata getPersistenceUnit(DeploymentUnit current, final String absolutePath, String puName) {
-        final String archiveName = relativize(canonicalize(absolutePath));
+        final String archiveName = normalizePath(absolutePath);
         final List<ResourceRoot> resourceRoots = DeploymentUtils.allResourceRoots(DeploymentUtils.getTopDeploymentUnit(current));
         for (final ResourceRoot resourceRoot : resourceRoots) {
             if (resourceRoot.getLoader().getPath().equals(archiveName)) {

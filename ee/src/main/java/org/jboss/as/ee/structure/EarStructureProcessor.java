@@ -24,9 +24,8 @@ package org.jboss.as.ee.structure;
 
 import static org.jboss.as.server.loaders.Utils.getChildArchives;
 import static org.jboss.as.server.loaders.Utils.getResourceName;
+import static org.jboss.as.server.loaders.Utils.normalizePath;
 import static org.jboss.as.server.loaders.Utils.resourceOrPathExists;
-import static org.jboss.modules.PathUtils.canonicalize;
-import static org.jboss.modules.PathUtils.relativize;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -92,8 +91,7 @@ public final class EarStructureProcessor implements DeploymentUnitProcessor {
                     throw EeLogger.ROOT_LOGGER.rootAsLibraryDirectory();
                 }
                 if (!xmlLibDirName.isEmpty()) {
-                    libDirName = relativize(canonicalize(xmlLibDirName));
-                    if (libDirName.endsWith("/")) libDirName = libDirName.substring(0, libDirName.length() - 1);
+                    libDirName = normalizePath(xmlLibDirName);
                 }
             }
         }

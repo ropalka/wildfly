@@ -21,8 +21,7 @@
  */
 package org.jboss.as.jpa.hibernate4;
 
-import static org.jboss.modules.PathUtils.canonicalize;
-import static org.jboss.modules.PathUtils.relativize;
+import static org.jboss.as.server.loaders.Utils.normalizePath;
 
 import org.hibernate.jpa.boot.archive.spi.ArchiveContext;
 import org.hibernate.jpa.boot.archive.spi.ArchiveDescriptor;
@@ -56,10 +55,9 @@ public class ResourceLoaderArchiveDescriptor implements ArchiveDescriptor {
         int exclamationIndex = archiveURL.indexOf("!");
         final String archiveFile = exclamationIndex > -1 ? archiveURL.substring(0, exclamationIndex) : archiveURL;
         final String path = (exclamationIndex > -1 ? archiveURL.substring(exclamationIndex + 1) : "") + "/" + entryBase;
-        String normalizedPath = relativize(canonicalize(path));
-        normalizedPath = normalizedPath.endsWith("/") ? normalizedPath.substring(0, normalizedPath.length() - 1) : normalizedPath;
+        final String normalizedPath = "".equals(path) ? "" : normalizePath(path);
         ResourceLoader loader = ResourceLoaders.newResourceLoader(new File(archiveFile));
-        if (!normalizedPath.equals("") && !normalizedPath.equals("/")) {
+        if (!normalizedPath.equals("")) {
             loader = ResourceLoaders.newResourceLoader(normalizedPath, loader, normalizedPath);
         }
         this.loader = loader;

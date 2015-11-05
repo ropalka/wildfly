@@ -21,8 +21,7 @@
  */
 package org.jboss.as.appclient.deployment;
 
-import static org.jboss.modules.PathUtils.canonicalize;
-import static org.jboss.modules.PathUtils.relativize;
+import static org.jboss.as.server.loaders.Utils.normalizePath;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -57,8 +56,7 @@ public class ApplicationClientStructureProcessor implements DeploymentUnitProces
     private final String deployment;
 
     public ApplicationClientStructureProcessor(final String deployment) {
-        final String canonPath = relativize(canonicalize(deployment));
-        this.deployment = canonPath.endsWith("/") ? canonPath.substring(canonPath.length() - 1) : canonPath;
+        this.deployment = normalizePath(deployment);
     }
 
     @Override

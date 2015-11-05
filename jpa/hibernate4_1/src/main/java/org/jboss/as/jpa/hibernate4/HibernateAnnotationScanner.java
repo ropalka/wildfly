@@ -24,8 +24,7 @@ package org.jboss.as.jpa.hibernate4;
 
 import static org.jipijapa.JipiLogger.JPA_LOGGER;
 import static org.jboss.as.server.loaders.Utils.getResourceName;
-import static org.jboss.modules.PathUtils.canonicalize;
-import static org.jboss.modules.PathUtils.relativize;
+import static org.jboss.as.server.loaders.Utils.normalizePath;
 
 import java.io.File;
 import java.io.IOException;
@@ -318,10 +317,9 @@ public class HibernateAnnotationScanner implements Scanner {
             int exclamationIndex = archiveURL.indexOf("!");
             final String archiveFile = exclamationIndex > -1 ? archiveURL.substring(0, exclamationIndex) : archiveURL;
             final String path = exclamationIndex > -1 ? archiveURL.substring(exclamationIndex + 1) : "";
-            String normalizedPath = relativize(canonicalize(path));
-            normalizedPath = normalizedPath.endsWith("/") ? normalizedPath.substring(0, normalizedPath.length() - 1) : normalizedPath;
+            final String normalizedPath = "".equals(path) ? "" : normalizePath(path);
             ResourceLoader loader = ResourceLoaders.newResourceLoader(new File(archiveFile));
-            if (!normalizedPath.equals("") && !normalizedPath.equals("/")) {
+            if (!normalizedPath.equals("")) {
                 loader = ResourceLoaders.newResourceLoader(normalizedPath, loader, normalizedPath);
             }
             return loader;

@@ -23,6 +23,7 @@
 package org.jboss.as.jpa.processor;
 
 import static org.jboss.as.server.loaders.Utils.getResourceName;
+import static org.jboss.as.server.loaders.Utils.normalizePath;
 
 import org.jboss.as.ee.structure.DeploymentType;
 import org.jboss.as.ee.structure.DeploymentTypeMarker;
@@ -45,7 +46,6 @@ import org.jboss.as.server.loaders.ResourceLoader;
 import org.jboss.as.txn.service.TransactionManagerService;
 import org.jboss.as.txn.service.TransactionSynchronizationRegistryService;
 import org.jboss.metadata.parser.util.NoopXMLResolver;
-import org.jboss.modules.PathUtils;
 import org.jboss.modules.Resource;
 import org.jipijapa.plugin.spi.PersistenceUnitMetadata;
 
@@ -302,7 +302,7 @@ public class PersistenceUnitParseProcessor implements DeploymentUnitProcessor {
              */
             try {
                 loader = loader.getParent() != null ? loader.getParent() : loader;
-                final String normalizedJarPath = PathUtils.relativize(PathUtils.canonicalize(jar));
+                final String normalizedJarPath = normalizePath(jar);
                 if (!loader.getPaths().contains(normalizedJarPath) && loader.getResource(normalizedJarPath) == null) {
                     throw JpaLogger.ROOT_LOGGER.archiveNotFound(jar);
                 }
