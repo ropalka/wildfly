@@ -23,8 +23,8 @@
 package org.jboss.as.jpa.hibernate4;
 
 import static org.jipijapa.JipiLogger.JPA_LOGGER;
-import static org.jboss.as.server.loaders.Utils.getResourceName;
-import static org.jboss.as.server.loaders.Utils.normalizePath;
+import static org.wildfly.loaders.Utils.getResourceName;
+import static org.wildfly.loaders.Utils.normalizePath;
 
 import java.io.File;
 import java.io.IOException;
@@ -41,14 +41,14 @@ import java.util.Set;
 
 import org.hibernate.ejb.packaging.NamedInputStream;
 import org.hibernate.ejb.packaging.Scanner;
-import org.jboss.as.server.loaders.ResourceLoader;
-import org.jboss.as.server.loaders.ResourceLoaders;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.ClassInfo;
 import org.jboss.jandex.DotName;
 import org.jboss.jandex.Index;
 import org.jboss.modules.Resource;
 import org.jipijapa.plugin.spi.PersistenceUnitMetadata;
+import org.wildfly.loaders.ResourceLoader;
+import org.wildfly.loaders.ResourceLoaders;
 
 /**
  * Annotation scanner for Hibernate

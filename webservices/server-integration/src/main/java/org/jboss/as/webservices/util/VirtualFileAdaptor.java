@@ -21,16 +21,16 @@
  */
 package org.jboss.as.webservices.util;
 
-import static org.jboss.as.server.loaders.Utils.getResourceName;
+import static org.wildfly.loaders.Utils.getResourceName;
 
 import java.io.IOException;
 import java.net.URL;
 import java.util.List;
 
-import org.jboss.as.server.loaders.ResourceLoader;
 import org.jboss.as.webservices.logging.WSLogger;
 import org.jboss.modules.Resource;
 import org.jboss.wsf.spi.deployment.UnifiedVirtualFile;
+import org.wildfly.loaders.ResourceLoader;
 
 /**
  * A ResourceLoader and Resource adaptor.

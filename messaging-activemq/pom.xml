@@ -127,10 +127,15 @@
             <artifactId>wildfly-naming</artifactId>
         </dependency>
 
-	    <dependency>
-	        <groupId>org.wildfly.core</groupId>
+        <dependency>
+            <groupId>org.wildfly.core</groupId>
+            <artifactId>wildfly-loaders</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.wildfly.core</groupId>
             <artifactId>wildfly-network</artifactId>
-	    </dependency>
+        </dependency>
 
         <dependency>
             <groupId>org.wildfly</groupId>
@@ -199,7 +204,7 @@
         <dependency>
             <groupId>org.wildfly.core</groupId>
             <artifactId>wildfly-subsystem-test</artifactId>
-						<type>pom</type>
+            <type>pom</type>
             <scope>test</scope>
         </dependency>
     </dependencies>

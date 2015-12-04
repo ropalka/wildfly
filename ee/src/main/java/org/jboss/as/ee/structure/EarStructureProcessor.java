@@ -22,10 +22,10 @@
 
 package org.jboss.as.ee.structure;
 
-import static org.jboss.as.server.loaders.Utils.getChildArchives;
-import static org.jboss.as.server.loaders.Utils.getResourceName;
-import static org.jboss.as.server.loaders.Utils.normalizePath;
-import static org.jboss.as.server.loaders.Utils.resourceOrPathExists;
+import static org.wildfly.loaders.Utils.getChildArchives;
+import static org.wildfly.loaders.Utils.getResourceName;
+import static org.wildfly.loaders.Utils.normalizePath;
+import static org.wildfly.loaders.Utils.resourceOrPathExists;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -44,12 +44,12 @@ import org.jboss.as.server.deployment.SubDeploymentMarker;
 import org.jboss.as.server.deployment.SubExplodedDeploymentMarker;
 import org.jboss.as.server.deployment.module.ModuleRootMarker;
 import org.jboss.as.server.deployment.module.ResourceRoot;
-import org.jboss.as.server.loaders.ResourceLoader;
-import org.jboss.as.server.loaders.ResourceLoaders;
 import org.jboss.metadata.ear.spec.EarMetaData;
 import org.jboss.metadata.ear.spec.ModuleMetaData;
 import org.jboss.metadata.ear.spec.ModuleMetaData.ModuleType;
 import org.jboss.modules.Resource;
+import org.wildfly.loaders.ResourceLoader;
+import org.wildfly.loaders.ResourceLoaders;
 
 /**
  * Deployment processor responsible for detecting EAR deployments and putting setting up the basic structure.

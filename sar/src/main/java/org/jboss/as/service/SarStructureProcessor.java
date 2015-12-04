@@ -1,7 +1,7 @@
 package org.jboss.as.service;
 
-import static org.jboss.as.server.loaders.Utils.getResourceName;
-import static org.jboss.as.server.loaders.Utils.getChildArchives;
+import static org.wildfly.loaders.Utils.getResourceName;
+import static org.wildfly.loaders.Utils.getChildArchives;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -15,9 +15,9 @@ import org.jboss.as.server.deployment.DeploymentUnitProcessingException;
 import org.jboss.as.server.deployment.DeploymentUnitProcessor;
 import org.jboss.as.server.deployment.module.ModuleRootMarker;
 import org.jboss.as.server.deployment.module.ResourceRoot;
-import org.jboss.as.server.loaders.ResourceLoader;
-import org.jboss.as.server.loaders.ResourceLoaders;
 import org.jboss.as.service.logging.SarLogger;
+import org.wildfly.loaders.ResourceLoader;
+import org.wildfly.loaders.ResourceLoaders;
 
 /**
  * @author Tomasz Adamski

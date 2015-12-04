@@ -63,6 +63,7 @@
         <module name="org.jboss.as.naming"/>
         <module name="org.wildfly.security.elytron"/>
         <module name="org.jboss.as.security"/>
+        <module name="org.wildfly.loaders"/>
         <module name="org.jboss.as.server"/>
         <module name="org.jboss.as.transactions"/>
         <module name="org.jboss.as.web-common"/>

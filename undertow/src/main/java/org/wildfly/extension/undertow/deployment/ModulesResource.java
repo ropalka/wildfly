@@ -21,7 +21,7 @@
  */
 package org.wildfly.extension.undertow.deployment;
 
-import static org.jboss.as.server.loaders.Utils.getResourceName;
+import static org.wildfly.loaders.Utils.getResourceName;
 
 import io.undertow.UndertowLogger;
 import io.undertow.io.IoCallback;
@@ -31,7 +31,7 @@ import io.undertow.server.handlers.resource.Resource;
 import io.undertow.util.DateUtils;
 import io.undertow.util.ETag;
 import io.undertow.util.MimeMappings;
-import org.jboss.as.server.loaders.ResourceLoader;
+import org.wildfly.loaders.ResourceLoader;
 import org.xnio.IoUtils;
 import org.xnio.Pooled;
 

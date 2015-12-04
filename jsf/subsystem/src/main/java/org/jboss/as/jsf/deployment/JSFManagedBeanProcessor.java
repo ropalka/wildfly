@@ -21,7 +21,7 @@
  */
 package org.jboss.as.jsf.deployment;
 
-import static org.jboss.as.server.loaders.Utils.getResourceName;
+import static org.wildfly.loaders.Utils.getResourceName;
 
 import org.jboss.as.ee.component.ComponentDescription;
 import org.jboss.as.ee.component.EEApplicationClasses;
@@ -37,7 +37,6 @@ import org.jboss.as.server.deployment.DeploymentUnitProcessor;
 import org.jboss.as.server.deployment.DeploymentUtils;
 import org.jboss.as.server.deployment.annotation.CompositeIndex;
 import org.jboss.as.server.deployment.module.ResourceRoot;
-import org.jboss.as.server.loaders.ResourceLoader;
 import org.jboss.as.web.common.WarMetaData;
 import org.jboss.as.web.common.WebComponentDescription;
 import org.jboss.jandex.AnnotationInstance;
@@ -49,6 +48,7 @@ import org.jboss.metadata.parser.util.NoopXMLResolver;
 import org.jboss.metadata.web.spec.WebMetaData;
 import org.jboss.modules.Module;
 import org.jboss.modules.Resource;
+import org.wildfly.loaders.ResourceLoader;
 
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamConstants;

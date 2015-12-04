@@ -29,12 +29,12 @@ import java.util.Map;
 import java.util.Set;
 
 import org.jboss.as.server.deployment.AttachmentKey;
-import org.jboss.as.server.loaders.ResourceLoader;
 import org.jboss.metadata.web.jboss.JBossWebMetaData;
 import org.jboss.metadata.web.spec.WebFragmentMetaData;
 import org.jboss.metadata.web.spec.WebMetaData;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.modules.Resource;
+import org.wildfly.loaders.ResourceLoader;
 
 /**
  * @author Remy Maucherat

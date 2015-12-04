@@ -30,9 +30,8 @@ import org.jboss.as.server.deployment.DeploymentUnitProcessor;
 import org.jboss.as.server.deployment.SubDeploymentMarker;
 import org.jboss.as.server.deployment.module.ModuleRootMarker;
 import org.jboss.as.server.deployment.module.ResourceRoot;
-import org.jboss.as.server.loaders.ResourceLoader;
-
 import org.jboss.modules.Resource;
+import org.wildfly.loaders.ResourceLoader;
 
 import java.util.List;
 

@@ -22,8 +22,8 @@
 
 package org.wildfly.extension.undertow.deployment;
 
-import static org.jboss.as.server.loaders.Utils.getChildArchives;
-import static org.jboss.as.server.loaders.Utils.getResourceName;
+import static org.wildfly.loaders.Utils.getChildArchives;
+import static org.wildfly.loaders.Utils.getResourceName;
 
 import java.io.File;
 import java.io.FilePermission;
@@ -47,14 +47,14 @@ import org.jboss.as.server.deployment.module.FilterSpecification;
 import org.jboss.as.server.deployment.module.ModuleRootMarker;
 import org.jboss.as.server.deployment.module.ModuleSpecification;
 import org.jboss.as.server.deployment.module.ResourceRoot;
-import org.jboss.as.server.loaders.ResourceLoader;
-import org.jboss.as.server.loaders.ResourceLoaders;
 import org.jboss.as.web.common.SharedTldsMetaDataBuilder;
 import org.jboss.as.web.common.WarMetaData;
 import org.jboss.modules.filter.PathFilters;
 import org.jboss.modules.security.ImmediatePermissionFactory;
 import org.jboss.modules.Resource;
 import org.wildfly.extension.undertow.logging.UndertowLogger;
+import org.wildfly.loaders.ResourceLoader;
+import org.wildfly.loaders.ResourceLoaders;
 
 /**
  * Create and mount classpath entries in the .war deployment.

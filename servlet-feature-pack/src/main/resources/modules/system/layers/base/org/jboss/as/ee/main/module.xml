@@ -49,6 +49,7 @@
         <module name="org.wildfly.security.elytron"/>
         <module name="org.wildfly.extension.request-controller" />
         <module name="org.wildfly.extension.undertow" />
+        <module name="org.wildfly.loaders" />
         <module name="org.jboss.as.server" />
         <module name="org.jboss.invocation"/>
         <module name="org.jboss.jandex"/>

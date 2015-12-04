@@ -22,8 +22,8 @@
 
 package org.jboss.as.jpa.processor;
 
-import static org.jboss.as.server.loaders.Utils.getResourceName;
-import static org.jboss.as.server.loaders.Utils.normalizePath;
+import static org.wildfly.loaders.Utils.getResourceName;
+import static org.wildfly.loaders.Utils.normalizePath;
 
 import org.jboss.as.ee.structure.DeploymentType;
 import org.jboss.as.ee.structure.DeploymentTypeMarker;
@@ -42,12 +42,12 @@ import org.jboss.as.server.deployment.DeploymentUtils;
 import org.jboss.as.server.deployment.JPADeploymentMarker;
 import org.jboss.as.server.deployment.SubDeploymentMarker;
 import org.jboss.as.server.deployment.module.ResourceRoot;
-import org.jboss.as.server.loaders.ResourceLoader;
 import org.jboss.as.txn.service.TransactionManagerService;
 import org.jboss.as.txn.service.TransactionSynchronizationRegistryService;
 import org.jboss.metadata.parser.util.NoopXMLResolver;
 import org.jboss.modules.Resource;
 import org.jipijapa.plugin.spi.PersistenceUnitMetadata;
+import org.wildfly.loaders.ResourceLoader;
 
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamReader;

@@ -24,21 +24,20 @@ package org.jboss.as.connector.annotations.repository.jandex;
 
 import static org.junit.Assert.fail;
 
-import org.jboss.as.server.loaders.ResourceLoader;
-import org.jboss.as.server.loaders.ResourceLoaders;
+import org.jboss.jandex.Index;
+import org.jboss.jandex.Indexer;
 import org.jboss.jca.common.annotations.Annotations;
 import org.jboss.jca.common.api.validator.ValidateException;
 import org.jboss.jca.common.spi.annotations.repository.AnnotationRepository;
+import org.jboss.modules.Resource;
+import org.wildfly.loaders.ResourceLoader;
+import org.wildfly.loaders.ResourceLoaders;
 
 import java.io.Closeable;
 import java.io.File;
 import java.io.InputStream;
 import java.util.Iterator;
 
-import org.jboss.jandex.Index;
-import org.jboss.jandex.Indexer;
-
-import org.jboss.modules.Resource;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;

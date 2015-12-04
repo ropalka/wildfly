@@ -21,7 +21,7 @@
  */
 package org.wildfly.extension.undertow.deployment;
 
-import static org.jboss.as.server.loaders.Utils.normalizePath;
+import static org.wildfly.loaders.Utils.normalizePath;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -32,7 +32,7 @@ import java.util.List;
 import io.undertow.server.handlers.resource.Resource;
 import io.undertow.server.handlers.resource.ResourceChangeListener;
 import io.undertow.server.handlers.resource.ResourceManager;
-import org.jboss.as.server.loaders.ResourceLoader;
+import org.wildfly.loaders.ResourceLoader;
 
 /**
  * Resource manager that deals with overlays

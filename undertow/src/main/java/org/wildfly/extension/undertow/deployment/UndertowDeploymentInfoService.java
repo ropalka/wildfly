@@ -82,7 +82,6 @@ import org.jboss.as.server.deployment.SetupAction;
 import org.jboss.as.server.suspend.ServerActivity;
 import org.jboss.as.server.suspend.ServerActivityCallback;
 import org.jboss.as.server.suspend.SuspendController;
-import org.jboss.as.server.loaders.ResourceLoader;
 import org.jboss.as.version.Version;
 import org.jboss.as.web.common.ExpressionFactoryWrapper;
 import org.jboss.as.web.common.ServletContextAttribute;
@@ -157,6 +156,7 @@ import org.wildfly.extension.undertow.security.jaspi.JASPICSecurityContextFactor
 import org.wildfly.extension.undertow.session.CodecSessionConfigWrapper;
 import org.wildfly.extension.undertow.session.SharedSessionManagerConfig;
 import org.wildfly.security.manager.WildFlySecurityManager;
+import org.wildfly.loaders.ResourceLoader;
 import org.xnio.IoUtils;
 
 import javax.servlet.Filter;

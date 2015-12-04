@@ -40,12 +40,12 @@ import org.jboss.as.server.deployment.DeploymentPhaseContext;
 import org.jboss.as.server.deployment.DeploymentUnit;
 import org.jboss.as.server.deployment.DeploymentUnitProcessingException;
 import org.jboss.as.server.deployment.DeploymentUnitProcessor;
-import org.jboss.as.server.loaders.ResourceLoader;
 import org.jboss.jca.common.api.metadata.ds.DataSource;
 import org.jboss.jca.common.api.metadata.ds.DataSources;
 import org.jboss.metadata.property.PropertyReplacer;
 import org.jboss.metadata.property.PropertyResolver;
 import org.jboss.modules.Resource;
+import org.wildfly.loaders.ResourceLoader;
 
 /**
  * Picks up -ds.xml deployments

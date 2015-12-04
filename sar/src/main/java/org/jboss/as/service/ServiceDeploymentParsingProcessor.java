@@ -36,13 +36,13 @@ import org.jboss.as.server.deployment.DeploymentPhaseContext;
 import org.jboss.as.server.deployment.DeploymentUnit;
 import org.jboss.as.server.deployment.DeploymentUnitProcessingException;
 import org.jboss.as.server.deployment.DeploymentUnitProcessor;
-import org.jboss.as.server.loaders.ResourceLoader;
 import org.jboss.as.service.descriptor.JBossServiceXmlDescriptor;
 import org.jboss.as.service.descriptor.JBossServiceXmlDescriptorParser;
 import org.jboss.as.service.descriptor.ParseResult;
 import org.jboss.as.service.logging.SarLogger;
 import org.jboss.modules.Resource;
 import org.jboss.staxmapper.XMLMapper;
+import org.wildfly.loaders.ResourceLoader;
 
 /**
  * DeploymentUnitProcessor responsible for parsing a jboss-service.xml descriptor and attaching the corresponding JBossServiceXmlDescriptor.

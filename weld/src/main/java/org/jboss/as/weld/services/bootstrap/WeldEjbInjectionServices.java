@@ -41,7 +41,6 @@ import org.jboss.as.ee.component.ViewDescription;
 import org.jboss.as.naming.ManagedReference;
 import org.jboss.as.naming.deployment.ContextNames;
 import org.jboss.as.naming.deployment.ContextNames.BindInfo;
-import org.jboss.as.server.loaders.ResourceLoader;
 import org.jboss.as.weld.logging.WeldLogger;
 import org.jboss.as.weld.util.ResourceInjectionUtilities;
 import org.jboss.modules.Module;
@@ -53,6 +52,7 @@ import org.jboss.weld.injection.spi.ResourceReferenceFactory;
 import org.jboss.weld.injection.spi.helpers.SimpleResourceReference;
 import org.jboss.weld.logging.BeanLogger;
 import org.jboss.weld.util.reflection.Reflections;
+import org.wildfly.loaders.ResourceLoader;
 
 /**
  * Implementation of EjbInjectionServices.

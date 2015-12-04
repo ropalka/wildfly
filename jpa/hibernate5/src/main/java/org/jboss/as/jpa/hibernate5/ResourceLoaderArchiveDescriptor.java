@@ -16,16 +16,16 @@
  */
 package org.jboss.as.jpa.hibernate5;
 
-import static org.jboss.as.server.loaders.Utils.normalizePath;
+import static org.wildfly.loaders.Utils.normalizePath;
 
 import org.hibernate.boot.archive.spi.ArchiveContext;
 import org.hibernate.boot.archive.spi.ArchiveDescriptor;
 import org.hibernate.boot.archive.spi.ArchiveEntry;
 import org.hibernate.boot.archive.spi.InputStreamAccess;
-import org.jboss.as.server.loaders.ResourceLoader;
-import org.jboss.as.server.loaders.ResourceLoaders;
-import org.jboss.as.server.loaders.Utils;
 import org.jboss.modules.Resource;
+import org.wildfly.loaders.ResourceLoader;
+import org.wildfly.loaders.ResourceLoaders;
+import org.wildfly.loaders.Utils;
 
 import java.io.File;
 import java.io.IOException;

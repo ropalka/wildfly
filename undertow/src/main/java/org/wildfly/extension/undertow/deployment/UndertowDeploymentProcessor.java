@@ -45,7 +45,6 @@ import org.jboss.as.server.deployment.DeploymentUnitProcessor;
 import org.jboss.as.server.deployment.ExplodedDeploymentMarker;
 import org.jboss.as.server.deployment.SetupAction;
 import org.jboss.as.server.deployment.module.ResourceRoot;
-import org.jboss.as.server.loaders.ResourceLoader;
 import org.jboss.as.server.suspend.SuspendController;
 import org.jboss.as.web.common.ExpressionFactoryWrapper;
 import org.jboss.as.web.common.ServletContextAttribute;
@@ -87,6 +86,7 @@ import org.wildfly.extension.undertow.session.DistributableSessionManagerFactory
 import org.wildfly.extension.undertow.session.SharedSessionManagerConfig;
 import org.wildfly.extension.undertow.session.SimpleDistributableSessionManagerConfiguration;
 import org.wildfly.extension.undertow.session.SimpleSessionIdentifierCodecService;
+import org.wildfly.loaders.ResourceLoader;
 
 import javax.security.jacc.PolicyConfiguration;
 

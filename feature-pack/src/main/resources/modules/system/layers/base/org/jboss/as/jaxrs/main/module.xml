@@ -43,6 +43,7 @@
         <module name="org.jboss.as.controller"/>
         <module name="org.jboss.as.ee"/>
         <module name="org.wildfly.security.elytron"/>
+        <module name="org.wildfly.loaders"/>
         <module name="org.jboss.as.server"/>
         <module name="org.jboss.as.web-common"/>
         <module name="org.wildfly.extension.undertow"/>

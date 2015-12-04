@@ -22,7 +22,7 @@
 
 package org.jboss.as.jpa.hibernate4;
 
-import static org.jboss.as.server.loaders.Utils.getResourceName;
+import static org.wildfly.loaders.Utils.getResourceName;
 
 import org.jboss.modules.Resource;
 

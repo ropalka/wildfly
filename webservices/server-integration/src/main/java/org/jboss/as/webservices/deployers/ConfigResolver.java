@@ -26,7 +26,6 @@ import java.lang.annotation.Annotation;
 import java.net.URL;
 import java.util.List;
 
-import org.jboss.as.server.loaders.ResourceLoader;
 import org.jboss.jandex.AnnotationInstance;
 import org.jboss.jandex.AnnotationValue;
 import org.jboss.jandex.ClassInfo;
@@ -38,6 +37,7 @@ import org.jboss.ws.api.annotation.EndpointConfig;
 import org.jboss.ws.common.configuration.AbstractCommonConfigResolver;
 import org.jboss.ws.common.integration.WSConstants;
 import org.jboss.wsf.spi.metadata.webservices.JBossWebservicesMetaData;
+import org.wildfly.loaders.ResourceLoader;
 
 public class ConfigResolver extends AbstractCommonConfigResolver {
 

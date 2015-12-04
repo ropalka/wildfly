@@ -45,7 +45,6 @@ import org.jboss.as.server.deployment.Attachments;
 import org.jboss.as.server.deployment.DeploymentUnit;
 import org.jboss.as.server.deployment.DeploymentUnitProcessingException;
 import org.jboss.as.server.deployment.annotation.CompositeIndex;
-import org.jboss.as.server.loaders.ResourceLoader;
 import org.jboss.as.webservices.injection.WSEndpointHandlersMapping;
 import org.jboss.as.webservices.metadata.model.EJBEndpoint;
 import org.jboss.as.webservices.metadata.model.POJOEndpoint;
@@ -57,6 +56,7 @@ import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.wsf.spi.metadata.config.EndpointConfig;
 import org.jboss.wsf.spi.metadata.webservices.JBossWebservicesMetaData;
+import org.wildfly.loaders.ResourceLoader;
 
 /**
  * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>

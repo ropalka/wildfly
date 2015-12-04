@@ -36,8 +36,6 @@ import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
 
 import org.jboss.as.ee.structure.JBossDescriptorPropertyReplacement;
-import org.jboss.as.server.loaders.ResourceLoader;
-import org.wildfly.extension.messaging.activemq.logging.MessagingLogger;
 import org.jboss.as.server.deployment.Attachments;
 import org.jboss.as.server.deployment.DeploymentPhaseContext;
 import org.jboss.as.server.deployment.DeploymentUnit;
@@ -45,6 +43,8 @@ import org.jboss.as.server.deployment.DeploymentUnitProcessingException;
 import org.jboss.as.server.deployment.DeploymentUnitProcessor;
 import org.jboss.modules.Resource;
 import org.jboss.staxmapper.XMLMapper;
+import org.wildfly.extension.messaging.activemq.logging.MessagingLogger;
+import org.wildfly.loaders.ResourceLoader;
 
 /**
  * Processor that handles the messaging subsystems deployable XML
