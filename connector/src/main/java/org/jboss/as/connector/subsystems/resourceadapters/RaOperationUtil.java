@@ -142,8 +142,8 @@ import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceRegistry;
 import org.jboss.msc.service.ServiceTarget;
-import org.wildfly.loaders.ResourceLoader;
-import org.wildfly.loaders.ResourceLoaders;
+import org.wildfly.loaders.deployment.ResourceLoader;
+import org.wildfly.loaders.deployment.ResourceLoaders;
 
 public class RaOperationUtil {
     public static final ServiceName RAR_MODULE = ServiceName.of("rarinsidemodule");
@@ -437,7 +437,7 @@ public class RaOperationUtil {
                     throw new OperationFailedException(ConnectorLogger.ROOT_LOGGER.compressedRarNotSupportedInModuleRA(moduleName));
                 }
 
-                final ResourceLoader loader = ResourceLoaders.newResourceLoader(new File(path.getPath().split("META-INF")[0]));
+                final ResourceLoader loader = ResourceLoaders.newResourceLoader(new File(path.getPath().split("META-INF")[0]), false);
                 final ResourceRoot resourceRoot = new ResourceRoot(loader);
 
                 ConnectorXmlDescriptor connectorXmlDescriptor = RaDeploymentParsingProcessor.process(resolveProperties, loader, null, name);

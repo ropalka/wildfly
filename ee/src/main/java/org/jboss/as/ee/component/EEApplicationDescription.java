@@ -22,7 +22,7 @@
 
 package org.jboss.as.ee.component;
 
-import static org.wildfly.loaders.Utils.normalizePath;
+import static org.wildfly.loaders.deployment.Utils.normalizePath;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -32,7 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.wildfly.loaders.ResourceLoader;
+import org.wildfly.loaders.deployment.ResourceLoader;
 
 /**
  * @author John Bailey

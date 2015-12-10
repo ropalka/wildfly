@@ -21,7 +21,7 @@
  */
 package org.wildfly.extension.undertow.deployment;
 
-import static org.wildfly.loaders.Utils.getResourceName;
+import static org.wildfly.loaders.deployment.Utils.getResourceName;
 
 import io.undertow.UndertowLogger;
 import io.undertow.io.IoCallback;
@@ -31,7 +31,7 @@ import io.undertow.server.handlers.resource.Resource;
 import io.undertow.util.DateUtils;
 import io.undertow.util.ETag;
 import io.undertow.util.MimeMappings;
-import org.wildfly.loaders.ResourceLoader;
+import org.wildfly.loaders.deployment.ResourceLoader;
 import org.xnio.IoUtils;
 import org.xnio.Pooled;
 
@@ -59,7 +59,6 @@ public class ModulesResource implements Resource {
 
     private final ResourceLoader loader;
     private final org.jboss.modules.Resource res;
-    private final File resFile;
     private final File loaderFile;
     private final String path;
     private final boolean isOverlay;
@@ -67,8 +66,7 @@ public class ModulesResource implements Resource {
     public ModulesResource(final ResourceLoader loader, final org.jboss.modules.Resource res, final String path, final boolean isOverlay) {
         this.loader = loader;
         this.res = res;
-        this.resFile = res != null ? new File(res.getURL().getFile()) : null;
-        this.loaderFile = new File(loader.getRootURL().getFile());
+        this.loaderFile = loader.getRoot();
         this.path = path;
         this.isOverlay = isOverlay;
     }
@@ -80,7 +78,7 @@ public class ModulesResource implements Resource {
 
     @Override
     public Date getLastModified() {
-        return resFile != null ? new Date(resFile.lastModified()) : null;
+        return null;
     }
 
     @Override
@@ -233,7 +231,7 @@ public class ModulesResource implements Resource {
 
     @Override
     public File getFile() {
-        return resFile;
+        return null;
     }
 
     @Override

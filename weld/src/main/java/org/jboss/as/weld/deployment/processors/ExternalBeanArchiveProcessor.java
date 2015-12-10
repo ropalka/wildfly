@@ -52,8 +52,8 @@ import org.jboss.as.weld.services.bootstrap.WeldJpaInjectionServices;
 import org.jboss.modules.DependencySpec;
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleDependencySpec;
-import org.jboss.modules.ModuleLoadException;
 import org.jboss.modules.ModuleLoader;
+import org.jboss.modules.ModuleLoadException;
 import org.jboss.modules.Resource;
 import org.jboss.weld.bootstrap.spi.BeansXml;
 import org.jboss.weld.injection.spi.JaxwsInjectionServices;
@@ -157,7 +157,7 @@ public class ExternalBeanArchiveProcessor implements DeploymentUnitProcessor {
                         final UrlScanner urlScanner = new UrlScanner();
 
                         final List<String> discoveredClasses = new ArrayList<String>();
-                        if (!urlScanner.handleBeansXml(url, discoveredClasses)) {
+                        if (!urlScanner.handleBeansXml(url, discoveredClasses, dependency.getClassLoader())) {
                             continue;
                         }
                         discoveredClasses.removeAll(ejbClassName);

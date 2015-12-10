@@ -86,7 +86,7 @@ import org.wildfly.extension.undertow.session.DistributableSessionManagerFactory
 import org.wildfly.extension.undertow.session.SharedSessionManagerConfig;
 import org.wildfly.extension.undertow.session.SimpleDistributableSessionManagerConfiguration;
 import org.wildfly.extension.undertow.session.SimpleSessionIdentifierCodecService;
-import org.wildfly.loaders.ResourceLoader;
+import org.wildfly.loaders.deployment.ResourceLoader;
 
 import javax.security.jacc.PolicyConfiguration;
 

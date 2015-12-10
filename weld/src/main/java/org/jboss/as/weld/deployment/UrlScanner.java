@@ -28,16 +28,19 @@ import java.io.UnsupportedEncodingException;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.util.Enumeration;
+import java.util.Iterator;
 import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipException;
 import java.util.zip.ZipFile;
 
 import org.jboss.as.weld.logging.WeldLogger;
+import org.jboss.modules.ModuleClassLoader;
+import org.jboss.modules.Resource;
 
 public class UrlScanner {
 
-    public boolean handleBeansXml(final URL url, final List<String> discoveredClasses) {
+    public boolean handleBeansXml(final URL url, final List<String> discoveredClasses, final ModuleClassLoader loader) {
         String urlPath = url.toExternalForm();
 
         // determin resource type (eg: jar, file, bundle)
@@ -68,9 +71,23 @@ public class UrlScanner {
             }
             handle(urlPath, discoveredClasses);
             return true;
+        } else if ("deployment".equals(urlType)) {
+            handle(loader, discoveredClasses);
+            return true;
         } else {
             WeldLogger.DEPLOYMENT_LOGGER.doNotUnderstandProtocol(url);
             return false;
+        }
+    }
+
+    private void handle(final ModuleClassLoader loader, final List<String> discoveredClasses) {
+        final Iterator<Resource> i = loader.iterateResources("", true);
+        String name;
+        while (i.hasNext()) {
+            name = i.next().getName();
+            if (name.endsWith(".class")) {
+                discoveredClasses.add(filenameToClassname(name));
+            }
         }
     }
 

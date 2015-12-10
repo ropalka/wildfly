@@ -34,7 +34,7 @@ import org.jboss.metadata.web.spec.WebFragmentMetaData;
 import org.jboss.metadata.web.spec.WebMetaData;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.modules.Resource;
-import org.wildfly.loaders.ResourceLoader;
+import org.wildfly.loaders.deployment.ResourceLoader;
 
 /**
  * @author Remy Maucherat

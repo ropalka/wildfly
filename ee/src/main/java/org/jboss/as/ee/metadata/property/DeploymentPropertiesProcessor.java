@@ -34,7 +34,7 @@ import org.jboss.as.server.deployment.DeploymentUnitProcessingException;
 import org.jboss.as.server.deployment.DeploymentUnitProcessor;
 import org.jboss.as.server.deployment.module.ResourceRoot;
 import org.jboss.modules.Resource;
-import org.wildfly.loaders.ResourceLoader;
+import org.wildfly.loaders.deployment.ResourceLoader;
 
 /**
  * @author John Bailey

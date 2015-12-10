@@ -46,7 +46,7 @@ import org.jboss.as.server.deployment.DeploymentUnitProcessor;
 import org.jboss.as.server.deployment.module.ResourceRoot;
 import org.jboss.modules.Resource;
 import org.jboss.staxmapper.XMLMapper;
-import org.wildfly.loaders.ResourceLoader;
+import org.wildfly.loaders.deployment.ResourceLoader;
 
 /**
  * DeploymentUnitProcessor responsible for parsing a jboss-beans.xml

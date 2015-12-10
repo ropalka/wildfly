@@ -22,8 +22,8 @@
 
 package org.jboss.as.connector.deployers.ra.processors;
 
-import static org.wildfly.loaders.Utils.getResourceName;
-import static org.wildfly.loaders.Utils.getChildArchives;
+import static org.wildfly.loaders.deployment.Utils.getResourceName;
+import static org.wildfly.loaders.deployment.Utils.getChildArchives;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -39,8 +39,8 @@ import org.jboss.as.server.deployment.DeploymentUnitProcessor;
 import org.jboss.as.server.deployment.module.ModuleRootMarker;
 import org.jboss.as.server.deployment.module.ModuleSpecification;
 import org.jboss.as.server.deployment.module.ResourceRoot;
-import org.wildfly.loaders.ResourceLoader;
-import org.wildfly.loaders.ResourceLoaders;
+import org.wildfly.loaders.deployment.ResourceLoader;
+import org.wildfly.loaders.deployment.ResourceLoaders;
 
 /**
  * Deployment processor used to determine the structure of RAR deployments.
@@ -79,7 +79,7 @@ public final class RaStructureProcessor implements DeploymentUnitProcessor {
             String archiveName;
             for (final String archivePath : childArchives) {
                 archiveName = getResourceName(archivePath);
-                final ResourceLoader loader = ResourceLoaders.newResourceLoader(archiveName, resourceRoot.getLoader(), archivePath);
+                final ResourceLoader loader = ResourceLoaders.newResourceLoader(archiveName, resourceRoot.getLoader(), archivePath, true);
                 // TODO: close loaders on cleanup in undeploy()
                 final ResourceRoot childResource = new ResourceRoot(loader);
                 ModuleRootMarker.mark(childResource);

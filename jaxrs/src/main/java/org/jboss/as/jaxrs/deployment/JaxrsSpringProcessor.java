@@ -37,8 +37,8 @@ import org.jboss.metadata.web.jboss.JBossWebMetaData;
 import org.jboss.metadata.web.spec.ListenerMetaData;
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleIdentifier;
-import org.wildfly.loaders.ResourceLoader;
-import org.wildfly.loaders.ResourceLoaders;
+import org.wildfly.loaders.deployment.ResourceLoader;
+import org.wildfly.loaders.deployment.ResourceLoaders;
 
 import java.io.File;
 import java.net.URL;
@@ -81,7 +81,7 @@ public class JaxrsSpringProcessor implements DeploymentUnitProcessor {
             if (file == null) {
                 throw JaxrsLogger.JAXRS_LOGGER.noSpringIntegrationJar();
             }
-            ResourceLoader loader = ResourceLoaders.newResourceLoader(file);
+            ResourceLoader loader = ResourceLoaders.newResourceLoader(file, false);
             resourceRoot = new ResourceRoot(loader);
             return resourceRoot;
         } catch (Exception e) {

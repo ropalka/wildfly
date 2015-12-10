@@ -63,7 +63,7 @@ import org.jboss.metadata.web.spec.WebFragmentMetaData;
 import org.jboss.metadata.web.spec.WebMetaData;
 import org.jboss.modules.Resource;
 import org.wildfly.extension.undertow.logging.UndertowLogger;
-import org.wildfly.loaders.ResourceLoader;
+import org.wildfly.loaders.deployment.ResourceLoader;
 
 /**
  * Merge all metadata into a main JBossWebMetaData.

@@ -56,7 +56,7 @@ import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.wsf.spi.metadata.config.EndpointConfig;
 import org.jboss.wsf.spi.metadata.webservices.JBossWebservicesMetaData;
-import org.wildfly.loaders.ResourceLoader;
+import org.wildfly.loaders.deployment.ResourceLoader;
 
 /**
  * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>

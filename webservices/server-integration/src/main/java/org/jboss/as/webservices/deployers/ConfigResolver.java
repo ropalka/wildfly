@@ -37,7 +37,7 @@ import org.jboss.ws.api.annotation.EndpointConfig;
 import org.jboss.ws.common.configuration.AbstractCommonConfigResolver;
 import org.jboss.ws.common.integration.WSConstants;
 import org.jboss.wsf.spi.metadata.webservices.JBossWebservicesMetaData;
-import org.wildfly.loaders.ResourceLoader;
+import org.wildfly.loaders.deployment.ResourceLoader;
 
 public class ConfigResolver extends AbstractCommonConfigResolver {
 

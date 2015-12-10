@@ -156,7 +156,7 @@ import org.wildfly.extension.undertow.security.jaspi.JASPICSecurityContextFactor
 import org.wildfly.extension.undertow.session.CodecSessionConfigWrapper;
 import org.wildfly.extension.undertow.session.SharedSessionManagerConfig;
 import org.wildfly.security.manager.WildFlySecurityManager;
-import org.wildfly.loaders.ResourceLoader;
+import org.wildfly.loaders.deployment.ResourceLoader;
 import org.xnio.IoUtils;
 
 import javax.servlet.Filter;

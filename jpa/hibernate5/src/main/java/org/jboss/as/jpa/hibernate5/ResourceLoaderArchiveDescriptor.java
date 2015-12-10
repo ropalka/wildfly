@@ -16,16 +16,16 @@
  */
 package org.jboss.as.jpa.hibernate5;
 
-import static org.wildfly.loaders.Utils.normalizePath;
+import static org.wildfly.loaders.deployment.Utils.normalizePath;
 
 import org.hibernate.boot.archive.spi.ArchiveContext;
 import org.hibernate.boot.archive.spi.ArchiveDescriptor;
 import org.hibernate.boot.archive.spi.ArchiveEntry;
 import org.hibernate.boot.archive.spi.InputStreamAccess;
 import org.jboss.modules.Resource;
-import org.wildfly.loaders.ResourceLoader;
-import org.wildfly.loaders.ResourceLoaders;
-import org.wildfly.loaders.Utils;
+import org.wildfly.loaders.deployment.ResourceLoader;
+import org.wildfly.loaders.deployment.ResourceLoaders;
+import org.wildfly.loaders.deployment.Utils;
 
 import java.io.File;
 import java.io.IOException;
@@ -51,9 +51,9 @@ public class ResourceLoaderArchiveDescriptor implements ArchiveDescriptor {
         final String archiveFile = exclamationIndex > -1 ? archiveURL.substring(0, exclamationIndex) : archiveURL;
         final String path = (exclamationIndex > -1 ? archiveURL.substring(exclamationIndex + 1) : "") + "/" + entryBase;
         final String normalizedPath = "".equals(path) ? "" : normalizePath(path);
-        ResourceLoader loader = ResourceLoaders.newResourceLoader(new File(archiveFile));
+        ResourceLoader loader = ResourceLoaders.newResourceLoader(new File(archiveFile), false);
         if (!normalizedPath.equals("")) {
-            loader = ResourceLoaders.newResourceLoader(normalizedPath, loader, normalizedPath);
+            loader = ResourceLoaders.newResourceLoader(normalizedPath, loader, normalizedPath, false);
         }
         this.loader = loader;
     }

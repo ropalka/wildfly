@@ -44,7 +44,7 @@ import org.jboss.as.server.deployment.DeploymentUnitProcessor;
 import org.jboss.modules.Resource;
 import org.jboss.staxmapper.XMLMapper;
 import org.wildfly.extension.messaging.activemq.logging.MessagingLogger;
-import org.wildfly.loaders.ResourceLoader;
+import org.wildfly.loaders.deployment.ResourceLoader;
 
 /**
  * Processor that handles the messaging subsystems deployable XML

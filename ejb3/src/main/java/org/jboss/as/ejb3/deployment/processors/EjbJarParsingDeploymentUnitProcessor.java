@@ -71,7 +71,7 @@ import org.jboss.metadata.ejb.spec.EjbJarMetaData;
 import org.jboss.metadata.ejb.spec.EjbType;
 import org.jboss.metadata.parser.util.MetaDataElementParser;
 import org.jboss.modules.Resource;
-import org.wildfly.loaders.ResourceLoader;
+import org.wildfly.loaders.deployment.ResourceLoader;
 
 /**
  * Processes a {@link DeploymentUnit} containing an ejb-jar.xml and creates {@link EjbJarMetaData}

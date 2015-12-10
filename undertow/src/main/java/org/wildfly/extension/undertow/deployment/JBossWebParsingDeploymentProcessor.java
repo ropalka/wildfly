@@ -44,7 +44,7 @@ import org.jboss.metadata.web.jboss.JBossWebMetaData;
 import org.jboss.metadata.web.jboss.ValveMetaData;
 import org.jboss.modules.Resource;
 import org.wildfly.extension.undertow.logging.UndertowLogger;
-import org.wildfly.loaders.ResourceLoader;
+import org.wildfly.loaders.deployment.ResourceLoader;
 
 /**
  * @author Jean-Frederic Clere

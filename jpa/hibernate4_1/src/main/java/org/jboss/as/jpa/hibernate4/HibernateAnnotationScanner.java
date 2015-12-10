@@ -23,8 +23,8 @@
 package org.jboss.as.jpa.hibernate4;
 
 import static org.jipijapa.JipiLogger.JPA_LOGGER;
-import static org.wildfly.loaders.Utils.getResourceName;
-import static org.wildfly.loaders.Utils.normalizePath;
+import static org.wildfly.loaders.deployment.Utils.getResourceName;
+import static org.wildfly.loaders.deployment.Utils.normalizePath;
 
 import java.io.File;
 import java.io.IOException;
@@ -47,8 +47,8 @@ import org.jboss.jandex.DotName;
 import org.jboss.jandex.Index;
 import org.jboss.modules.Resource;
 import org.jipijapa.plugin.spi.PersistenceUnitMetadata;
-import org.wildfly.loaders.ResourceLoader;
-import org.wildfly.loaders.ResourceLoaders;
+import org.wildfly.loaders.deployment.ResourceLoader;
+import org.wildfly.loaders.deployment.ResourceLoaders;
 
 /**
  * Annotation scanner for Hibernate
@@ -318,9 +318,9 @@ public class HibernateAnnotationScanner implements Scanner {
             final String archiveFile = exclamationIndex > -1 ? archiveURL.substring(0, exclamationIndex) : archiveURL;
             final String path = exclamationIndex > -1 ? archiveURL.substring(exclamationIndex + 1) : "";
             final String normalizedPath = "".equals(path) ? "" : normalizePath(path);
-            ResourceLoader loader = ResourceLoaders.newResourceLoader(new File(archiveFile));
+            ResourceLoader loader = ResourceLoaders.newResourceLoader(new File(archiveFile), false);
             if (!normalizedPath.equals("")) {
-                loader = ResourceLoaders.newResourceLoader(normalizedPath, loader, normalizedPath);
+                loader = ResourceLoaders.newResourceLoader(normalizedPath, loader, normalizedPath, false);
             }
             return loader;
         } catch (IOException e) {

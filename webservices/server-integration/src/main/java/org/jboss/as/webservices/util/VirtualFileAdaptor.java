@@ -21,7 +21,7 @@
  */
 package org.jboss.as.webservices.util;
 
-import static org.wildfly.loaders.Utils.getResourceName;
+import static org.wildfly.loaders.deployment.Utils.getResourceName;
 
 import java.io.IOException;
 import java.net.URL;
@@ -30,7 +30,7 @@ import java.util.List;
 import org.jboss.as.webservices.logging.WSLogger;
 import org.jboss.modules.Resource;
 import org.jboss.wsf.spi.deployment.UnifiedVirtualFile;
-import org.wildfly.loaders.ResourceLoader;
+import org.wildfly.loaders.deployment.ResourceLoader;
 
 /**
  * A ResourceLoader and Resource adaptor.

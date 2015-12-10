@@ -45,7 +45,7 @@ import org.jboss.jca.common.api.metadata.ds.DataSources;
 import org.jboss.metadata.property.PropertyReplacer;
 import org.jboss.metadata.property.PropertyResolver;
 import org.jboss.modules.Resource;
-import org.wildfly.loaders.ResourceLoader;
+import org.wildfly.loaders.deployment.ResourceLoader;
 
 /**
  * Picks up -ds.xml deployments

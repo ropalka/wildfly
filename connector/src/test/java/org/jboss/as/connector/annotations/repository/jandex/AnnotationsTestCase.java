@@ -30,8 +30,8 @@ import org.jboss.jca.common.annotations.Annotations;
 import org.jboss.jca.common.api.validator.ValidateException;
 import org.jboss.jca.common.spi.annotations.repository.AnnotationRepository;
 import org.jboss.modules.Resource;
-import org.wildfly.loaders.ResourceLoader;
-import org.wildfly.loaders.ResourceLoaders;
+import org.wildfly.loaders.deployment.ResourceLoader;
+import org.wildfly.loaders.deployment.ResourceLoaders;
 
 import java.io.Closeable;
 import java.io.File;
@@ -86,7 +86,7 @@ public class AnnotationsTestCase {
     public void testProcessConnector() throws Throwable {
         try {
             File file = getFile("/ra16inoutanno.rar");
-            final ResourceLoader loader = ResourceLoaders.newResourceLoader(file);
+            final ResourceLoader loader = ResourceLoaders.newResourceLoader(file, true);
             final Indexer indexer = new Indexer();
             final Iterator<Resource> resources = loader.iterateResources("", true);
             Resource resource;
@@ -121,7 +121,7 @@ public class AnnotationsTestCase {
     public void testProcessConnectorFail() throws Throwable {
         try {
             File file = getFile("/rafail2connector.rar");
-            final ResourceLoader loader = ResourceLoaders.newResourceLoader(file);
+            final ResourceLoader loader = ResourceLoaders.newResourceLoader(file, true);
             final Indexer indexer = new Indexer();
             final Iterator<Resource> resources = loader.iterateResources("", true);
             Resource resource;
@@ -158,7 +158,7 @@ public class AnnotationsTestCase {
     public void testProcessConnectionDefinitions() throws Throwable {
         try {
             File file = getFile("/ra16annoconndefs.rar");
-            final ResourceLoader loader = ResourceLoaders.newResourceLoader(file);
+            final ResourceLoader loader = ResourceLoaders.newResourceLoader(file, true);
             final Indexer indexer = new Indexer();
             final Iterator<Resource> resources = loader.iterateResources("", true);
             Resource resource;
@@ -193,7 +193,7 @@ public class AnnotationsTestCase {
     public void testProcessConnectionDefinition() throws Throwable {
         try {
             File file = getFile("/ra16annoconndef.rar");
-            final ResourceLoader loader = ResourceLoaders.newResourceLoader(file);
+            final ResourceLoader loader = ResourceLoaders.newResourceLoader(file, true);
             final Indexer indexer = new Indexer();
             final Iterator<Resource> resources = loader.iterateResources("", true);
             Resource resource;
@@ -226,7 +226,7 @@ public class AnnotationsTestCase {
     public void testProcessActivation() throws Throwable {
         try {
             File file = getFile("/ra16annoactiv.rar");
-            final ResourceLoader loader = ResourceLoaders.newResourceLoader(file);
+            final ResourceLoader loader = ResourceLoaders.newResourceLoader(file, true);
             final Indexer indexer = new Indexer();
             final Iterator<Resource> resources = loader.iterateResources("", true);
             Resource resource;
@@ -260,7 +260,7 @@ public class AnnotationsTestCase {
     public void testProcessAuthenticationMechanism() throws Throwable {
         try {
             File file = getFile("/ra16annoauthmech.rar");
-            final ResourceLoader loader = ResourceLoaders.newResourceLoader(file);
+            final ResourceLoader loader = ResourceLoaders.newResourceLoader(file, true);
             final Indexer indexer = new Indexer();
             final Iterator<Resource> resources = loader.iterateResources("", true);
             Resource resource;
@@ -294,7 +294,7 @@ public class AnnotationsTestCase {
     public void testProcessAdministeredObject() throws Throwable {
         try {
             File file = getFile("/ra16annoadminobj.rar");
-            final ResourceLoader loader = ResourceLoaders.newResourceLoader(file);
+            final ResourceLoader loader = ResourceLoaders.newResourceLoader(file, true);
             final Indexer indexer = new Indexer();
             final Iterator<Resource> resources = loader.iterateResources("", true);
             Resource resource;
@@ -328,7 +328,7 @@ public class AnnotationsTestCase {
     public void testProcessConfigProperty() throws Throwable {
         try {
             File file = getFile("/ra16annoconfprop.rar");
-            final ResourceLoader loader = ResourceLoaders.newResourceLoader(file);
+            final ResourceLoader loader = ResourceLoaders.newResourceLoader(file, true);
             final Indexer indexer = new Indexer();
             final Iterator<Resource> resources = loader.iterateResources("", true);
             Resource resource;

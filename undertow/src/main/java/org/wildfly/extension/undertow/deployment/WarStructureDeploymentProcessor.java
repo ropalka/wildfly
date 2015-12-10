@@ -22,8 +22,8 @@
 
 package org.wildfly.extension.undertow.deployment;
 
-import static org.wildfly.loaders.Utils.getChildArchives;
-import static org.wildfly.loaders.Utils.getResourceName;
+import static org.wildfly.loaders.deployment.Utils.getChildArchives;
+import static org.wildfly.loaders.deployment.Utils.getResourceName;
 
 import java.io.File;
 import java.io.FilePermission;
@@ -53,8 +53,8 @@ import org.jboss.modules.filter.PathFilters;
 import org.jboss.modules.security.ImmediatePermissionFactory;
 import org.jboss.modules.Resource;
 import org.wildfly.extension.undertow.logging.UndertowLogger;
-import org.wildfly.loaders.ResourceLoader;
-import org.wildfly.loaders.ResourceLoaders;
+import org.wildfly.loaders.deployment.ResourceLoader;
+import org.wildfly.loaders.deployment.ResourceLoaders;
 
 /**
  * Create and mount classpath entries in the .war deployment.
@@ -191,7 +191,7 @@ public final class WarStructureDeploymentProcessor implements DeploymentUnitProc
         final List<ResourceRoot> entries = new ArrayList<>();
         // WEB-INF classes
         if (rootLoader.getPaths().contains(WEB_INF_CLASSES)) {
-            final ResourceLoader loader = ResourceLoaders.newResourceLoader(getResourceName(WEB_INF_CLASSES), resourceRoot.getLoader(), WEB_INF_CLASSES);
+            final ResourceLoader loader = ResourceLoaders.newResourceLoader(getResourceName(WEB_INF_CLASSES), resourceRoot.getLoader(), WEB_INF_CLASSES, true);
             final ResourceRoot webInfClassesRoot = new ResourceRoot(loader);
             ModuleRootMarker.mark(webInfClassesRoot);
             entries.add(webInfClassesRoot);
@@ -201,7 +201,7 @@ public final class WarStructureDeploymentProcessor implements DeploymentUnitProc
             final Collection<String> archives = getChildArchives(rootLoader, WEB_INF_LIB, false, JAR_EXTENSION);
             for (final String archive : archives) {
                 try {
-                    final ResourceLoader loader = ResourceLoaders.newResourceLoader(getResourceName(archive), resourceRoot.getLoader(), archive);
+                    final ResourceLoader loader = ResourceLoaders.newResourceLoader(getResourceName(archive), resourceRoot.getLoader(), archive, true);
                     final ResourceRoot webInfArchiveRoot = new ResourceRoot(loader);
                     ModuleRootMarker.mark(webInfArchiveRoot);
                     entries.add(webInfArchiveRoot);

@@ -22,7 +22,7 @@
 
 package org.wildfly.extension.undertow.deployment;
 
-import static org.wildfly.loaders.Utils.getResourceName;
+import static org.wildfly.loaders.deployment.Utils.getResourceName;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -55,7 +55,7 @@ import org.jboss.metadata.web.spec.TaglibMetaData;
 import org.jboss.metadata.web.spec.TldMetaData;
 import org.jboss.modules.Resource;
 import org.wildfly.extension.undertow.logging.UndertowLogger;
-import org.wildfly.loaders.ResourceLoader;
+import org.wildfly.loaders.deployment.ResourceLoader;
 
 /**
  * @author Remy Maucherat

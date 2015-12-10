@@ -22,10 +22,10 @@
 
 package org.jboss.as.ee.structure;
 
-import static org.wildfly.loaders.Utils.getChildArchives;
-import static org.wildfly.loaders.Utils.getResourceName;
-import static org.wildfly.loaders.Utils.normalizePath;
-import static org.wildfly.loaders.Utils.resourceOrPathExists;
+import static org.wildfly.loaders.deployment.Utils.getChildArchives;
+import static org.wildfly.loaders.deployment.Utils.getResourceName;
+import static org.wildfly.loaders.deployment.Utils.normalizePath;
+import static org.wildfly.loaders.deployment.Utils.resourceOrPathExists;
 
 import java.io.IOException;
 import java.util.Collection;
@@ -48,8 +48,8 @@ import org.jboss.metadata.ear.spec.EarMetaData;
 import org.jboss.metadata.ear.spec.ModuleMetaData;
 import org.jboss.metadata.ear.spec.ModuleMetaData.ModuleType;
 import org.jboss.modules.Resource;
-import org.wildfly.loaders.ResourceLoader;
-import org.wildfly.loaders.ResourceLoaders;
+import org.wildfly.loaders.deployment.ResourceLoader;
+import org.wildfly.loaders.deployment.ResourceLoaders;
 
 /**
  * Deployment processor responsible for detecting EAR deployments and putting setting up the basic structure.
@@ -102,7 +102,7 @@ public final class EarStructureProcessor implements DeploymentUnitProcessor {
             if (loader.getPaths().contains(libDirName)) {
                 final Collection<String> libArchives = getChildArchives(loader, libDirName, false, SUBDEPLOYMENT_EXTENSIONS);
                 for (final String child : libArchives) {
-                    final ResourceLoader childLoader = ResourceLoaders.newResourceLoader(getResourceName(child), deploymentRoot.getLoader(), child);
+                    final ResourceLoader childLoader = ResourceLoaders.newResourceLoader(getResourceName(child), deploymentRoot.getLoader(), child, true);
                     final ResourceRoot childResource = new ResourceRoot(childLoader);
                     if (getResourceName(child).toLowerCase(Locale.ENGLISH).endsWith(JAR_EXTENSION)) {
                         ModuleRootMarker.mark(childResource);
@@ -203,7 +203,7 @@ public final class EarStructureProcessor implements DeploymentUnitProcessor {
      * @throws IOException
      */
     private ResourceRoot createResourceRoot(final ResourceRoot deploymentRoot, final DeploymentUnit deploymentUnit, final String file, final boolean markAsSubDeployment) throws IOException {
-        final ResourceLoader loader = ResourceLoaders.newResourceLoader(getResourceName(file), deploymentRoot.getLoader(), file);
+        final ResourceLoader loader = ResourceLoaders.newResourceLoader(getResourceName(file), deploymentRoot.getLoader(), file, true);
         final ResourceRoot resourceRoot = new ResourceRoot(loader);
         deploymentUnit.addToAttachmentList(Attachments.RESOURCE_ROOTS, resourceRoot);
         if (markAsSubDeployment) {

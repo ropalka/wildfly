@@ -43,7 +43,7 @@ import org.jboss.metadata.parser.spec.EarMetaDataParser;
 import org.jboss.metadata.parser.util.NoopXMLResolver;
 import org.jboss.metadata.property.PropertyReplacer;
 import org.jboss.modules.Resource;
-import org.wildfly.loaders.ResourceLoader;
+import org.wildfly.loaders.deployment.ResourceLoader;
 
 /**
  * Deployment processor responsible for parsing the application.xml file of an ear.

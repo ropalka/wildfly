@@ -52,7 +52,7 @@ import org.jboss.weld.injection.spi.ResourceReferenceFactory;
 import org.jboss.weld.injection.spi.helpers.SimpleResourceReference;
 import org.jboss.weld.logging.BeanLogger;
 import org.jboss.weld.util.reflection.Reflections;
-import org.wildfly.loaders.ResourceLoader;
+import org.wildfly.loaders.deployment.ResourceLoader;
 
 /**
  * Implementation of EjbInjectionServices.

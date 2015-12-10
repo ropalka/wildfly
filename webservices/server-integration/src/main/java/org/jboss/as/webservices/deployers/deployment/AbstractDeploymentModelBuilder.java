@@ -51,7 +51,7 @@ import org.jboss.wsf.spi.deployment.EndpointType;
 import org.jboss.wsf.spi.deployment.UnifiedVirtualFile;
 import org.jboss.wsf.spi.metadata.webservices.JBossWebservicesMetaData;
 import org.jboss.wsf.spi.metadata.webservices.WebservicesMetaData;
-import org.wildfly.loaders.ResourceLoader;
+import org.wildfly.loaders.deployment.ResourceLoader;
 
 /**
  * Base class for all deployment model builders.

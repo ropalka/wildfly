@@ -22,7 +22,7 @@
 
 package org.wildfly.extension.batch.jberet.deployment;
 
-import static org.wildfly.loaders.Utils.getResourceName;
+import static org.wildfly.loaders.deployment.Utils.getResourceName;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -52,7 +52,7 @@ import org.jboss.as.server.deployment.DeploymentUnit;
 import org.jboss.as.server.deployment.DeploymentUnitProcessingException;
 import org.jboss.modules.Resource;
 import org.wildfly.extension.batch.jberet._private.BatchLogger;
-import org.wildfly.loaders.ResourceLoader;
+import org.wildfly.loaders.deployment.ResourceLoader;
 import org.wildfly.security.manager.WildFlySecurityManager;
 
 /**

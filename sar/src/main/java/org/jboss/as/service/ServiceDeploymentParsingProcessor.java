@@ -42,7 +42,7 @@ import org.jboss.as.service.descriptor.ParseResult;
 import org.jboss.as.service.logging.SarLogger;
 import org.jboss.modules.Resource;
 import org.jboss.staxmapper.XMLMapper;
-import org.wildfly.loaders.ResourceLoader;
+import org.wildfly.loaders.deployment.ResourceLoader;
 
 /**
  * DeploymentUnitProcessor responsible for parsing a jboss-service.xml descriptor and attaching the corresponding JBossServiceXmlDescriptor.

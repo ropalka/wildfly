@@ -38,7 +38,7 @@ import org.jboss.as.server.deployment.module.ResourceRoot;
 import org.jboss.jca.common.api.metadata.resourceadapter.Activation;
 import org.jboss.jca.common.metadata.ironjacamar.IronJacamarParser;
 import org.jboss.modules.Resource;
-import org.wildfly.loaders.ResourceLoader;
+import org.wildfly.loaders.deployment.ResourceLoader;
 
 /**
  * DeploymentUnitProcessor responsible for parsing an iron-jacamar.xml descriptor

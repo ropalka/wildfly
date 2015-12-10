@@ -23,7 +23,7 @@
 package org.jboss.as.jpa.container;
 
 import static org.jboss.as.jpa.messages.JpaLogger.ROOT_LOGGER;
-import static org.wildfly.loaders.Utils.normalizePath;
+import static org.wildfly.loaders.deployment.Utils.normalizePath;
 
 import java.util.List;
 

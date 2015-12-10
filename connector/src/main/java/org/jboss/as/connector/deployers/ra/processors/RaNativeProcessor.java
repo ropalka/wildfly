@@ -23,7 +23,7 @@
 package org.jboss.as.connector.deployers.ra.processors;
 
 import static org.jboss.as.connector.logging.ConnectorLogger.ROOT_LOGGER;
-import static org.wildfly.loaders.Utils.getResourceName;
+import static org.wildfly.loaders.deployment.Utils.getResourceName;
 
 import java.io.File;
 import java.util.Iterator;
@@ -36,7 +36,7 @@ import org.jboss.as.server.deployment.DeploymentUnit;
 import org.jboss.as.server.deployment.DeploymentUnitProcessingException;
 import org.jboss.as.server.deployment.DeploymentUnitProcessor;
 import org.jboss.modules.Resource;
-import org.wildfly.loaders.ResourceLoader;
+import org.wildfly.loaders.deployment.ResourceLoader;
 
 /**
  * Load native libraries for .rar deployments

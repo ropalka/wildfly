@@ -21,7 +21,7 @@
  */
 package org.jboss.as.appclient.deployment;
 
-import static org.wildfly.loaders.Utils.normalizePath;
+import static org.wildfly.loaders.deployment.Utils.normalizePath;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -40,8 +40,8 @@ import org.jboss.as.server.deployment.SubDeploymentMarker;
 import org.jboss.as.server.deployment.module.ModuleRootMarker;
 import org.jboss.as.server.deployment.module.ResourceRoot;
 import org.jboss.modules.Resource;
-import org.wildfly.loaders.ResourceLoader;
-import org.wildfly.loaders.ResourceLoaders;
+import org.wildfly.loaders.deployment.ResourceLoader;
+import org.wildfly.loaders.deployment.ResourceLoaders;
 
 /**
  * Processor that marks a sub-deployment as an application client based on the parameters passed on the command line
@@ -79,7 +79,7 @@ public class ApplicationClientStructureProcessor implements DeploymentUnitProces
                 } else {
                     ResourceLoader loader;
                     try {
-                        loader = ResourceLoaders.newResourceLoader(appClientRoot.getName(), root.getLoader(), deployment);
+                        loader = ResourceLoaders.newResourceLoader(appClientRoot.getName(), root.getLoader(), deployment, true);
                     } catch (IOException e) {
                         throw AppClientLogger.ROOT_LOGGER.unableToReadAppclientResource(deployment, e);
                     }
