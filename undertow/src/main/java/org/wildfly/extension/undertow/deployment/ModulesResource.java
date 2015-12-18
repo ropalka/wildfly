@@ -60,6 +60,7 @@ public class ModulesResource implements Resource {
     private final ResourceLoader loader;
     private final org.jboss.modules.Resource res;
     private final File loaderFile;
+    private final File resFile;
     private final String path;
     private final boolean isOverlay;
 
@@ -67,6 +68,7 @@ public class ModulesResource implements Resource {
         this.loader = loader;
         this.res = res;
         this.loaderFile = loader.getRoot();
+        this.resFile = res != null ? new File(((org.wildfly.loaders.deployment.Resource)res).getNativeURL().getFile()) : null;
         this.path = path;
         this.isOverlay = isOverlay;
     }
@@ -78,7 +80,7 @@ public class ModulesResource implements Resource {
 
     @Override
     public Date getLastModified() {
-        return null;
+        return resFile != null ? new Date(resFile.lastModified()) : null;
     }
 
     @Override
@@ -231,7 +233,7 @@ public class ModulesResource implements Resource {
 
     @Override
     public File getFile() {
-        return null;
+        return resFile;
     }
 
     @Override
