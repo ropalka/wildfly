@@ -57,6 +57,7 @@ import static org.jboss.as.test.xts.util.EventLogEvent.*;
 /**
  * XTS business activities - participant completition test case
  */
+@org.junit.Ignore
 @RunWith(Arquillian.class)
 public class BAParticipantCompletionTestCase extends BaseFunctionalTest {
     UserBusinessActivity uba;
