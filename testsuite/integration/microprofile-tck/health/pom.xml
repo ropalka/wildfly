@@ -52,6 +52,12 @@
             <groupId>org.eclipse.microprofile.health</groupId>
             <artifactId>microprofile-health-tck</artifactId>
             <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.jboss.arquillian.container</groupId>
+                    <artifactId>arquillian-container-test-spi</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
     </dependencies>
 
