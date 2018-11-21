@@ -21,45 +21,70 @@
  */
 package org.jboss.as.naming.service;
 
+import org.jboss.as.naming.ManagedReferenceFactory;
+import org.jboss.as.naming.ServiceBasedNamingStore;
 import org.jboss.as.naming.context.external.ExternalContexts;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
 import org.jboss.msc.value.InjectedValue;
 
+import java.util.function.Consumer;
+import java.util.function.Supplier;
+
 /**
  * A binder service for external contexts.
  * @author Eduardo Martins
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public class ExternalContextBinderService extends BinderService {
 
     private final InjectedValue<ExternalContexts> externalContextsInjectedValue;
+    private final Supplier<ExternalContexts> externalContextsSupplier;
 
     /**
-     *
-     * @param name
-     * @param source
+     * @deprecated use {@link #ExternalContextBinderService(String, Object, Consumer, Supplier, Supplier, Supplier)} instead
      */
-    public ExternalContextBinderService(String name, Object source) {
-        super(name, source);
+    @Deprecated
+    public ExternalContextBinderService(final String name, final Object source) {
+        super(name, source, null, null, null);
         this.externalContextsInjectedValue = new InjectedValue<>();
+        this.externalContextsSupplier = null;
     }
 
+    public ExternalContextBinderService(final String name, final Object source,
+                                        final Consumer<ManagedReferenceFactory> managedReferenceFactoryConsumer,
+                                        final Supplier<ManagedReferenceFactory> managedReferenceFactorySupplier,
+                                        final Supplier<ServiceBasedNamingStore> namingStoreSupplier,
+                                        final Supplier<ExternalContexts> externalContextsSupplier) {
+        super(name, source, managedReferenceFactoryConsumer, managedReferenceFactorySupplier, namingStoreSupplier);
+        this.externalContextsInjectedValue = null;
+        this.externalContextsSupplier = externalContextsSupplier;
+    }
+
+    /**
+     * @deprecated
+     */
+    @Deprecated
     public InjectedValue<ExternalContexts> getExternalContextsInjector() {
+        if (externalContextsSupplier != null) throw new UnsupportedOperationException();
         return externalContextsInjectedValue;
     }
 
     @Override
-    public synchronized void start(StartContext context) throws StartException {
+    public synchronized void start(final StartContext context) throws StartException {
         super.start(context);
-        externalContextsInjectedValue.getValue().addExternalContext(context.getController().getName());
+        final ExternalContexts externalContexts = externalContextsSupplier != null
+                ? externalContextsSupplier.get() : externalContextsInjectedValue.getValue();
+        externalContexts.addExternalContext(context.getController().getName());
     }
 
     @Override
-    public synchronized void stop(StopContext context) {
+    public synchronized void stop(final StopContext context) {
+        final ExternalContexts externalContexts = externalContextsSupplier != null
+                ? externalContextsSupplier.get() : externalContextsInjectedValue.getValue();
+        externalContexts.removeExternalContext(context.getController().getName());
         super.stop(context);
-        externalContextsInjectedValue.getValue().removeExternalContext(context.getController().getName());
     }
 
 }
-
