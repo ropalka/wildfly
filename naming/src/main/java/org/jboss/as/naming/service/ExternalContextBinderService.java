@@ -27,7 +27,6 @@ import org.jboss.as.naming.context.external.ExternalContexts;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
-import org.jboss.msc.value.InjectedValue;
 
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -39,18 +38,7 @@ import java.util.function.Supplier;
  */
 public class ExternalContextBinderService extends BinderService {
 
-    private final InjectedValue<ExternalContexts> externalContextsInjectedValue;
     private final Supplier<ExternalContexts> externalContextsSupplier;
-
-    /**
-     * @deprecated use {@link #ExternalContextBinderService(String, Object, Consumer, Supplier, Supplier, Supplier)} instead
-     */
-    @Deprecated
-    public ExternalContextBinderService(final String name, final Object source) {
-        super(name, source, null, null, null);
-        this.externalContextsInjectedValue = new InjectedValue<>();
-        this.externalContextsSupplier = null;
-    }
 
     public ExternalContextBinderService(final String name, final Object source,
                                         final Consumer<ManagedReferenceFactory> managedReferenceFactoryConsumer,
@@ -58,32 +46,18 @@ public class ExternalContextBinderService extends BinderService {
                                         final Supplier<ServiceBasedNamingStore> namingStoreSupplier,
                                         final Supplier<ExternalContexts> externalContextsSupplier) {
         super(name, source, managedReferenceFactoryConsumer, managedReferenceFactorySupplier, namingStoreSupplier);
-        this.externalContextsInjectedValue = null;
         this.externalContextsSupplier = externalContextsSupplier;
-    }
-
-    /**
-     * @deprecated
-     */
-    @Deprecated
-    public InjectedValue<ExternalContexts> getExternalContextsInjector() {
-        if (externalContextsSupplier != null) throw new UnsupportedOperationException();
-        return externalContextsInjectedValue;
     }
 
     @Override
     public synchronized void start(final StartContext context) throws StartException {
         super.start(context);
-        final ExternalContexts externalContexts = externalContextsSupplier != null
-                ? externalContextsSupplier.get() : externalContextsInjectedValue.getValue();
-        externalContexts.addExternalContext(context.getController().getName());
+        externalContextsSupplier.get().addExternalContext(context.getController().getName());
     }
 
     @Override
     public synchronized void stop(final StopContext context) {
-        final ExternalContexts externalContexts = externalContextsSupplier != null
-                ? externalContextsSupplier.get() : externalContextsInjectedValue.getValue();
-        externalContexts.removeExternalContext(context.getController().getName());
+        externalContextsSupplier.get().removeExternalContext(context.getController().getName());
         super.stop(context);
     }
 

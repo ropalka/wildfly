@@ -30,7 +30,6 @@ import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
-import org.jboss.msc.value.InjectedValue;
 
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
@@ -48,8 +47,6 @@ import static org.jboss.as.naming.logging.NamingLogger.ROOT_LOGGER;
  */
 public class BinderService implements Service<ManagedReferenceFactory> {
 
-    private final InjectedValue<ServiceBasedNamingStore> namingStoreValue = new InjectedValue<ServiceBasedNamingStore>();
-    private final InjectedValue<ManagedReferenceFactory> managedReferenceFactory = new InjectedValue<ManagedReferenceFactory>();
     private final Consumer<ManagedReferenceFactory> managedReferenceFactoryConsumer;
     private final Supplier<ManagedReferenceFactory> managedReferenceFactorySupplier;
     private final Supplier<ServiceBasedNamingStore> namingStoreSupplier;
@@ -57,19 +54,6 @@ public class BinderService implements Service<ManagedReferenceFactory> {
     private final AtomicInteger refcnt;
     private volatile Object source;
     private volatile ServiceController<?> controller;
-
-    /**
-     * Construct new instance.
-     *
-     * @param name The JNDI name to use for binding. May be either an absolute or relative name
-     * @param source
-     * @param shared indicates if the bind may be shared among multiple deployments, if true the service tracks references indicated through acquire(), and automatically stops once all deployments unreference it through release()
-     * @deprecated use {@link #BinderService(String, Object, boolean, Consumer, Supplier, Supplier)} instead
-     */
-    @Deprecated
-    public BinderService(final String name, final Object source, final boolean shared) {
-        this(name, source, shared, null, null, null);
-    }
 
     /**
      * Construct new instance.
@@ -103,18 +87,6 @@ public class BinderService implements Service<ManagedReferenceFactory> {
      *
      * @param name The JNDI name to use for binding. May be either an absolute or relative name
      * @param source
-     * @deprecated use {@link #BinderService(String, Object, Consumer, Supplier, Supplier)} instead
-     */
-    @Deprecated
-    public BinderService(final String name, final Object source) {
-        this(name, source, false, null, null, null);
-    }
-
-    /**
-     * Construct new instance.
-     *
-     * @param name The JNDI name to use for binding. May be either an absolute or relative name
-     * @param source
      * @param managedReferenceFactoryConsumer managed reference factory provided by this service
      * @param managedReferenceFactorySupplier managed reference factory supplier
      * @param namingStoreSupplier naming store supplier
@@ -124,17 +96,6 @@ public class BinderService implements Service<ManagedReferenceFactory> {
                          final Supplier<ManagedReferenceFactory> managedReferenceFactorySupplier,
                          final Supplier<ServiceBasedNamingStore> namingStoreSupplier) {
         this(name, source, false, managedReferenceFactoryConsumer, managedReferenceFactorySupplier, namingStoreSupplier);
-    }
-
-    /**
-     * Construct new instance.
-     *
-     * @param name The JNDI name to use for binding. May be either an absolute or relative name
-     * @deprecated use {@link #BinderService(String, Consumer, Supplier, Supplier)} instead
-     */
-    @Deprecated
-    public BinderService(final String name) {
-        this(name, null, false, null, null, null);
     }
 
     /**
@@ -190,11 +151,11 @@ public class BinderService implements Service<ManagedReferenceFactory> {
      * @throws StartException If the entity can not be bound
      */
     public void start(final StartContext context) throws StartException {
-        final ServiceBasedNamingStore namingStore = namingStoreSupplier != null ? namingStoreSupplier.get() : namingStoreValue.getValue();
+        final ServiceBasedNamingStore namingStore = namingStoreSupplier.get();
         controller = context.getController();
         namingStore.add(controller.getName());
         ROOT_LOGGER.tracef("Bound resource %s into naming store %s (service name %s)", name, namingStore, controller.getName());
-        if (managedReferenceFactoryConsumer != null) managedReferenceFactoryConsumer.accept(managedReferenceFactorySupplier.get());
+        managedReferenceFactoryConsumer.accept(managedReferenceFactorySupplier.get());
     }
 
     /**
@@ -203,8 +164,8 @@ public class BinderService implements Service<ManagedReferenceFactory> {
      * @param context The stop context
      */
     public void stop(final StopContext context) {
-        if (managedReferenceFactoryConsumer != null) managedReferenceFactoryConsumer.accept(null);
-        final ServiceBasedNamingStore namingStore = namingStoreSupplier != null ? namingStoreSupplier.get() : namingStoreValue.getValue();
+        managedReferenceFactoryConsumer.accept(null);
+        final ServiceBasedNamingStore namingStore = namingStoreSupplier.get();
         namingStore.remove(controller.getName());
         ROOT_LOGGER.tracef("Unbound resource %s into naming store %s (service name %s)", name, namingStore, context.getController().getName());
     }
@@ -217,29 +178,7 @@ public class BinderService implements Service<ManagedReferenceFactory> {
      */
     @Deprecated
     public ManagedReferenceFactory getValue() throws IllegalStateException {
-        return managedReferenceFactorySupplier != null ? managedReferenceFactorySupplier.get() : managedReferenceFactory.getValue();
-    }
-
-    /**
-     * Get the injector for the item to be bound.
-     *
-     * @return the injector
-     */
-    @Deprecated
-    public InjectedValue<ManagedReferenceFactory> getManagedObjectInjector() {
-        if (managedReferenceFactorySupplier != null) throw new UnsupportedOperationException();
-        return managedReferenceFactory;
-    }
-
-    /**
-     * Get the naming store injector.
-     *
-     * @return the injector
-     */
-    @Deprecated
-    public InjectedValue<ServiceBasedNamingStore> getNamingStoreInjector() {
-        if (namingStoreSupplier != null) throw new UnsupportedOperationException();
-        return namingStoreValue;
+        return managedReferenceFactorySupplier.get();
     }
 
     @Override
