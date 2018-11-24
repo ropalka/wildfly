@@ -28,6 +28,8 @@ import java.net.URL;
 import java.util.Arrays;
 import java.util.Hashtable;
 import java.util.Map;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import javax.naming.InitialContext;
 import javax.naming.spi.ObjectFactory;
@@ -53,12 +55,14 @@ import org.jboss.as.naming.deployment.ContextNames;
 import org.jboss.as.naming.service.BinderService;
 import org.jboss.as.naming.service.ExternalContextBinderService;
 import org.jboss.as.naming.service.ExternalContextsService;
+import org.jboss.as.naming.service.ManagedReferenceFactorySupplier;
 import org.jboss.dmr.ModelNode;
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleIdentifier;
 import org.jboss.modules.ModuleLoadException;
 import org.jboss.modules.ModuleNotFoundException;
 import org.jboss.msc.service.ServiceBuilder;
+import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.value.ImmediateValue;
 import org.wildfly.security.manager.WildFlySecurityManager;
@@ -68,6 +72,7 @@ import org.wildfly.security.manager.WildFlySecurityManager;
  *
  * @author Stuart Douglas
  * @author Eduardo Martins
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public class NamingBindingAdd extends AbstractAddStepHandler {
 
@@ -112,20 +117,16 @@ public class NamingBindingAdd extends AbstractAddStepHandler {
     }
 
     void installSimpleBinding(final OperationContext context, final String name, final ModelNode model) throws OperationFailedException {
-
-        Object bindValue = createSimpleBinding(context, model);
-
-        ValueManagedReferenceFactory referenceFactory = new ValueManagedReferenceFactory(new ImmediateValue<Object>(bindValue));
-
-
-        final BinderService binderService = new BinderService(name, bindValue);
-        binderService.getManagedObjectInjector().inject(new MutableManagedReferenceFactory(referenceFactory));
-        final ContextNames.BindInfo bindInfo = ContextNames.bindInfoFor(name);
-
+        final Object bindValue = createSimpleBinding(context, model);
+        final ManagedReferenceFactory referenceFactory = new ValueManagedReferenceFactory(new ImmediateValue<Object>(bindValue));
         final ServiceTarget serviceTarget = context.getServiceTarget();
-        ServiceBuilder<ManagedReferenceFactory> builder = serviceTarget.addService(bindInfo.getBinderServiceName(), binderService)
-                .addDependency(bindInfo.getParentContextServiceName(), ServiceBasedNamingStore.class, binderService.getNamingStoreInjector());
-
+        final ContextNames.BindInfo bindInfo = ContextNames.bindInfoFor(name);
+        final ServiceName serviceName = bindInfo.getBinderServiceName();
+        final ServiceBuilder<?> builder = serviceTarget.addService(serviceName);
+        final Consumer<ManagedReferenceFactory> mrfConsumer = builder.provides(serviceName);
+        final Supplier<ManagedReferenceFactory> mrfSupplier = new ManagedReferenceFactorySupplier(referenceFactory);
+        final Supplier<ServiceBasedNamingStore> sbnsSupplier = builder.requires(bindInfo.getParentContextServiceName());
+        builder.setInstance(new BinderService(name, bindValue, mrfConsumer, mrfSupplier, sbnsSupplier));
         builder.install();
     }
 
@@ -141,24 +142,20 @@ public class NamingBindingAdd extends AbstractAddStepHandler {
         return coerceToType(value, type);
     }
 
-
     void installObjectFactory(final OperationContext context, final String name, final ModelNode model) throws OperationFailedException {
-
         final ObjectFactory objectFactoryClassInstance = createObjectFactory(context, model);
-
         final Hashtable<String, String> environment = getObjectFactoryEnvironment(context, model);
-        ContextListAndJndiViewManagedReferenceFactory factory = new ObjectFactoryManagedReference(objectFactoryClassInstance, name, environment);
-
+        final ContextListAndJndiViewManagedReferenceFactory factory = new ObjectFactoryManagedReference(objectFactoryClassInstance, name, environment);
+        final ManagedReferenceFactory referenceFactory = new MutableManagedReferenceFactory(factory);
         final ServiceTarget serviceTarget = context.getServiceTarget();
         final ContextNames.BindInfo bindInfo = ContextNames.bindInfoFor(name);
-
-
-        final BinderService binderService = new BinderService(name, objectFactoryClassInstance);
-        binderService.getManagedObjectInjector().inject(new MutableManagedReferenceFactory(factory));
-
-        serviceTarget.addService(bindInfo.getBinderServiceName(), binderService)
-                .addDependency(bindInfo.getParentContextServiceName(), ServiceBasedNamingStore.class, binderService.getNamingStoreInjector())
-                .install();
+        final ServiceName serviceName = bindInfo.getBinderServiceName();
+        final ServiceBuilder<?> builder = serviceTarget.addService(serviceName);
+        final Consumer<ManagedReferenceFactory> mrfConsumer = builder.provides(serviceName);
+        final Supplier<ManagedReferenceFactory> mrfSupplier = new ManagedReferenceFactorySupplier(referenceFactory);
+        final Supplier<ServiceBasedNamingStore> sbnsSupplier = builder.requires(bindInfo.getParentContextServiceName());
+        builder.setInstance(new BinderService(name, objectFactoryClassInstance, mrfConsumer, mrfSupplier, sbnsSupplier));
+        builder.install();
     }
 
     private ObjectFactory createObjectFactory(OperationContext context, ModelNode model) throws OperationFailedException {
@@ -200,7 +197,7 @@ public class NamingBindingAdd extends AbstractAddStepHandler {
         final String moduleID = NamingBindingResourceDefinition.MODULE.resolveModelAttribute(context, model).asString();
         final String className = NamingBindingResourceDefinition.CLASS.resolveModelAttribute(context, model).asString();
         final ModelNode cacheNode = NamingBindingResourceDefinition.CACHE.resolveModelAttribute(context, model);
-        boolean cache = cacheNode.isDefined() ? cacheNode.asBoolean() : false;
+        final boolean cache = cacheNode.isDefined() ? cacheNode.asBoolean() : false;
 
         final ObjectFactory objectFactoryClassInstance = new ExternalContextObjectFactory();
 
@@ -211,9 +208,10 @@ public class NamingBindingAdd extends AbstractAddStepHandler {
         environment.put(ExternalContextObjectFactory.CACHE_CONTEXT, Boolean.toString(cache));
         environment.put(ExternalContextObjectFactory.INITIAL_CONTEXT_CLASS, className);
         environment.put(ExternalContextObjectFactory.INITIAL_CONTEXT_MODULE, moduleID);
-
-        final ExternalContextBinderService binderService = new ExternalContextBinderService(name, objectFactoryClassInstance);
-        binderService.getManagedObjectInjector().inject(new ContextListAndJndiViewManagedReferenceFactory() {
+        final ServiceName serviceName = bindInfo.getBinderServiceName();
+        final ServiceBuilder<?> builder = serviceTarget.addService(serviceName);
+        final Consumer<ManagedReferenceFactory> mrfConsumer = builder.provides(serviceName);
+        final Supplier<ManagedReferenceFactory> mrfSupplier = new ManagedReferenceFactorySupplier(new ContextListAndJndiViewManagedReferenceFactory() {
             @Override
             public ManagedReference getReference() {
                 try {
@@ -240,11 +238,10 @@ public class NamingBindingAdd extends AbstractAddStepHandler {
                 }
             }
         });
-
-        serviceTarget.addService(bindInfo.getBinderServiceName(), binderService)
-                .addDependency(bindInfo.getParentContextServiceName(), ServiceBasedNamingStore.class, binderService.getNamingStoreInjector())
-                .addDependency(ExternalContextsService.SERVICE_NAME, ExternalContexts.class, binderService.getExternalContextsInjector())
-                .install();
+        final Supplier<ServiceBasedNamingStore> sbnsSupplier = builder.requires(bindInfo.getParentContextServiceName());
+        final Supplier<ExternalContexts> ecSupplier = builder.requires(ExternalContextsService.SERVICE_NAME);
+        builder.setInstance(new ExternalContextBinderService(name, objectFactoryClassInstance, mrfConsumer, mrfSupplier, sbnsSupplier, ecSupplier));
+        builder.install();
     }
 
 
@@ -256,18 +253,18 @@ public class NamingBindingAdd extends AbstractAddStepHandler {
     }
 
     void installLookup(final OperationContext context, final String name, final ModelNode model) throws OperationFailedException {
-
         final String lookup = NamingBindingResourceDefinition.LOOKUP.resolveModelAttribute(context, model).asString();
-
         final ServiceTarget serviceTarget = context.getServiceTarget();
         final ContextNames.BindInfo bindInfo = ContextNames.bindInfoFor(name);
-
-        final BinderService binderService = new BinderService(name);
-        binderService.getManagedObjectInjector().inject(new MutableManagedReferenceFactory(new LookupManagedReferenceFactory(lookup)));
-
-        serviceTarget.addService(bindInfo.getBinderServiceName(), binderService)
-                .addDependency(bindInfo.getParentContextServiceName(), ServiceBasedNamingStore.class, binderService.getNamingStoreInjector())
-                .install();
+        final ServiceName serviceName = bindInfo.getBinderServiceName();
+        final ServiceBuilder<?> builder = serviceTarget.addService(serviceName);
+        final Consumer<ManagedReferenceFactory> mrfConsumer = builder.provides(serviceName);
+        final Supplier<ManagedReferenceFactory> mrfSupplier = new ManagedReferenceFactorySupplier(
+                new MutableManagedReferenceFactory(new LookupManagedReferenceFactory(lookup))
+        );
+        final Supplier<ServiceBasedNamingStore> sbnsSupplier = builder.requires(bindInfo.getParentContextServiceName());
+        builder.setInstance(new BinderService(name, mrfConsumer, mrfSupplier, sbnsSupplier));
+        builder.install();
     }
 
     private Object coerceToType(final String value, final String type) throws OperationFailedException {
