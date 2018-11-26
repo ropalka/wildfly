@@ -1,4 +1,4 @@
-/*
+ /*
  * JBoss, Home of Professional Open Source.
  * Copyright 2011, Red Hat, Inc., and individual contributors
  * as indicated by the @author tags. See the copyright.txt file in the
@@ -25,13 +25,15 @@ package org.jboss.as.ee.component;
 import org.jboss.as.naming.ManagedReferenceFactory;
 import org.jboss.as.server.deployment.DeploymentPhaseContext;
 import org.jboss.as.server.deployment.DeploymentUnitProcessingException;
-import org.jboss.msc.inject.Injector;
 import org.jboss.msc.service.ServiceBuilder;
+
+import java.util.function.Supplier;
 
 /**
  * A configuration for an injection source.
  *
  * @author <a href="mailto:david.lloyd@redhat.com">David M. Lloyd</a>
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public abstract class InjectionSource {
     /**
@@ -42,10 +44,9 @@ public abstract class InjectionSource {
      * @param resolutionContext the resolution context to use
      * @param serviceBuilder the builder for the binder service
      * @param phaseContext the deployment phase context
-     * @param injector the injector into which the value should be placed
      * @throws DeploymentUnitProcessingException if an error occurs
      */
-    public abstract void getResourceValue(ResolutionContext resolutionContext, ServiceBuilder<?> serviceBuilder, DeploymentPhaseContext phaseContext, Injector<ManagedReferenceFactory> injector) throws DeploymentUnitProcessingException;
+    public abstract Supplier<ManagedReferenceFactory> getResourceValue(ResolutionContext resolutionContext, ServiceBuilder<?> serviceBuilder, DeploymentPhaseContext phaseContext) throws DeploymentUnitProcessingException;
 
     /**
      * A resolution context for the injection source.
