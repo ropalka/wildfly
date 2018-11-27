@@ -23,14 +23,17 @@
 package org.jboss.as.ee.component;
 
 import org.jboss.as.naming.ManagedReferenceFactory;
+import org.jboss.as.naming.service.ManagedReferenceFactorySupplier;
 import org.jboss.as.server.deployment.DeploymentPhaseContext;
-import org.jboss.msc.inject.Injector;
 import org.jboss.msc.service.ServiceBuilder;
+
+import java.util.function.Supplier;
 
 /**
  * An injection of a fixed value.
  *
  * @author <a href="mailto:david.lloyd@redhat.com">David M. Lloyd</a>
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public final class FixedInjectionSource extends InjectionSource {
     private final Object value;
@@ -50,8 +53,8 @@ public final class FixedInjectionSource extends InjectionSource {
     /**
      * {@inheritDoc}
      */
-    public void getResourceValue(final ResolutionContext resolutionContext, final ServiceBuilder<?> serviceBuilder, final DeploymentPhaseContext phaseContext, final Injector<ManagedReferenceFactory> injector) {
-        injector.inject(managedReferenceFactory);
+    public Supplier<ManagedReferenceFactory> getResourceValue(final ResolutionContext resolutionContext, final ServiceBuilder<?> serviceBuilder, final DeploymentPhaseContext phaseContext) {
+        return new ManagedReferenceFactorySupplier(managedReferenceFactory);
     }
 
     @Override
