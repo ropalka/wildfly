@@ -27,8 +27,8 @@ import org.jboss.as.naming.ImmediateManagedReference;
 import org.jboss.as.naming.ManagedReference;
 import org.jboss.as.naming.ManagedReferenceFactory;
 import org.jboss.as.naming.deployment.ContextNames;
+import org.jboss.as.naming.service.ManagedReferenceFactorySupplier;
 import org.jboss.as.server.deployment.DeploymentPhaseContext;
-import org.jboss.msc.inject.Injector;
 import org.jboss.msc.service.ServiceBuilder;
 
 import javax.naming.InitialContext;
@@ -38,11 +38,13 @@ import java.net.URL;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.Supplier;
 
 /**
  * A binding which gets its value from another JNDI binding.
  *
  * @author <a href="mailto:david.lloyd@redhat.com">David M. Lloyd</a>
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public final class LookupInjectionSource extends InjectionSource {
 
@@ -77,7 +79,7 @@ public final class LookupInjectionSource extends InjectionSource {
     /**
      * {@inheritDoc}
      */
-    public void getResourceValue(final ResolutionContext resolutionContext, final ServiceBuilder<?> serviceBuilder, final DeploymentPhaseContext phaseContext, final Injector<ManagedReferenceFactory> injector) {
+    public Supplier<ManagedReferenceFactory> getResourceValue(final ResolutionContext resolutionContext, final ServiceBuilder<?> serviceBuilder, final DeploymentPhaseContext phaseContext) {
         final String applicationName = resolutionContext.getApplicationName();
         final String moduleName = resolutionContext.getModuleName();
         final String componentName = resolutionContext.getComponentName();
@@ -86,25 +88,25 @@ public final class LookupInjectionSource extends InjectionSource {
         if (scheme == null) {
             // relative name, build absolute name and setup normal lookup injection
             if (componentName != null && !compUsesModule) {
-                ContextNames.bindInfoFor(applicationName, moduleName, componentName, "java:comp/env/" + lookupName)
-                        .setupLookupInjection(serviceBuilder, injector, phaseContext.getDeploymentUnit(), optional);
+                return ContextNames.bindInfoFor(applicationName, moduleName, componentName, "java:comp/env/" + lookupName)
+                        .setupLookupInjection(serviceBuilder, phaseContext.getDeploymentUnit(), optional);
             } else if (compUsesModule) {
-                ContextNames.bindInfoFor(applicationName, moduleName, componentName, "java:module/env/" + lookupName)
-                        .setupLookupInjection(serviceBuilder, injector, phaseContext.getDeploymentUnit(), optional);
+                return ContextNames.bindInfoFor(applicationName, moduleName, componentName, "java:module/env/" + lookupName)
+                        .setupLookupInjection(serviceBuilder, phaseContext.getDeploymentUnit(), optional);
             } else {
-                ContextNames.bindInfoFor(applicationName, moduleName, componentName, "java:jboss/env/" + lookupName)
-                        .setupLookupInjection(serviceBuilder, injector, phaseContext.getDeploymentUnit(), optional);
+                return ContextNames.bindInfoFor(applicationName, moduleName, componentName, "java:jboss/env/" + lookupName)
+                        .setupLookupInjection(serviceBuilder, phaseContext.getDeploymentUnit(), optional);
             }
         } else {
             if (scheme.equals("java")) {
                 // an absolute java name, setup normal lookup injection
                 if (compUsesModule && lookupName.startsWith("java:comp/")) {
                     // switch "comp" with "module"
-                    ContextNames.bindInfoFor(applicationName, moduleName, componentName, "java:module/" + lookupName.substring(10))
-                            .setupLookupInjection(serviceBuilder, injector, phaseContext.getDeploymentUnit(), optional);
+                    return ContextNames.bindInfoFor(applicationName, moduleName, componentName, "java:module/" + lookupName.substring(10))
+                            .setupLookupInjection(serviceBuilder, phaseContext.getDeploymentUnit(), optional);
                 } else {
-                    ContextNames.bindInfoFor(applicationName, moduleName, componentName, lookupName)
-                            .setupLookupInjection(serviceBuilder, injector, phaseContext.getDeploymentUnit(), optional);
+                    return ContextNames.bindInfoFor(applicationName, moduleName, componentName, lookupName)
+                            .setupLookupInjection(serviceBuilder, phaseContext.getDeploymentUnit(), optional);
                 }
             } else {
                 // an absolute non java name
@@ -135,7 +137,7 @@ public final class LookupInjectionSource extends InjectionSource {
                         }
                     };
                 }
-                injector.inject(managedReferenceFactory);
+                return new ManagedReferenceFactorySupplier(managedReferenceFactory);
             }
         }
     }
