@@ -25,6 +25,7 @@ package org.jboss.as.ee.component.deployers;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import org.jboss.as.ee.logging.EeLogger;
@@ -184,14 +185,15 @@ public final class ComponentInstallProcessor implements DeploymentUnitProcessor 
             for (BindingConfiguration bindingConfiguration : viewConfiguration.getBindingConfigurations()) {
                 final String bindingName = bindingConfiguration.getName();
                 final ContextNames.BindInfo bindInfo = ContextNames.bindInfoFor(applicationName, moduleName, componentName, bindingName);
-                final BinderService service = new BinderService(bindInfo.getBindName(), bindingConfiguration.getSource());
 
                 //these bindings should never be merged, if a view binding is duplicated it is an error
-                jndiDepServiceBuilder.requires(bindInfo.getBinderServiceName());
-
-                ServiceBuilder<ManagedReferenceFactory> serviceBuilder = serviceTarget.addService(bindInfo.getBinderServiceName(), service);
-                bindingConfiguration.getSource().getResourceValue(resolutionContext, serviceBuilder, phaseContext, service.getManagedObjectInjector());
-                serviceBuilder.addDependency(bindInfo.getParentContextServiceName(), ServiceBasedNamingStore.class, service.getNamingStoreInjector());
+                final ServiceName sName = bindInfo.getBinderServiceName();
+                jndiDepServiceBuilder.requires(sName);
+                final ServiceBuilder<?> serviceBuilder = serviceTarget.addService(sName);
+                final Consumer<ManagedReferenceFactory> mrfConsumer = serviceBuilder.provides(sName);
+                final Supplier<ManagedReferenceFactory> mrfSupplier = bindingConfiguration.getSource().getResourceValue(resolutionContext, serviceBuilder, phaseContext);
+                final Supplier<ServiceBasedNamingStore> sbnsSupplier = serviceBuilder.requires(bindInfo.getParentContextServiceName());
+                serviceBuilder.setInstance(new BinderService(bindInfo.getBindName(), bindingConfiguration.getSource(), mrfConsumer, mrfSupplier, sbnsSupplier));
                 serviceBuilder.install();
             }
         }
@@ -254,11 +256,13 @@ public final class ComponentInstallProcessor implements DeploymentUnitProcessor 
                 }
                 bound.add(bindInfo.getBinderServiceName());
                 try {
-                    final BinderService service = new BinderService(bindInfo.getBindName(), bindingConfiguration.getSource());
-                    jndiDepServiceBuilder.requires(bindInfo.getBinderServiceName());
-                    ServiceBuilder<ManagedReferenceFactory> serviceBuilder = serviceTarget.addService(bindInfo.getBinderServiceName(), service);
-                    bindingConfiguration.getSource().getResourceValue(resolutionContext, serviceBuilder, phaseContext, service.getManagedObjectInjector());
-                    serviceBuilder.addDependency(bindInfo.getParentContextServiceName(), ServiceBasedNamingStore.class, service.getNamingStoreInjector());
+                    final ServiceName sName = bindInfo.getBinderServiceName();
+                    jndiDepServiceBuilder.requires(sName);
+                    final ServiceBuilder<?> serviceBuilder = serviceTarget.addService(sName);
+                    final Consumer<ManagedReferenceFactory> mrfConsumer = serviceBuilder.provides(sName);
+                    final Supplier<ManagedReferenceFactory> mrfSupplier = bindingConfiguration.getSource().getResourceValue(resolutionContext, serviceBuilder, phaseContext);
+                    final Supplier<ServiceBasedNamingStore> sbnsSupplier = serviceBuilder.requires(bindInfo.getParentContextServiceName());
+                    serviceBuilder.setInstance(new BinderService(bindInfo.getBindName(), bindingConfiguration.getSource(), mrfConsumer, mrfSupplier, sbnsSupplier));
                     serviceBuilder.install();
                 } catch (DuplicateServiceException e) {
                     ServiceController<ManagedReferenceFactory> registered = (ServiceController<ManagedReferenceFactory>) CurrentServiceContainer.getServiceContainer().getService(bindInfo.getBinderServiceName());
