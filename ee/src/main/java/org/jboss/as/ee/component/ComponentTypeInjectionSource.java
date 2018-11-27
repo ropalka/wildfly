@@ -24,6 +24,7 @@ package org.jboss.as.ee.component;
 
 import java.util.Iterator;
 import java.util.Set;
+import java.util.function.Supplier;
 
 import org.jboss.as.ee.logging.EeLogger;
 import org.jboss.as.naming.ManagedReferenceFactory;
@@ -31,7 +32,6 @@ import org.jboss.as.server.deployment.DeploymentPhaseContext;
 import org.jboss.as.server.deployment.DeploymentUnit;
 import org.jboss.as.server.deployment.DeploymentUnitProcessingException;
 import org.jboss.as.server.deployment.module.ResourceRoot;
-import org.jboss.msc.inject.Injector;
 import org.jboss.msc.service.ServiceBuilder;
 
 import static org.jboss.as.ee.component.Attachments.EE_APPLICATION_DESCRIPTION;
@@ -40,6 +40,7 @@ import static org.jboss.as.ee.component.Attachments.EE_APPLICATION_DESCRIPTION;
  * An injection source which injects a component based upon its type.
  *
  * @author <a href="mailto:david.lloyd@redhat.com">David M. Lloyd</a>
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public final class ComponentTypeInjectionSource extends InjectionSource {
     private final String typeName;
@@ -48,7 +49,7 @@ public final class ComponentTypeInjectionSource extends InjectionSource {
         this.typeName = typeName;
     }
 
-    public void getResourceValue(final ResolutionContext resolutionContext, final ServiceBuilder<?> serviceBuilder, final DeploymentPhaseContext phaseContext, final Injector<ManagedReferenceFactory> injector) throws DeploymentUnitProcessingException {
+    public Supplier<ManagedReferenceFactory> getResourceValue(final ResolutionContext resolutionContext, final ServiceBuilder<?> serviceBuilder, final DeploymentPhaseContext phaseContext) throws DeploymentUnitProcessingException {
         final DeploymentUnit deploymentUnit = phaseContext.getDeploymentUnit();
         final EEApplicationDescription applicationDescription = deploymentUnit.getAttachment(EE_APPLICATION_DESCRIPTION);
         final ResourceRoot deploymentRoot = deploymentUnit.getAttachment(org.jboss.as.server.deployment.Attachments.DEPLOYMENT_ROOT);
@@ -63,7 +64,8 @@ public final class ComponentTypeInjectionSource extends InjectionSource {
         }
 
         //TODO: should ComponentView also be a managed reference factory?
-        serviceBuilder.addDependency(description.getServiceName(), ComponentView.class, new ViewManagedReferenceFactory.Injector(injector));
+        final Supplier<ComponentView> cvSupplier = serviceBuilder.requires(description.getServiceName());
+        return new ViewManagedReferenceFactory.Supplier(cvSupplier);
     }
 
     public boolean equals(final Object other) {

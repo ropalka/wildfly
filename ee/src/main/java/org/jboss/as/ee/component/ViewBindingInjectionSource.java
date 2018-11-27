@@ -24,12 +24,14 @@ package org.jboss.as.ee.component;
 
 import org.jboss.as.naming.ManagedReferenceFactory;
 import org.jboss.as.server.deployment.DeploymentPhaseContext;
-import org.jboss.msc.inject.Injector;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceName;
 
+import java.util.function.Supplier;
+
 /**
  * @author <a href="mailto:david.lloyd@redhat.com">David M. Lloyd</a>
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public final class ViewBindingInjectionSource extends InjectionSource {
 
@@ -40,8 +42,9 @@ public final class ViewBindingInjectionSource extends InjectionSource {
     }
 
     /** {@inheritDoc} */
-    public void getResourceValue(final ResolutionContext resolutionContext, final ServiceBuilder<?> serviceBuilder, final DeploymentPhaseContext phaseContext, final Injector<ManagedReferenceFactory> injector) {
-        serviceBuilder.addDependency(serviceName, ComponentView.class, new ViewManagedReferenceFactory.Injector(injector));
+    public Supplier<ManagedReferenceFactory> getResourceValue(final ResolutionContext resolutionContext, final ServiceBuilder<?> serviceBuilder, final DeploymentPhaseContext phaseContext) {
+        final Supplier<ComponentView> cvSupplier = serviceBuilder.requires(serviceName);
+        return new ViewManagedReferenceFactory.Supplier(cvSupplier);
     }
 
     public boolean equals(final Object injectionSource) {
