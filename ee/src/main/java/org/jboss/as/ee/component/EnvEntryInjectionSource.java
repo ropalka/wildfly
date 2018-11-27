@@ -24,16 +24,18 @@ package org.jboss.as.ee.component;
 
 import org.jboss.as.naming.ManagedReferenceFactory;
 import org.jboss.as.naming.ValueManagedReferenceFactory;
+import org.jboss.as.naming.service.ManagedReferenceFactorySupplier;
 import org.jboss.as.server.deployment.DeploymentPhaseContext;
-import org.jboss.as.server.deployment.DeploymentUnitProcessingException;
-import org.jboss.msc.inject.Injector;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.value.Values;
+
+import java.util.function.Supplier;
 
 /**
  * A description of an env-entry.
  *
  * @author <a href="mailto:david.lloyd@redhat.com">David M. Lloyd</a>
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public final class EnvEntryInjectionSource extends InjectionSource {
     private final Object value;
@@ -47,8 +49,8 @@ public final class EnvEntryInjectionSource extends InjectionSource {
         this.value = value;
     }
 
-    public void getResourceValue(final ResolutionContext resolutionContext, final ServiceBuilder<?> serviceBuilder, final DeploymentPhaseContext phaseContext, final Injector<ManagedReferenceFactory> injector) throws DeploymentUnitProcessingException {
-        injector.inject(new ValueManagedReferenceFactory(Values.immediateValue(value)));
+    public Supplier<ManagedReferenceFactory> getResourceValue(final ResolutionContext resolutionContext, final ServiceBuilder<?> serviceBuilder, final DeploymentPhaseContext phaseContext) {
+        return new ManagedReferenceFactorySupplier(new ValueManagedReferenceFactory(Values.immediateValue(value)));
     }
 
     public boolean equals(final Object injectionSource) {
