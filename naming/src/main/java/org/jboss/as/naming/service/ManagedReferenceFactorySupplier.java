@@ -33,6 +33,8 @@ import java.util.function.Supplier;
  */
 public class ManagedReferenceFactorySupplier implements Supplier<ManagedReferenceFactory> {
 
+    public static final Supplier<ManagedReferenceFactory> NULL = new ManagedReferenceFactorySupplier(null);
+
     private final ManagedReferenceFactory factory;
 
     public ManagedReferenceFactorySupplier(final ManagedReferenceFactory factory) {

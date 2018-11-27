@@ -23,18 +23,19 @@
 package org.jboss.as.ee.component.deployers;
 
 import java.util.Set;
+import java.util.function.Supplier;
 
 import org.jboss.as.ee.logging.EeLogger;
 import org.jboss.as.ee.component.EEApplicationDescription;
 import org.jboss.as.ee.component.InjectionSource;
 import org.jboss.as.naming.ManagedReferenceFactory;
 import org.jboss.as.naming.deployment.ContextNames;
+import org.jboss.as.naming.service.ManagedReferenceFactorySupplier;
 import org.jboss.as.server.deployment.Attachments;
 import org.jboss.as.server.deployment.DeploymentPhaseContext;
 import org.jboss.as.server.deployment.DeploymentUnit;
 import org.jboss.as.server.deployment.DeploymentUnitProcessingException;
 import org.jboss.as.server.deployment.module.ResourceRoot;
-import org.jboss.msc.inject.Injector;
 import org.jboss.msc.service.ServiceBuilder;
 
 import static org.jboss.as.ee.component.Attachments.EE_APPLICATION_DESCRIPTION;
@@ -43,6 +44,7 @@ import static org.jboss.as.ee.component.Attachments.EE_APPLICATION_DESCRIPTION;
  * Implementation of {@link org.jboss.as.ee.component.InjectionSource} responsible for finding a message destination
  *
  * @author Stuart Douglas
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public class MessageDestinationInjectionSource extends InjectionSource {
     private final String bindingName;
@@ -55,7 +57,7 @@ public class MessageDestinationInjectionSource extends InjectionSource {
         this.bindingName = bindingName;
     }
 
-    public void getResourceValue(final ResolutionContext resolutionContext, final ServiceBuilder<?> serviceBuilder, final DeploymentPhaseContext phaseContext, final Injector<ManagedReferenceFactory> injector) throws DeploymentUnitProcessingException {
+    public Supplier<ManagedReferenceFactory> getResourceValue(final ResolutionContext resolutionContext, final ServiceBuilder<?> serviceBuilder, final DeploymentPhaseContext phaseContext) throws DeploymentUnitProcessingException {
         if (error != null) {
             throw new DeploymentUnitProcessingException(error);
         }
@@ -79,7 +81,9 @@ public class MessageDestinationInjectionSource extends InjectionSource {
         }
         final ContextNames.BindInfo bindInfo = ContextNames.bindInfoFor(applicationName, moduleName, componentName, lookupName);
         if (lookupName.startsWith("java:")) {
-            serviceBuilder.addDependency(bindInfo.getBinderServiceName(), ManagedReferenceFactory.class, injector);
+            return serviceBuilder.requires(bindInfo.getBinderServiceName());
+        } else {
+            return ManagedReferenceFactorySupplier.NULL;
         }
     }
 
