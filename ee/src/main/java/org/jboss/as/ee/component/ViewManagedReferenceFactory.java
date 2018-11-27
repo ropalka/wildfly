@@ -26,12 +26,12 @@ import org.jboss.as.ee.logging.EeLogger;
 import org.jboss.as.naming.ContextListManagedReferenceFactory;
 import org.jboss.as.naming.ManagedReference;
 import org.jboss.as.naming.ManagedReferenceFactory;
-import org.jboss.msc.inject.InjectionException;
 
 /**
  * A managed reference factory for a component view.
  *
  * @author <a href="mailto:david.lloyd@redhat.com">David M. Lloyd</a>
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public final class ViewManagedReferenceFactory implements ContextListManagedReferenceFactory {
     private final ComponentView view;
@@ -60,29 +60,32 @@ public final class ViewManagedReferenceFactory implements ContextListManagedRefe
     }
 
     /**
-     * The bridge injector for binding views into JNDI.  Injects a {@link ComponentView}
+     * The bridge supplier for binding views into JNDI. Supplies a {@link ComponentView}
      * wrapped as a {@link ManagedReferenceFactory}.
      */
-    public static class Injector implements org.jboss.msc.inject.Injector<ComponentView> {
-        private final org.jboss.msc.inject.Injector<ManagedReferenceFactory> referenceFactoryInjector;
+    public static class Supplier implements java.util.function.Supplier<ManagedReferenceFactory> {
+        private final java.util.function.Supplier<ComponentView> componentViewSupplier;
+        private volatile ManagedReferenceFactory factory;
 
         /**
          * Construct a new instance.
          *
-         * @param referenceFactoryInjector the injector from the binder service
+         * @param componentViewSupplier the component view supplier
          */
-        public Injector(final org.jboss.msc.inject.Injector<ManagedReferenceFactory> referenceFactoryInjector) {
-            this.referenceFactoryInjector = referenceFactoryInjector;
+        public Supplier(final java.util.function.Supplier<ComponentView> componentViewSupplier) {
+            this.componentViewSupplier = componentViewSupplier;
         }
 
-        /** {@inheritDoc} */
-        public void inject(final ComponentView value) throws InjectionException {
-            referenceFactoryInjector.inject(new ViewManagedReferenceFactory(value));
-        }
-
-        /** {@inheritDoc} */
-        public void uninject() {
-            referenceFactoryInjector.uninject();
+        @Override
+        public ManagedReferenceFactory get() {
+            if (factory == null) {
+                synchronized (this) {
+                    if (factory == null) {
+                        factory = new ViewManagedReferenceFactory(componentViewSupplier.get());
+                    }
+                }
+            }
+            return factory;
         }
     }
 
