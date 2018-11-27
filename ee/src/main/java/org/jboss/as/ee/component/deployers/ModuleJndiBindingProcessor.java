@@ -52,7 +52,6 @@ import org.jboss.msc.service.CircularDependencyException;
 import org.jboss.msc.service.DuplicateServiceException;
 import org.jboss.msc.service.LifecycleEvent;
 import org.jboss.msc.service.LifecycleListener;
-import org.jboss.msc.service.Service;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceName;
@@ -66,6 +65,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import static org.jboss.as.ee.logging.EeLogger.ROOT_LOGGER;
 
@@ -78,6 +79,7 @@ import static org.jboss.as.ee.logging.EeLogger.ROOT_LOGGER;
  *
  * @author Stuart Douglas
  * @author Eduardo Martins
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public class ModuleJndiBindingProcessor implements DeploymentUnitProcessor {
 
@@ -249,10 +251,12 @@ public class ModuleJndiBindingProcessor implements DeploymentUnitProcessor {
             if (bindingName.startsWith("java:comp") || bindingName.startsWith("java:module") || bindingName.startsWith("java:app")) {
                 //this is a binding that does not need to be shared.
                 try {
-                    final BinderService service = new BinderService(bindInfo.getBindName(), bindingConfiguration.getSource());
-                    ServiceBuilder<ManagedReferenceFactory> serviceBuilder = phaseContext.getServiceTarget().addService(bindInfo.getBinderServiceName(), service);
-                    bindingConfiguration.getSource().getResourceValue(resolutionContext, serviceBuilder, phaseContext, service.getManagedObjectInjector());
-                    serviceBuilder.addDependency(bindInfo.getParentContextServiceName(), ServiceBasedNamingStore.class, service.getNamingStoreInjector());
+                    final ServiceName sName = bindInfo.getBinderServiceName();
+                    final ServiceBuilder<?> serviceBuilder = phaseContext.getServiceTarget().addService(sName);
+                    final Consumer<ManagedReferenceFactory> mrfConsumer = serviceBuilder.provides(sName);
+                    final Supplier<ManagedReferenceFactory> mrfSupplier = bindingConfiguration.getSource().getResourceValue(resolutionContext, serviceBuilder, phaseContext);
+                    final Supplier<ServiceBasedNamingStore> sbnsSupplier = serviceBuilder.requires(bindInfo.getParentContextServiceName());
+                    serviceBuilder.setInstance(new BinderService(bindInfo.getBindName(), bindingConfiguration.getSource(), mrfConsumer, mrfSupplier, sbnsSupplier));
                     serviceBuilder.install();
                 } catch (DuplicateServiceException e) {
                     ServiceController<ManagedReferenceFactory> registered = (ServiceController<ManagedReferenceFactory>) CurrentServiceContainer.getServiceContainer().getService(bindInfo.getBinderServiceName());
@@ -266,16 +270,19 @@ public class ModuleJndiBindingProcessor implements DeploymentUnitProcessor {
                 }
             } else {
                 BinderService service;
-                ServiceController<ManagedReferenceFactory> controller;
+                ServiceController<?> controller;
                 try {
-                    service = new BinderService(bindInfo.getBindName(), bindingConfiguration.getSource(), true);
+                    final ServiceName sName = bindInfo.getBinderServiceName();
                     ServiceTarget externalServiceTarget = phaseContext.getDeploymentUnit().getAttachment(org.jboss.as.server.deployment.Attachments.EXTERNAL_SERVICE_TARGET);
-                    ServiceBuilder<ManagedReferenceFactory> serviceBuilder = externalServiceTarget.addService(bindInfo.getBinderServiceName(), service);
-                    bindingConfiguration.getSource().getResourceValue(resolutionContext, serviceBuilder, phaseContext, service.getManagedObjectInjector());
-                    serviceBuilder.addDependency(bindInfo.getParentContextServiceName(), ServiceBasedNamingStore.class, service.getNamingStoreInjector());
+                    final ServiceBuilder<?> serviceBuilder = externalServiceTarget.addService(sName);
+                    final Consumer<ManagedReferenceFactory> mrfConsumer = serviceBuilder.provides(sName);
+                    final Supplier<ManagedReferenceFactory> mrfSupplier = bindingConfiguration.getSource().getResourceValue(resolutionContext, serviceBuilder, phaseContext);
+                    final Supplier<ServiceBasedNamingStore> sbnsSupplier = serviceBuilder.requires(bindInfo.getParentContextServiceName());
+                    service = new BinderService(bindInfo.getBindName(), bindingConfiguration.getSource(), true, mrfConsumer, mrfSupplier, sbnsSupplier);
+                    serviceBuilder.setInstance(service);
                     controller = serviceBuilder.install();
                 } catch (DuplicateServiceException e) {
-                    controller = (ServiceController<ManagedReferenceFactory>) CurrentServiceContainer.getServiceContainer().getService(bindInfo.getBinderServiceName());
+                    controller = CurrentServiceContainer.getServiceContainer().getService(bindInfo.getBinderServiceName());
                     if (controller == null)
                         throw e;
                     service = (BinderService) controller.getService();
@@ -288,8 +295,8 @@ public class ModuleJndiBindingProcessor implements DeploymentUnitProcessor {
                 //if the reference count hits zero this service will wait till the binding is down to actually stop
                 //to prevent WFLY-9870 where the undeployment is complete but the binding services are still present
                 try {
-                    phaseContext.getServiceTarget().addService(phaseContext.getDeploymentUnit().getServiceName().append("sharedBindingReleaseService").append(bindInfo.getBinderServiceName()), new BinderReleaseService(controller, service))
-                            .install();
+                    phaseContext.getServiceTarget().addService(phaseContext.getDeploymentUnit().getServiceName().append("sharedBindingReleaseService").append(bindInfo.getBinderServiceName()))
+                            .setInstance(new BinderReleaseService(controller, service)).install();
                     service.acquire();
                 } catch (DuplicateServiceException ignore) {
                     //we ignore this, as it is already managed by this deployment
@@ -307,24 +314,24 @@ public class ModuleJndiBindingProcessor implements DeploymentUnitProcessor {
     public void undeploy(DeploymentUnit context) {
     }
 
-    private static class BinderReleaseService implements Service<BinderReleaseService> {
+    private static class BinderReleaseService implements org.jboss.msc.Service {
 
-        private final ServiceController<ManagedReferenceFactory> sharedBindingController;
+        private final ServiceController<?> sharedBindingController;
         private final BinderService binderService;
 
-        private BinderReleaseService(ServiceController<ManagedReferenceFactory> sharedBindingController, BinderService binderService) {
+        private BinderReleaseService(final ServiceController<?> sharedBindingController, final BinderService binderService) {
             this.sharedBindingController = sharedBindingController;
             this.binderService = binderService;
         }
 
         @Override
-        public void start(StartContext context) throws StartException {
+        public void start(final StartContext context) throws StartException {
 
         }
 
         @Override
-        public void stop(StopContext context) {
-            if(binderService.release()) {
+        public void stop(final StopContext context) {
+            if (binderService.release()) {
                 //we are the last user, it needs to shut down
                 context.asynchronous();
                 sharedBindingController.addListener(new LifecycleListener() {
@@ -336,11 +343,6 @@ public class ModuleJndiBindingProcessor implements DeploymentUnitProcessor {
                     }
                 });
             }
-        }
-
-        @Override
-        public BinderReleaseService getValue() throws IllegalStateException, IllegalArgumentException {
-            return null;
         }
     }
 }
