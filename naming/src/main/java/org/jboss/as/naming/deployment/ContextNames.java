@@ -28,20 +28,21 @@ import org.jboss.as.naming.ManagedReferenceFactory;
 import org.jboss.as.naming.NamingContext;
 import org.jboss.as.naming.NamingStore;
 import org.jboss.as.naming.context.external.ExternalContexts;
+import org.jboss.as.naming.service.ManagedReferenceFactorySupplier;
 import org.jboss.as.server.CurrentServiceContainer;
 import org.jboss.as.server.deployment.DeploymentUnit;
 import org.jboss.as.naming.logging.NamingLogger;
-import org.jboss.msc.inject.InjectionException;
-import org.jboss.msc.inject.Injector;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceContainer;
 import org.jboss.msc.service.ServiceName;
 
 import javax.naming.NamingException;
+import java.util.function.Supplier;
 
 /**
  * @author John Bailey
  * @author Eduardo Martins
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public class ContextNames {
 
@@ -289,10 +290,9 @@ public class ContextNames {
          * Setup a lookup with respect to {@link javax.annotation.Resource} injection.
          *
          * @param serviceBuilder the builder that should depend on the lookup
-         * @param targetInjector the injector which will receive the lookup result once the builded service starts
+         * @return managed reference factory supplier
          */
-        public void setupLookupInjection(final ServiceBuilder<?> serviceBuilder,
-                final Injector<ManagedReferenceFactory> targetInjector, final DeploymentUnit deploymentUnit, final boolean optional) {
+        public Supplier<ManagedReferenceFactory> setupLookupInjection(final ServiceBuilder<?> serviceBuilder, final DeploymentUnit deploymentUnit, final boolean optional) {
 
             // set dependency to the binder or its parent external context's service name
             final ExternalContexts externalContexts = deploymentUnit.getAttachment(Attachments.EXTERNAL_CONTEXTS);
@@ -305,36 +305,33 @@ public class ContextNames {
                 serviceBuilder.requires(dependencyServiceName);
             }
 
-            // an injector which upon being injected with the naming store, injects a factory - which does the lookup - to the
-            // target injector
-            final Injector<NamingStore> lookupInjector = new Injector<NamingStore>() {
+            // sets dependency to the parent context service (holds the naming store), which will trigger the lookup supplier
+            final Supplier<NamingStore> nsSupplier = serviceBuilder.requires(getParentContextServiceName());
+            // an supplier which upon being called, supplies a factory - which does the lookup - to the target supplier
+            final ManagedReferenceFactory factory = new ManagedReferenceFactory() {
+                volatile NamingContext storeBaseContext;
                 @Override
-                public void uninject() {
-                    targetInjector.uninject();
-                }
-                @Override
-                public void inject(final NamingStore value) throws InjectionException {
-                    final NamingContext storeBaseContext = new NamingContext(value, null);
-                    final ManagedReferenceFactory factory = new ManagedReferenceFactory() {
-                        @Override
-                        public ManagedReference getReference() {
-                            try {
-                                return new ImmediateManagedReference(storeBaseContext.lookup(getBindName()));
-                            } catch (NamingException e) {
-                                if(!optional) {
-                                    throw NamingLogger.ROOT_LOGGER.resourceLookupForInjectionFailed(getAbsoluteJndiName(), e);
-                                } else {
-                                    NamingLogger.ROOT_LOGGER.tracef(e,"failed to lookup %s", getAbsoluteJndiName());
-                                }
+                public ManagedReference getReference() {
+                    if (storeBaseContext == null) {
+                        synchronized (this) {
+                            if (storeBaseContext == null) {
+                                storeBaseContext = new NamingContext(nsSupplier.get(), null);
                             }
-                            return null;
                         }
-                    };
-                    targetInjector.inject(factory);
+                    }
+                    try {
+                        return new ImmediateManagedReference(storeBaseContext.lookup(getBindName()));
+                    } catch (NamingException e) {
+                        if(!optional) {
+                            throw NamingLogger.ROOT_LOGGER.resourceLookupForInjectionFailed(getAbsoluteJndiName(), e);
+                        } else {
+                            NamingLogger.ROOT_LOGGER.tracef(e,"failed to lookup %s", getAbsoluteJndiName());
+                        }
+                    }
+                    return null;
                 }
             };
-            // sets dependency to the parent context service (holds the naming store), which will trigger the lookup injector
-            serviceBuilder.addDependency(getParentContextServiceName(), NamingStore.class, lookupInjector);
+            return new ManagedReferenceFactorySupplier(factory);
         }
 
     }
