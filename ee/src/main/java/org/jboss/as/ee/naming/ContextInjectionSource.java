@@ -28,18 +28,21 @@ import org.jboss.as.naming.ManagedReferenceFactory;
 import org.jboss.as.naming.logging.NamingLogger;
 import org.jboss.as.naming.NamingStore;
 import org.jboss.as.naming.deployment.ContextNames;
+import org.jboss.as.naming.service.ManagedReferenceFactorySupplier;
 import org.jboss.as.server.deployment.DeploymentPhaseContext;
 import org.jboss.as.server.deployment.DeploymentUnitProcessingException;
-import org.jboss.msc.inject.Injector;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceName;
+
+import java.util.function.Supplier;
 
 /**
  *
  * Injection source that can be used to bind a potentially empty context
  *
-* @author Stuart Douglas
-*/
+ * @author Stuart Douglas
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
+ */
 public class ContextInjectionSource extends InjectionSource {
 
     private final String name;
@@ -51,8 +54,7 @@ public class ContextInjectionSource extends InjectionSource {
     }
 
     @Override
-    public void getResourceValue(final ResolutionContext resolutionContext, final ServiceBuilder<?> serviceBuilder, final DeploymentPhaseContext phaseContext, final Injector<ManagedReferenceFactory> injector) throws DeploymentUnitProcessingException {
-        final ContextManagedReferenceFactory managedReferenceFactory = new ContextManagedReferenceFactory(name);
+    public Supplier<ManagedReferenceFactory> getResourceValue(final ResolutionContext resolutionContext, final ServiceBuilder<?> serviceBuilder, final DeploymentPhaseContext phaseContext) throws DeploymentUnitProcessingException {
         final ServiceName contextServiceName;
         if(fullName.startsWith("java:app")) {
             contextServiceName = ContextNames.contextServiceNameOfApplication(resolutionContext.getApplicationName());
@@ -63,7 +65,8 @@ public class ContextInjectionSource extends InjectionSource {
         } else {
             throw NamingLogger.ROOT_LOGGER.invalidNameForContextBinding(fullName);
         }
-        serviceBuilder.addDependency(contextServiceName, NamingStore.class, managedReferenceFactory.getNamingStoreInjectedValue());
-        injector.inject(managedReferenceFactory);
+        final Supplier<NamingStore> nsSupplier = serviceBuilder.requires(contextServiceName);
+        final ContextManagedReferenceFactory managedReferenceFactory = new ContextManagedReferenceFactory(name, nsSupplier);
+        return new ManagedReferenceFactorySupplier(managedReferenceFactory);
     }
 }

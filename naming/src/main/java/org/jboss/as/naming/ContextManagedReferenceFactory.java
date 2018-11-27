@@ -26,34 +26,35 @@ import javax.naming.Name;
 import javax.naming.NamingException;
 
 import org.jboss.as.naming.util.NameParser;
-import org.jboss.msc.value.InjectedValue;
+
+import java.util.function.Supplier;
 
 /**
  * Managed reference factory used for binding a context.
  *
  * @author Stuart Douglas
  * @author Eduardo Martins
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public class ContextManagedReferenceFactory implements ContextListAndJndiViewManagedReferenceFactory {
 
     private final String name;
-    private final InjectedValue<NamingStore> namingStoreInjectedValue = new InjectedValue<NamingStore>();
+    private final Supplier<NamingStore> namingStoreSupplier;
 
-    public ContextManagedReferenceFactory(final String name) {
+    public ContextManagedReferenceFactory(final String name, final Supplier<NamingStore> namingStoreSupplier) {
         this.name = name;
+        this.namingStoreSupplier = namingStoreSupplier;
     }
 
     @Override
     public ManagedReference getReference() {
-        final NamingStore namingStore = namingStoreInjectedValue.getValue();
+        final NamingStore namingStore = namingStoreSupplier.get();
         try {
             final Name name = NameParser.INSTANCE.parse(this.name);
             final NamingContext context =  new NamingContext(name, namingStore, null);
             return new ManagedReference() {
                 @Override
-                public void release() {
-
-                }
+                public void release() {}
 
                 @Override
                 public Object getInstance() {
@@ -65,10 +66,6 @@ public class ContextManagedReferenceFactory implements ContextListAndJndiViewMan
         }
     }
 
-    public InjectedValue<NamingStore> getNamingStoreInjectedValue() {
-        return namingStoreInjectedValue;
-    }
-
     @Override
     public String getInstanceClassName() {
         return NamingContext.class.getName();
@@ -78,4 +75,5 @@ public class ContextManagedReferenceFactory implements ContextListAndJndiViewMan
     public String getJndiViewInstanceValue() {
         return name;
     }
+
 }
