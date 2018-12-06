@@ -21,7 +21,6 @@
  */
 package org.jboss.as.ejb3.component.session;
 
-
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
@@ -39,6 +38,7 @@ import static java.util.Collections.emptyMap;
 
 /**
  * @author <a href="mailto:cdewolf@redhat.com">Carlo de Wolf</a>
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public abstract class SessionBeanComponent extends EJBComponent {
 
@@ -58,7 +58,7 @@ public abstract class SessionBeanComponent extends EJBComponent {
         //        this.asyncExecutor = (Executor) ejbComponentCreateService.getInjection(ASYNC_EXECUTOR_SERVICE_NAME).getValue();
 
         //if this bean has no async methods, then this will not be injected
-        this.asyncExecutor = ejbComponentCreateService.getAsyncExecutorService().getOptionalValue();
+        this.asyncExecutor = ejbComponentCreateService.getAsyncExecutorService();
     }
 
     public <T> T getBusinessObject(Class<T> businessInterface, final InterceptorContext context) throws IllegalStateException {
