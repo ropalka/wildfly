@@ -75,6 +75,7 @@ import org.wildfly.security.manager.WildFlySecurityManager;
  * Stateful Session Bean
  *
  * @author <a href="mailto:cdewolf@redhat.com">Carlo de Wolf</a>
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public class StatefulSessionComponent extends SessionBeanComponent implements StatefulObjectFactory<StatefulSessionComponentInstance>, PassivationListener<StatefulSessionComponentInstance>, IdentifierFactory<SessionID> {
 
@@ -95,7 +96,11 @@ public class StatefulSessionComponent extends SessionBeanComponent implements St
     private Interceptor postActivateInterceptor;
     private final Map<EJBBusinessMethod, AccessTimeoutDetails> methodAccessTimeouts;
     private final DefaultAccessTimeoutService defaultAccessTimeoutProvider;
+<<<<<<< HEAD
     private final Supplier<CacheFactory<SessionID, StatefulSessionComponentInstance>> cacheFactory;
+=======
+    private final Supplier<CacheFactory> cacheFactorySupplier;
+>>>>>>> WIP
     private final InterceptorFactory ejb2XRemoveMethod;
     private Interceptor ejb2XRemoveMethodInterceptor;
 
@@ -129,7 +134,7 @@ public class StatefulSessionComponent extends SessionBeanComponent implements St
         this.ejb2XRemoveMethod = ejbComponentCreateService.getEjb2XRemoveMethod();
         this.serialiableInterceptorContextKeys = ejbComponentCreateService.getSerializableInterceptorContextKeys();
         this.timerService = ejbComponentCreateService.getTimerService();
-        this.cacheFactory = ejbComponentCreateService.getCacheFactory();
+        this.cacheFactorySupplier = ejbComponentCreateService.getCacheFactorySupplier();
     }
 
     @Override
@@ -337,7 +342,11 @@ public class StatefulSessionComponent extends SessionBeanComponent implements St
     public synchronized void init() {
         super.init();
 
+<<<<<<< HEAD
         this.cache = this.cacheFactory.get().createCache(this, this, this);
+=======
+        this.cache = this.cacheFactorySupplier.get().createCache(this, this, this);
+>>>>>>> WIP
         this.cache.start();
     }
 

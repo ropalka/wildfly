@@ -35,6 +35,10 @@ import org.jboss.invocation.ContextClassLoaderInterceptor;
 import org.jboss.invocation.ImmediateInterceptorFactory;
 import org.jboss.invocation.InterceptorFactory;
 import org.jboss.invocation.Interceptors;
+<<<<<<< HEAD
+=======
+
+>>>>>>> WIP
 import java.lang.reflect.Method;
 import java.util.Set;
 import java.util.function.Supplier;
@@ -157,6 +161,13 @@ public class StatefulSessionComponentCreateService extends SessionBeanComponentC
         return beforeCompletionMethod;
     }
 
+<<<<<<< HEAD
+=======
+    public CacheInfo getCache() {
+        return this.cache;
+    }
+
+>>>>>>> WIP
     DefaultAccessTimeoutService getDefaultAccessTimeoutService() {
         final Supplier<DefaultAccessTimeoutService> defaultAccessTimeoutService = this.defaultAccessTimeoutService;
         return defaultAccessTimeoutService != null ? defaultAccessTimeoutService.get() : null;
@@ -176,6 +187,36 @@ public class StatefulSessionComponentCreateService extends SessionBeanComponentC
 
     void setCacheFactoryBuilderSupplier(final Supplier<CacheFactoryBuilder> cacheFactoryBuilder) {
         this.cacheFactoryBuilder = cacheFactoryBuilder;
+<<<<<<< HEAD
+=======
+    }
+
+    void setCacheFactorySupplier(final Supplier<CacheFactory> cacheFactory) {
+        this.cacheFactory = cacheFactory;
+    }
+
+    Supplier<CacheFactory> getCacheFactorySupplier() {
+        return this.cacheFactory;
+    }
+
+    boolean isPassivationCapable() {
+        return this.passivationCapable;
+    }
+
+    @Override
+    public ClassLoader getClassLoader() {
+        return this.loader;
+    }
+
+    @Override
+    public String getBeanName() {
+        return this.getComponentName();
+    }
+
+    @Override
+    public ModuleLoader getModuleLoader() {
+        return this.moduleLoader;
+>>>>>>> WIP
     }
 
     void setCacheFactorySupplier(final Supplier<CacheFactory> cacheFactory) {
