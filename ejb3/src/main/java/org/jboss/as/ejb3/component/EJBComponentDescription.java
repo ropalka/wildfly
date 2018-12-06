@@ -35,7 +35,6 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BooleanSupplier;
 import java.util.function.Function;
 
@@ -45,7 +44,6 @@ import javax.ejb.TransactionAttributeType;
 import javax.ejb.TransactionManagementType;
 
 import org.jboss.as.controller.capability.CapabilityServiceSupport;
-import org.jboss.as.core.security.ServerSecurityManager;
 import org.jboss.as.ee.component.Attachments;
 import org.jboss.as.ee.component.BindingConfiguration;
 import org.jboss.as.ee.component.Component;
@@ -90,7 +88,6 @@ import org.jboss.as.ejb3.security.SecurityContextInterceptorFactory;
 import org.jboss.as.ejb3.security.SecurityDomainInterceptorFactory;
 import org.jboss.as.ejb3.security.SecurityRolesAddingInterceptor;
 import org.jboss.as.ejb3.subsystem.ApplicationSecurityDomainDefinition;
-import org.jboss.as.ejb3.subsystem.ApplicationSecurityDomainService.ApplicationSecurityDomain;
 import org.jboss.as.ejb3.subsystem.EJB3RemoteResourceDefinition;
 import org.jboss.as.ejb3.suspend.EJBSuspendHandlerService;
 import org.jboss.as.ejb3.timerservice.AutoTimer;
@@ -120,6 +117,7 @@ import org.wildfly.security.authz.Roles;
 
 /**
  * @author <a href="mailto:cdewolf@redhat.com">Carlo de Wolf</a>
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public abstract class EJBComponentDescription extends ComponentDescription {
 
@@ -371,8 +369,8 @@ public abstract class EJBComponentDescription extends ComponentDescription {
                 configuration.addComponentInterceptor(ExecutionTimeInterceptor.FACTORY, InterceptorOrder.Component.EJB_EXECUTION_TIME_INTERCEPTOR, true);
                 configuration.getCreateDependencies().add(new DependencyConfigurator<EJBComponentCreateService>() {
                     @Override
-                    public void configureDependency(ServiceBuilder<?> serviceBuilder, EJBComponentCreateService service) throws DeploymentUnitProcessingException {
-                        serviceBuilder.addDependency(LoggingInterceptor.LOGGING_ENABLED_SERVICE_NAME, AtomicBoolean.class, service.getExceptionLoggingEnabledInjector());
+                    public void configureDependency(ServiceBuilder<?> serviceBuilder, EJBComponentCreateService service) {
+                        service.setExceptionLoggingEnabledSupplier(serviceBuilder.requires(LoggingInterceptor.LOGGING_ENABLED_SERVICE_NAME));
                     }
                 });
             }
@@ -584,10 +582,8 @@ public abstract class EJBComponentDescription extends ComponentDescription {
             @Override
             public void configure(final DeploymentPhaseContext context, final ComponentDescription description, final ComponentConfiguration componentConfiguration) throws DeploymentUnitProcessingException {
                 componentConfiguration.getCreateDependencies().add(new DependencyConfigurator<EJBComponentCreateService>() {
-                    @Override public void configureDependency(final ServiceBuilder<?> serviceBuilder, final EJBComponentCreateService ejbComponentCreateService)
-                            throws DeploymentUnitProcessingException {
-                        serviceBuilder.addDependency(EJBSuspendHandlerService.SERVICE_NAME, EJBSuspendHandlerService.class,
-                                ejbComponentCreateService.getEJBSuspendHandlerInjector());
+                    @Override public void configureDependency(final ServiceBuilder<?> serviceBuilder, final EJBComponentCreateService ejbComponentCreateService) {
+                        ejbComponentCreateService.setEJBSuspendHandlerSupplier(serviceBuilder.requires(EJBSuspendHandlerService.SERVICE_NAME));
                     }
                 });
             }
@@ -606,8 +602,8 @@ public abstract class EJBComponentDescription extends ComponentDescription {
                     final CapabilityServiceSupport support = deploymentUnit.getAttachment(org.jboss.as.server.deployment.Attachments.CAPABILITY_SERVICE_SUPPORT);
                     componentConfiguration.getCreateDependencies().add(new DependencyConfigurator<EJBComponentCreateService>() {
                         @Override
-                        public void configureDependency(final ServiceBuilder<?> serviceBuilder, final EJBComponentCreateService ejbComponentCreateService) throws DeploymentUnitProcessingException {
-                            serviceBuilder.addDependency(support.getCapabilityServiceName("org.wildfly.legacy-security.server-security-manager"), ServerSecurityManager.class, ejbComponentCreateService.getServerSecurityManagerInjector());
+                        public void configureDependency(final ServiceBuilder<?> serviceBuilder, final EJBComponentCreateService ejbComponentCreateService) {
+                            ejbComponentCreateService.setServerSecurityManagerSupplier(serviceBuilder.requires(support.getCapabilityServiceName("org.wildfly.legacy-security.server-security-manager")));
                         }
                     });
                 }
@@ -917,18 +913,19 @@ public abstract class EJBComponentDescription extends ComponentDescription {
         public void configure(DeploymentPhaseContext context, ComponentDescription description, ComponentConfiguration configuration) throws DeploymentUnitProcessingException {
             configuration.getCreateDependencies().add(new DependencyConfigurator<Service<Component>>() {
                 @Override
-                public void configureDependency(ServiceBuilder<?> serviceBuilder, Service<Component> service) throws DeploymentUnitProcessingException {
+                public void configureDependency(ServiceBuilder<?> serviceBuilder, Service<Component> service) {
                     final EJBComponentCreateService ejbComponentCreateService = (EJBComponentCreateService) service;
                     final String securityDomainName = SecurityDomainDependencyConfigurator.this.ejbComponentDescription.getSecurityDomain();
                     if (SecurityDomainDependencyConfigurator.this.ejbComponentDescription.isSecurityDomainKnown()) {
                         final DeploymentUnit deploymentUnit = context.getDeploymentUnit();
                         final CapabilityServiceSupport support = deploymentUnit.getAttachment(org.jboss.as.server.deployment.Attachments.CAPABILITY_SERVICE_SUPPORT);
                         if (securityDomainName != null && ! securityDomainName.isEmpty()) {
-                            serviceBuilder.addDependency(support.getCapabilityServiceName(ApplicationSecurityDomainDefinition.APPLICATION_SECURITY_DOMAIN_CAPABILITY, securityDomainName),
-                                    ApplicationSecurityDomain.class, ejbComponentCreateService.getApplicationSecurityDomainInjector());
+                            ejbComponentCreateService.setApplicationSecurityDomainSupplier(
+                                    serviceBuilder.requires(support.getCapabilityServiceName(
+                                            ApplicationSecurityDomainDefinition.APPLICATION_SECURITY_DOMAIN_CAPABILITY, securityDomainName)));
                         }
                         if (SecurityDomainDependencyConfigurator.this.ejbComponentDescription.isOutflowSecurityDomainsConfigured()) {
-                            serviceBuilder.addDependency(support.getCapabilityServiceName(IDENTITY_CAPABILITY), Function.class, ejbComponentCreateService.getIdentityOutflowFunctionInjector());
+                            ejbComponentCreateService.setIdentityOutflowFunctionSupplier(serviceBuilder.requires(support.getCapabilityServiceName(IDENTITY_CAPABILITY)));
                         }
                     } else {
                         if (securityDomainName != null && !securityDomainName.isEmpty()) {
