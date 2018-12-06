@@ -23,13 +23,14 @@
 package org.jboss.as.ee.component;
 
 import org.jboss.as.server.deployment.DeploymentUnitProcessingException;
-import org.jboss.msc.service.Service;
+import org.jboss.msc.Service;
 import org.jboss.msc.service.ServiceBuilder;
 
 /**
  * A configurator for a service dependency.
  *
  * @author <a href="mailto:david.lloyd@redhat.com">David M. Lloyd</a>
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  * @param <T> the type of the service that is being configured
  */
 public interface DependencyConfigurator<T extends Service> {
@@ -38,7 +39,8 @@ public interface DependencyConfigurator<T extends Service> {
      * Configure the dependency on the service builder.
      *
      * @param serviceBuilder the service builder
-     * @param service
+     * @param service the service
      */
-    void configureDependency(ServiceBuilder<?> serviceBuilder, final T service) throws DeploymentUnitProcessingException;
+    void configureDependency(ServiceBuilder<?> serviceBuilder, T service) throws DeploymentUnitProcessingException;
+
 }
