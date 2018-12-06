@@ -38,6 +38,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import org.jboss.as.core.security.ServerSecurityManager;
 import org.jboss.as.ee.component.BasicComponentCreateService;
@@ -53,9 +54,7 @@ import org.jboss.as.ejb3.suspend.EJBSuspendHandlerService;
 import org.jboss.invocation.InterceptorFactory;
 import org.jboss.invocation.Interceptors;
 import org.jboss.invocation.proxy.MethodIdentifier;
-import org.jboss.msc.inject.Injector;
 import org.jboss.msc.service.ServiceName;
-import org.jboss.msc.value.InjectedValue;
 import org.wildfly.extension.requestcontroller.ControlPoint;
 import org.wildfly.security.auth.server.SecurityDomain;
 import org.wildfly.transaction.client.LocalUserTransaction;
@@ -68,21 +67,13 @@ public class EJBComponentCreateService extends BasicComponentCreateService {
 
     private final Map<MethodTransactionAttributeKey, TransactionAttributeType> txAttrs;
     private final Map<MethodTransactionAttributeKey, Boolean> txExplicitAttrs;
-
     private final Map<MethodTransactionAttributeKey, Integer> txTimeouts;
-
     private final TransactionManagementType transactionManagementType;
-
     private final ApplicationExceptions applicationExceptions;
-
     private final Map<String, ServiceName> viewServices;
-
     private final EJBSecurityMetaData securityMetaData;
-
     private final TimerService timerService;
-
     private final Map<Method, InterceptorFactory> timeoutInterceptors;
-
     private final Method timeoutMethod;
 
     private final ServiceName ejbLocalHome;
@@ -97,12 +88,12 @@ public class EJBComponentCreateService extends BasicComponentCreateService {
     private final String distinctName;
     private final String policyContextID;
 
-    private final InjectedValue<ServerSecurityManager> serverSecurityManagerInjectedValue = new InjectedValue<>();
-    private final InjectedValue<ControlPoint> controlPoint = new InjectedValue<>();
-    private final InjectedValue<AtomicBoolean> exceptionLoggingEnabled = new InjectedValue<>();
-    private final InjectedValue<ApplicationSecurityDomain> applicationSecurityDomain = new InjectedValue<>();
-    private final InjectedValue<Function> identityOutflowFunction = new InjectedValue<>();
-    private final InjectedValue<EJBSuspendHandlerService> ejbSuspendHandler = new InjectedValue<>();
+    private volatile Supplier<ServerSecurityManager> serverSecurityManager;
+    private volatile Supplier<ControlPoint> controlPoint;
+    private volatile Supplier<AtomicBoolean> exceptionLoggingEnabled;
+    private volatile Supplier<ApplicationSecurityDomain> applicationSecurityDomain;
+    private volatile Supplier<Function> identityOutflowFunction;
+    private volatile Supplier<EJBSuspendHandlerService> ejbSuspendHandler;
 
     private final ShutDownInterceptorFactory shutDownInterceptorFactory;
 
@@ -327,73 +318,79 @@ public class EJBComponentCreateService extends BasicComponentCreateService {
         return LocalUserTransaction.getInstance();
     }
 
-    public Injector<EJBSuspendHandlerService> getEJBSuspendHandlerInjector() {
-        return this.ejbSuspendHandler;
+    void setEJBSuspendHandlerSupplier(final Supplier<EJBSuspendHandlerService> ejbSuspendHandler) {
+        this.ejbSuspendHandler = ejbSuspendHandler;
     }
 
     EJBSuspendHandlerService getEJBSuspendHandler() {
-        return this.ejbSuspendHandler.getValue();
+        final Supplier<EJBSuspendHandlerService> ejbSuspendHandler = this.ejbSuspendHandler;
+        return ejbSuspendHandler != null ? ejbSuspendHandler.get() : null;
+    }
+
+    void setServerSecurityManagerSupplier(final Supplier<ServerSecurityManager> serverSecurityManager) {
+        this.serverSecurityManager = serverSecurityManager;
     }
 
     ServerSecurityManager getServerSecurityManager() {
-        return this.serverSecurityManagerInjectedValue.getOptionalValue();
+        final Supplier<ServerSecurityManager> serverSecurityManager = this.serverSecurityManager;
+        return serverSecurityManager != null ? serverSecurityManager.get() : null;
     }
 
-    Injector<ServerSecurityManager> getServerSecurityManagerInjector() {
-        return this.serverSecurityManagerInjectedValue;
+    public void setControlPointSupplier(final Supplier<ControlPoint> controlPoint) {
+        this.controlPoint = controlPoint;
     }
 
-    public ControlPoint getControlPoint() {
-        return this.controlPoint.getOptionalValue();
+    ControlPoint getControlPoint() {
+        final Supplier<ControlPoint> controlPoint = this.controlPoint;
+        return controlPoint != null ? controlPoint.get() : null;
     }
 
-    public Injector<ControlPoint> getControlPointInjector() {
-        return this.controlPoint;
-    }
-
-    public String getPolicyContextID() {
+    String getPolicyContextID() {
         return this.policyContextID;
     }
 
-    InjectedValue<AtomicBoolean> getExceptionLoggingEnabledInjector() {
-        return exceptionLoggingEnabled;
+    void setExceptionLoggingEnabledSupplier(final Supplier<AtomicBoolean> exceptionLoggingEnabled) {
+        this.exceptionLoggingEnabled = exceptionLoggingEnabled;
     }
 
-    public AtomicBoolean getExceptionLoggingEnabled() {
-        return exceptionLoggingEnabled.getValue();
+    AtomicBoolean getExceptionLoggingEnabled() {
+        final Supplier<AtomicBoolean> exceptionLoggingEnabled = this.exceptionLoggingEnabled;
+        return exceptionLoggingEnabled != null ? exceptionLoggingEnabled.get() : null;
     }
 
-    Injector<ApplicationSecurityDomain> getApplicationSecurityDomainInjector() {
-        return applicationSecurityDomain;
+    void setApplicationSecurityDomainSupplier(final Supplier<ApplicationSecurityDomain> applicationSecurityDomain) {
+        this.applicationSecurityDomain = applicationSecurityDomain;
     }
 
-    public ApplicationSecurityDomain getApplicationSecurityDomain() {
-        return applicationSecurityDomain.getOptionalValue();
+    ApplicationSecurityDomain getApplicationSecurityDomain() {
+        final Supplier<ApplicationSecurityDomain> applicationSecurityDomain = this.applicationSecurityDomain;
+        return applicationSecurityDomain != null ? applicationSecurityDomain.get() : null;
     }
 
-    public SecurityDomain getSecurityDomain() {
+    SecurityDomain getSecurityDomain() {
         ApplicationSecurityDomain applicationSecurityDomain = getApplicationSecurityDomain();
         return applicationSecurityDomain != null ? applicationSecurityDomain.getSecurityDomain() : null;
     }
 
-    public boolean isEnableJacc() {
+    boolean isEnableJacc() {
         ApplicationSecurityDomain applicationSecurityDomain = getApplicationSecurityDomain();
         return applicationSecurityDomain != null ? applicationSecurityDomain.isEnableJacc() : false;
     }
 
-    Injector<Function> getIdentityOutflowFunctionInjector() {
-        return identityOutflowFunction;
+    void setIdentityOutflowFunctionSupplier(final Supplier<Function> identityOutflowFunction) {
+        this.identityOutflowFunction = identityOutflowFunction;
     }
 
-    public Function getIdentityOutflowFunction() {
-        return identityOutflowFunction.getOptionalValue();
+    Function getIdentityOutflowFunction() {
+        final Supplier<Function> identityOutflowFunction = this.identityOutflowFunction;
+        return identityOutflowFunction != null ? identityOutflowFunction.get() : null;
     }
 
-    public ShutDownInterceptorFactory getShutDownInterceptorFactory() {
+    ShutDownInterceptorFactory getShutDownInterceptorFactory() {
         return shutDownInterceptorFactory;
     }
 
-    public boolean isSecurityRequired() {
+    boolean isSecurityRequired() {
         return securityRequired;
     }
 }

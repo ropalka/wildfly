@@ -19,13 +19,12 @@ import org.jboss.as.server.deployment.DeploymentUnit;
 import org.jboss.as.server.deployment.DeploymentUnitProcessor;
 import org.jboss.invocation.ImmediateInterceptorFactory;
 import org.jboss.msc.service.ServiceBuilder;
-import org.wildfly.extension.requestcontroller.ControlPoint;
 import org.wildfly.extension.requestcontroller.ControlPointService;
 import org.wildfly.extension.requestcontroller.RequestControllerActivationMarker;
 
-
 /**
  * @author Stuart Douglas
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public class EJBComponentSuspendDeploymentUnitProcessor implements DeploymentUnitProcessor {
 
@@ -68,7 +67,7 @@ public class EJBComponentSuspendDeploymentUnitProcessor implements DeploymentUni
                         configuration.getCreateDependencies().add(new DependencyConfigurator<EJBComponentCreateService>() {
                             @Override
                             public void configureDependency(ServiceBuilder<?> serviceBuilder, EJBComponentCreateService service) {
-                                serviceBuilder.addDependency(ControlPointService.serviceName(topLevelName, entryPoint), ControlPoint.class, service.getControlPointInjector());
+                                service.setControlPointSupplier(serviceBuilder.requires(ControlPointService.serviceName(topLevelName, entryPoint)));
                             }
                         });
 
