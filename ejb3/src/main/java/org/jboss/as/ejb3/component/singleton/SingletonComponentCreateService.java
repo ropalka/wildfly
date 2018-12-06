@@ -27,22 +27,22 @@ import org.jboss.as.ee.component.ComponentConfiguration;
 import org.jboss.as.ejb3.component.DefaultAccessTimeoutService;
 import org.jboss.as.ejb3.component.session.SessionBeanComponentCreateService;
 import org.jboss.as.ejb3.deployment.ApplicationExceptions;
-import org.jboss.msc.inject.Injector;
 import org.jboss.msc.service.ServiceName;
-import org.jboss.msc.value.InjectedValue;
 
 import java.util.List;
+import java.util.function.Supplier;
 
 /**
  * @author Stuart Douglas
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
-public class SingletonComponentCreateService extends SessionBeanComponentCreateService {
+public final class SingletonComponentCreateService extends SessionBeanComponentCreateService {
 
     private final boolean initOnStartup;
     private final List<ServiceName> dependsOn;
-    private final InjectedValue<DefaultAccessTimeoutService> defaultAccessTimeoutService = new InjectedValue<DefaultAccessTimeoutService>();
+    private volatile Supplier<DefaultAccessTimeoutService> defaultAccessTimeoutService;
 
-    public SingletonComponentCreateService(final ComponentConfiguration componentConfiguration, final ApplicationExceptions ejbJarConfiguration, final boolean initOnStartup, final List<ServiceName> dependsOn) {
+    SingletonComponentCreateService(final ComponentConfiguration componentConfiguration, final ApplicationExceptions ejbJarConfiguration, final boolean initOnStartup, final List<ServiceName> dependsOn) {
         super(componentConfiguration, ejbJarConfiguration);
         this.initOnStartup = initOnStartup;
         this.dependsOn = dependsOn;
@@ -53,15 +53,17 @@ public class SingletonComponentCreateService extends SessionBeanComponentCreateS
         return new SingletonComponent(this, dependsOn);
     }
 
-    public boolean isInitOnStartup() {
+    boolean isInitOnStartup() {
         return this.initOnStartup;
     }
 
-    public DefaultAccessTimeoutService getDefaultAccessTimeoutService() {
-        return defaultAccessTimeoutService.getValue();
+    DefaultAccessTimeoutService getDefaultAccessTimeoutService() {
+        final Supplier<DefaultAccessTimeoutService> defaultAccessTimeoutService = this.defaultAccessTimeoutService;
+        return defaultAccessTimeoutService != null ? defaultAccessTimeoutService.get() : null;
     }
 
-    Injector<DefaultAccessTimeoutService> getDefaultAccessTimeoutInjector() {
-        return this.defaultAccessTimeoutService;
+    void setDefaultAccessTimeoutSupplier(final Supplier<DefaultAccessTimeoutService> defaultAccessTimeoutService) {
+        this.defaultAccessTimeoutService = defaultAccessTimeoutService;
     }
+
 }
