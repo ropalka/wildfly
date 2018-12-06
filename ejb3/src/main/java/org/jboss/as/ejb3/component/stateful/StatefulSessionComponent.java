@@ -29,6 +29,7 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Supplier;
 
 import javax.ejb.ConcurrentAccessException;
 import javax.ejb.ConcurrentAccessTimeoutException;
@@ -64,7 +65,6 @@ import org.jboss.invocation.InterceptorFactory;
 import org.jboss.invocation.InterceptorFactoryContext;
 import org.jboss.msc.service.ServiceContainer;
 import org.jboss.msc.service.ServiceController;
-import org.jboss.msc.value.Value;
 import org.wildfly.clustering.ejb.IdentifierFactory;
 import org.wildfly.clustering.ejb.PassivationListener;
 import org.wildfly.extension.requestcontroller.ControlPoint;
@@ -75,6 +75,7 @@ import org.wildfly.security.manager.WildFlySecurityManager;
  * Stateful Session Bean
  *
  * @author <a href="mailto:cdewolf@redhat.com">Carlo de Wolf</a>
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public class StatefulSessionComponent extends SessionBeanComponent implements StatefulObjectFactory<StatefulSessionComponentInstance>, PassivationListener<StatefulSessionComponentInstance>, IdentifierFactory<SessionID> {
 
@@ -95,7 +96,7 @@ public class StatefulSessionComponent extends SessionBeanComponent implements St
     private Interceptor postActivateInterceptor;
     private final Map<EJBBusinessMethod, AccessTimeoutDetails> methodAccessTimeouts;
     private final DefaultAccessTimeoutService defaultAccessTimeoutProvider;
-    private final Value<CacheFactory> cacheFactory;
+    private final Supplier<CacheFactory> cacheFactorySupplier;
     private final InterceptorFactory ejb2XRemoveMethod;
     private Interceptor ejb2XRemoveMethodInterceptor;
 
@@ -129,7 +130,7 @@ public class StatefulSessionComponent extends SessionBeanComponent implements St
         this.ejb2XRemoveMethod = ejbComponentCreateService.getEjb2XRemoveMethod();
         this.serialiableInterceptorContextKeys = ejbComponentCreateService.getSerializableInterceptorContextKeys();
         this.timerService = ejbComponentCreateService.getTimerService();
-        this.cacheFactory = ejbComponentCreateService.getCacheFactory();
+        this.cacheFactorySupplier = ejbComponentCreateService.getCacheFactorySupplier();
     }
 
     @Override
@@ -337,7 +338,7 @@ public class StatefulSessionComponent extends SessionBeanComponent implements St
     public void init() {
         super.init();
 
-        this.cache = this.cacheFactory.getValue().createCache(this, this, this);
+        this.cache = this.cacheFactorySupplier.get().createCache(this, this, this);
         this.cache.start();
     }
 
