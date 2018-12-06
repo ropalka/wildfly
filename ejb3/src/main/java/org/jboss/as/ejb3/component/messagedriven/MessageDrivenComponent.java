@@ -59,6 +59,7 @@ import static org.jboss.as.ejb3.component.MethodIntf.MESSAGE_ENDPOINT;
 
 /**
  * @author <a href="mailto:cdewolf@redhat.com">Carlo de Wolf</a>
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public class MessageDrivenComponent extends EJBComponent implements PooledComponent<MessageDrivenComponentInstance> {
 
@@ -143,7 +144,7 @@ public class MessageDrivenComponent extends EJBComponent implements PooledCompon
             this.poolName = poolConfig.getPoolName();
         }
         this.classLoader = ejbComponentCreateService.getModuleClassLoader();
-        this.suspendController = ejbComponentCreateService.getSuspendControllerInjectedValue().getValue();
+        this.suspendController = ejbComponentCreateService.getSuspendController();
         this.activationSpec = activationSpec;
         this.activationName = activeResourceAdapterName + messageListenerInterface.getName();
         final ClassLoader componentClassLoader = doPrivileged(new GetClassLoaderAction(ejbComponentCreateService.getComponentClass()));
