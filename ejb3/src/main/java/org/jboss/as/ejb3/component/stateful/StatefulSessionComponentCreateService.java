@@ -35,12 +35,10 @@ import org.jboss.invocation.ContextClassLoaderInterceptor;
 import org.jboss.invocation.ImmediateInterceptorFactory;
 import org.jboss.invocation.InterceptorFactory;
 import org.jboss.invocation.Interceptors;
-import org.jboss.msc.inject.Injector;
-import org.jboss.msc.value.InjectedValue;
-import org.jboss.msc.value.Value;
 
 import java.lang.reflect.Method;
 import java.util.Set;
+import java.util.function.Supplier;
 
 import org.jboss.as.ejb3.cache.CacheFactoryBuilder;
 import org.jboss.modules.ModuleLoader;
@@ -53,6 +51,7 @@ import org.wildfly.clustering.ejb.Time;
 
 /**
  * @author Stuart Douglas
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public class StatefulSessionComponentCreateService extends SessionBeanComponentCreateService implements BeanContext {
 
@@ -67,23 +66,23 @@ public class StatefulSessionComponentCreateService extends SessionBeanComponentC
     private final StatefulTimeoutInfo statefulTimeout;
     private final CacheInfo cache;
     private final ClassLoader loader;
-    private final InjectedValue<DefaultAccessTimeoutService> defaultAccessTimeoutService = new InjectedValue<DefaultAccessTimeoutService>();
     private final InterceptorFactory ejb2XRemoveMethod;
-    private final Value<CacheFactory> cacheFactory;
     @SuppressWarnings("rawtypes")
-    private final InjectedValue<CacheFactoryBuilder> cacheFactoryBuilder = new InjectedValue<>();
     private final Set<Object> serializableInterceptorContextKeys;
-    final boolean passivationCapable;
+    private final boolean passivationCapable;
     private final ModuleLoader moduleLoader;
     private final ServiceName deploymentUnitServiceName;
     private final ServiceName componentServiceName;
+    private volatile Supplier<CacheFactory> cacheFactory;
+    private volatile Supplier<DefaultAccessTimeoutService> defaultAccessTimeoutService;
+    private volatile Supplier<CacheFactoryBuilder> cacheFactoryBuilder;
 
     /**
      * Construct a new instance.
      *
      * @param componentConfiguration the component configuration
      */
-    public StatefulSessionComponentCreateService(final ComponentConfiguration componentConfiguration, final ApplicationExceptions ejbJarConfiguration, Value<CacheFactory> cacheFactory) {
+    public StatefulSessionComponentCreateService(final ComponentConfiguration componentConfiguration, final ApplicationExceptions ejbJarConfiguration) {
         super(componentConfiguration, ejbJarConfiguration);
 
         final StatefulComponentDescription componentDescription = (StatefulComponentDescription) componentConfiguration.getComponentDescription();
@@ -109,7 +108,6 @@ public class StatefulSessionComponentCreateService extends SessionBeanComponentC
         this.passivationCapable = componentDescription.isPassivationApplicable();
         this.deploymentUnitServiceName = componentDescription.getDeploymentUnitServiceName();
         this.componentServiceName = componentDescription.getServiceName();
-        this.cacheFactory = cacheFactory;
     }
 
     private static InterceptorFactory invokeMethodOnTarget(final Method method) {
@@ -120,7 +118,7 @@ public class StatefulSessionComponentCreateService extends SessionBeanComponentC
     @Override
     public void start(StartContext context) throws StartException {
         super.start(context);
-        this.cacheFactoryBuilder.getValue().build(context.getChildTarget(), this.componentServiceName.append("cache"), this, this.statefulTimeout).install();
+        this.cacheFactoryBuilder.get().build(context.getChildTarget(), this.componentServiceName.append("cache"), this, this.statefulTimeout).install();
     }
 
     @Override
@@ -169,30 +167,34 @@ public class StatefulSessionComponentCreateService extends SessionBeanComponentC
         return this.cache;
     }
 
-    public DefaultAccessTimeoutService getDefaultAccessTimeoutService() {
-        return defaultAccessTimeoutService.getValue();
+    DefaultAccessTimeoutService getDefaultAccessTimeoutService() {
+        final Supplier<DefaultAccessTimeoutService> defaultAccessTimeoutService = this.defaultAccessTimeoutService;
+        return defaultAccessTimeoutService != null ? defaultAccessTimeoutService.get() : null;
     }
 
-    Injector<DefaultAccessTimeoutService> getDefaultAccessTimeoutInjector() {
-        return this.defaultAccessTimeoutService;
+    void setDefaultAccessTimeoutSupplier(final Supplier<DefaultAccessTimeoutService> defaultAccessTimeoutService) {
+        this.defaultAccessTimeoutService = defaultAccessTimeoutService;
     }
 
-    public InterceptorFactory getEjb2XRemoveMethod() {
+    InterceptorFactory getEjb2XRemoveMethod() {
         return ejb2XRemoveMethod;
     }
 
-    public Set<Object> getSerializableInterceptorContextKeys() {
+    Set<Object> getSerializableInterceptorContextKeys() {
         return serializableInterceptorContextKeys;
     }
 
-    @SuppressWarnings("rawtypes")
-    Injector<CacheFactoryBuilder> getCacheFactoryBuilderInjector() {
-        return this.cacheFactoryBuilder;
+    void setCacheFactoryBuilderSupplier(final Supplier<CacheFactoryBuilder> cacheFactoryBuilder) {
+        this.cacheFactoryBuilder = cacheFactoryBuilder;
     }
 
-    @SuppressWarnings("rawtypes")
-    Value<CacheFactory> getCacheFactory() {
-        return this.cacheFactory;
+    void setCacheFactorySupplier(final Supplier<CacheFactory> cacheFactory) {
+        this.cacheFactory = cacheFactory;
+    }
+
+    CacheFactory getCacheFactory() {
+        final Supplier<CacheFactory> cacheFactory = this.cacheFactory;
+        return cacheFactory != null ? cacheFactory.get() : null;
     }
 
     boolean isPassivationCapable() {
