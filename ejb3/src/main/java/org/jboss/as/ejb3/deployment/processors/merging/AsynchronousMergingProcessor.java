@@ -25,7 +25,6 @@ import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
 import javax.ejb.Asynchronous;
@@ -67,6 +66,7 @@ import org.jboss.msc.service.ServiceName;
  * Merging processor that handles EJB async methods, and adds a configurator to configure any that are found.
  *
  * @author Stuart Douglas
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public class AsynchronousMergingProcessor extends AbstractMergingProcessor<SessionBeanComponentDescription> {
 
@@ -118,11 +118,11 @@ public class AsynchronousMergingProcessor extends AbstractMergingProcessor<Sessi
             //setup a dependency on the executor service
             description.getConfigurators().add(new ComponentConfigurator() {
                 @Override
-                public void configure(final DeploymentPhaseContext context, final ComponentDescription description, final ComponentConfiguration configuration) throws DeploymentUnitProcessingException {
+                public void configure(final DeploymentPhaseContext context, final ComponentDescription description, final ComponentConfiguration configuration) {
                     configuration.getCreateDependencies().add(new DependencyConfigurator<SessionBeanComponentCreateService>() {
                         @Override
-                        public void configureDependency(final ServiceBuilder<?> serviceBuilder, final SessionBeanComponentCreateService service) throws DeploymentUnitProcessingException {
-                            serviceBuilder.addDependency(asynchronousThreadPoolService, ExecutorService.class, service.getAsyncExecutorService());
+                        public void configureDependency(final ServiceBuilder<?> serviceBuilder, final SessionBeanComponentCreateService service) {
+                            service.setAsyncExecutorServiceSupplier(serviceBuilder.requires(asynchronousThreadPoolService));
                         }
                     });
                 }

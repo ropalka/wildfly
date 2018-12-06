@@ -27,6 +27,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
+import java.util.function.Supplier;
 
 import javax.ejb.LockType;
 
@@ -38,10 +39,10 @@ import org.jboss.as.ejb3.component.MethodIntf;
 import org.jboss.as.ejb3.concurrency.AccessTimeoutDetails;
 import org.jboss.as.ejb3.deployment.ApplicationExceptions;
 import org.jboss.invocation.proxy.MethodIdentifier;
-import org.jboss.msc.value.InjectedValue;
 
 /**
  * User: jpai
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public abstract class SessionBeanComponentCreateService extends EJBComponentCreateService {
 
@@ -49,8 +50,7 @@ public abstract class SessionBeanComponentCreateService extends EJBComponentCrea
     private final Map<EJBBusinessMethod, LockType> methodApplicableLockTypes;
     private final Map<String, AccessTimeoutDetails> beanLevelAccessTimeout;
     private final Map<EJBBusinessMethod, AccessTimeoutDetails> methodApplicableAccessTimeouts;
-
-    private final InjectedValue<ExecutorService> asyncExecutorService = new InjectedValue<ExecutorService>();
+    private volatile Supplier<ExecutorService> asyncExecutorService;
 
     /**
      * Construct a new instance.
@@ -136,7 +136,13 @@ public abstract class SessionBeanComponentCreateService extends EJBComponentCrea
         return new EJBBusinessMethod(methodName, paramTypes);
     }
 
-    public InjectedValue<ExecutorService> getAsyncExecutorService() {
-        return asyncExecutorService;
+    ExecutorService getAsyncExecutorService() {
+        final Supplier<ExecutorService> asyncExecutorService = this.asyncExecutorService;
+        return asyncExecutorService != null ? asyncExecutorService.get() : null;
     }
+
+    public void setAsyncExecutorServiceSupplier(final Supplier<ExecutorService> asyncExecutorService) {
+        this.asyncExecutorService = asyncExecutorService;
+    }
+
 }
