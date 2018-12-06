@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.List;
 import java.util.Properties;
+import java.util.function.Supplier;
 
 import javax.resource.ResourceException;
 import javax.resource.spi.ActivationSpec;
@@ -50,7 +51,6 @@ import org.jboss.jca.core.spi.rar.ResourceAdapterRepository;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
-import org.jboss.msc.value.InjectedValue;
 
 /**
  * @author Stuart Douglas
@@ -63,11 +63,11 @@ public class MessageDrivenComponentCreateService extends EJBComponentCreateServi
     private final String resourceAdapterName;
     private final boolean deliveryActive;
     private final ServiceName deliveryControllerName;
-    private final InjectedValue<ResourceAdapterRepository> resourceAdapterRepositoryInjectedValue = new InjectedValue<ResourceAdapterRepository>();
-    private final InjectedValue<ResourceAdapter> resourceAdapterInjectedValue = new InjectedValue<ResourceAdapter>();
-    private final InjectedValue<PoolConfig> poolConfig = new InjectedValue<PoolConfig>();
-    private final InjectedValue<SuspendController> suspendControllerInjectedValue = new InjectedValue<>();
     private final ClassLoader moduleClassLoader;
+    private volatile Supplier<ResourceAdapterRepository> resourceAdapterRepository;
+    private volatile Supplier<ResourceAdapter> resourceAdapter;
+    private volatile Supplier<PoolConfig> poolConfig;
+    private volatile Supplier<SuspendController> suspendController;
 
     /**
      * Construct a new instance.
@@ -121,7 +121,7 @@ public class MessageDrivenComponentCreateService extends EJBComponentCreateServi
             if (raIdentifier == null) {
                 throw EjbLogger.ROOT_LOGGER.unknownResourceAdapter(resourceAdapterName);
             }
-            final ResourceAdapterRepository resourceAdapterRepository = resourceAdapterRepositoryInjectedValue.getValue();
+            final ResourceAdapterRepository resourceAdapterRepository = this.resourceAdapterRepository.get();
             if (resourceAdapterRepository == null) {
                 throw EjbLogger.ROOT_LOGGER.resourceAdapterRepositoryUnAvailable();
             }
@@ -209,7 +209,7 @@ public class MessageDrivenComponentCreateService extends EJBComponentCreateServi
         if (raIdentifier == null) {
             throw EjbLogger.ROOT_LOGGER.unknownResourceAdapter(resourceAdapterName);
         }
-        final ResourceAdapterRepository resourceAdapterRepository = resourceAdapterRepositoryInjectedValue.getValue();
+        final ResourceAdapterRepository resourceAdapterRepository = this.resourceAdapterRepository.get();
         if (resourceAdapterRepository == null) {
             throw EjbLogger.ROOT_LOGGER.resourceAdapterRepositoryUnAvailable();
         }
@@ -240,31 +240,37 @@ public class MessageDrivenComponentCreateService extends EJBComponentCreateServi
     }
 
     PoolConfig getPoolConfig() {
-        return this.poolConfig.getOptionalValue();
+        final Supplier<PoolConfig> poolConfig = this.poolConfig;
+        return poolConfig != null ? poolConfig.get() : null;
     }
 
-    public InjectedValue<PoolConfig> getPoolConfigInjector() {
-        return this.poolConfig;
+    void setPoolConfigSupplier(final Supplier<PoolConfig> poolConfig) {
+        this.poolConfig = poolConfig;
     }
 
     private ClassLoader getDeploymentClassLoader() {
         return getComponentClass().getClassLoader();
     }
 
-    public InjectedValue<ResourceAdapterRepository> getResourceAdapterRepositoryInjector() {
-        return this.resourceAdapterRepositoryInjectedValue;
+    void setResourceAdapterRepositorySupplier(final Supplier<ResourceAdapterRepository> resourceAdapterRepository) {
+        this.resourceAdapterRepository = resourceAdapterRepository;
     }
 
-    public InjectedValue<ResourceAdapter> getResourceAdapterInjector() {
-        return this.resourceAdapterInjectedValue;
+    void setResourceAdapterSupplier(final Supplier<ResourceAdapter> resourceAdapter) {
+        this.resourceAdapter = resourceAdapter;
     }
 
-    public ClassLoader getModuleClassLoader() {
+    ClassLoader getModuleClassLoader() {
         return moduleClassLoader;
     }
 
-    public InjectedValue<SuspendController> getSuspendControllerInjectedValue() {
-        return suspendControllerInjectedValue;
+    void setSuspendControllerSupplier(final Supplier<SuspendController> suspendController) {
+        this.suspendController = suspendController;
+    }
+
+    SuspendController getSuspendController() {
+        final Supplier<SuspendController> suspendController = this.suspendController;
+        return suspendController != null ? suspendController.get() : null;
     }
 
     private String stripDotRarSuffix(final String raName) {

@@ -25,7 +25,6 @@ import java.util.Properties;
 
 import javax.ejb.MessageDrivenBean;
 import javax.ejb.TransactionManagementType;
-import javax.resource.spi.ResourceAdapter;
 
 import org.jboss.as.connector.util.ConnectorServices;
 import org.jboss.as.ee.component.Attachments;
@@ -47,7 +46,6 @@ import org.jboss.as.ejb3.component.EJBComponentDescription;
 import org.jboss.as.ejb3.component.EJBViewDescription;
 import org.jboss.as.ejb3.component.MethodIntf;
 import org.jboss.as.ejb3.component.interceptors.CurrentInvocationContextInterceptor;
-import org.jboss.as.ejb3.component.pool.PoolConfig;
 import org.jboss.as.ejb3.component.pool.StrictMaxPoolConfigService;
 import org.jboss.as.ejb3.deployment.EjbJarDescription;
 import org.jboss.as.ejb3.tx.CMTTxInterceptor;
@@ -61,7 +59,6 @@ import org.jboss.as.server.suspend.SuspendController;
 import org.jboss.invocation.ImmediateInterceptorFactory;
 import org.jboss.invocation.Interceptor;
 import org.jboss.invocation.InterceptorContext;
-import org.jboss.jca.core.spi.rar.ResourceAdapterRepository;
 import org.jboss.metadata.ejb.spec.MessageDrivenBeanMetaData;
 import org.jboss.modules.ModuleLoader;
 import org.jboss.msc.service.Service;
@@ -139,8 +136,8 @@ public class MessageDrivenComponentDescription extends EJBComponentDescription {
 
         mdbComponentConfiguration.getCreateDependencies().add(new DependencyConfigurator<MessageDrivenComponentCreateService>() {
             @Override
-            public void configureDependency(final ServiceBuilder<?> serviceBuilder, final MessageDrivenComponentCreateService mdbComponentCreateService) throws DeploymentUnitProcessingException {
-                serviceBuilder.addDependency(SuspendController.SERVICE_NAME, SuspendController.class, mdbComponentCreateService.getSuspendControllerInjectedValue());
+            public void configureDependency(final ServiceBuilder<?> serviceBuilder, final MessageDrivenComponentCreateService service) {
+                service.setSuspendControllerSupplier(serviceBuilder.requires(SuspendController.SERVICE_NAME));
             }
         });
 
@@ -327,13 +324,11 @@ public class MessageDrivenComponentDescription extends EJBComponentDescription {
             // If the default mdb pool config itself is not configured, then pooling is disabled for the bean
             if (poolName == null) {
                 if (mdbComponentDescription.isDefaultMdbPoolAvailable()) {
-                    serviceBuilder.addDependency(StrictMaxPoolConfigService.DEFAULT_MDB_POOL_CONFIG_SERVICE_NAME,
-                            PoolConfig.class, mdbComponentCreateService.getPoolConfigInjector());
+                    mdbComponentCreateService.setPoolConfigSupplier(serviceBuilder.requires(StrictMaxPoolConfigService.DEFAULT_MDB_POOL_CONFIG_SERVICE_NAME));
                 }
             } else {
                 // pool name has been explicitly set so the pool config is a required dependency
-                serviceBuilder.addDependency(StrictMaxPoolConfigService.EJB_POOL_CONFIG_BASE_SERVICE_NAME.append(poolName),
-                        PoolConfig.class, mdbComponentCreateService.getPoolConfigInjector());
+                mdbComponentCreateService.setPoolConfigSupplier(serviceBuilder.requires(StrictMaxPoolConfigService.EJB_POOL_CONFIG_BASE_SERVICE_NAME.append(poolName)));
             }
         }
     }
@@ -343,14 +338,13 @@ public class MessageDrivenComponentDescription extends EJBComponentDescription {
      * for the appropriate resource adapter service
      */
     private class ResourceAdapterInjectingConfiguration implements DependencyConfigurator<MessageDrivenComponentCreateService> {
-
         @Override
         public void configureDependency(ServiceBuilder<?> serviceBuilder, MessageDrivenComponentCreateService service) {
             final ServiceName raServiceName =
                 ConnectorServices.getResourceAdapterServiceName(MessageDrivenComponentDescription.this.resourceAdapterName);
             // add the dependency on the RA service
-            serviceBuilder.addDependency(ConnectorServices.RA_REPOSITORY_SERVICE, ResourceAdapterRepository.class, service.getResourceAdapterRepositoryInjector());
-            serviceBuilder.addDependency(raServiceName, ResourceAdapter.class, service.getResourceAdapterInjector());
+            service.setResourceAdapterRepositorySupplier(serviceBuilder.requires(ConnectorServices.RA_REPOSITORY_SERVICE));
+            service.setResourceAdapterSupplier(serviceBuilder.requires(raServiceName));
         }
     }
 
