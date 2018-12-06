@@ -28,22 +28,23 @@ import org.jboss.as.ejb3.component.pool.PoolConfig;
 import org.jboss.as.ejb3.component.session.SessionBeanComponentCreateService;
 import org.jboss.as.ejb3.deployment.ApplicationExceptions;
 import org.jboss.ejb.client.Affinity;
-import org.jboss.msc.inject.Injector;
-import org.jboss.msc.value.InjectedValue;
+
+import java.util.function.Supplier;
 
 /**
  * @author Stuart Douglas
+ * @author <a href="mailto:ropalka@redhat.com'>Richard Opalka</a>
  */
 public class StatelessSessionComponentCreateService extends SessionBeanComponentCreateService {
 
-    private final InjectedValue<PoolConfig> poolConfig = new InjectedValue<>();
+    private volatile Supplier<PoolConfig> poolConfig;
 
     /**
      * Construct a new instance.
      *
      * @param componentConfiguration the component configuration
      */
-    public StatelessSessionComponentCreateService(final ComponentConfiguration componentConfiguration, final ApplicationExceptions ejbJarConfiguration) {
+    StatelessSessionComponentCreateService(final ComponentConfiguration componentConfiguration, final ApplicationExceptions ejbJarConfiguration) {
         super(componentConfiguration, ejbJarConfiguration);
     }
 
@@ -52,15 +53,16 @@ public class StatelessSessionComponentCreateService extends SessionBeanComponent
         return new StatelessSessionComponent(this);
     }
 
-    public PoolConfig getPoolConfig() {
-        return this.poolConfig.getOptionalValue();
+    PoolConfig getPoolConfig() {
+        final Supplier<PoolConfig> poolConfig = this.poolConfig;
+        return poolConfig != null ? poolConfig.get() : null;
     }
 
-    public Injector<PoolConfig> getPoolConfigInjector() {
-        return this.poolConfig;
+    void setPoolConfigSupplier(final Supplier<PoolConfig> poolConfig) {
+        this.poolConfig = poolConfig;
     }
 
-    public Affinity getWeakAffinity() {
+    Affinity getWeakAffinity() {
         return Affinity.NONE;
     }
 
