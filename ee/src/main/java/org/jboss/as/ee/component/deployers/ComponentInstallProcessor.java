@@ -28,7 +28,6 @@ import java.util.Set;
 
 import org.jboss.as.ee.logging.EeLogger;
 import org.jboss.as.ee.component.Attachments;
-import org.jboss.as.ee.component.BasicComponent;
 import org.jboss.as.ee.component.BasicComponentCreateService;
 import org.jboss.as.ee.component.BindingConfiguration;
 import org.jboss.as.ee.component.ClassDescriptionTraversal;
@@ -76,6 +75,7 @@ import static org.jboss.as.server.deployment.Attachments.MODULE;
 /**
  * @author <a href="mailto:david.lloyd@redhat.com">David M. Lloyd</a>
  * @author Eduardo Martins
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public final class ComponentInstallProcessor implements DeploymentUnitProcessor {
 
@@ -150,12 +150,11 @@ public final class ComponentInstallProcessor implements DeploymentUnitProcessor 
         }
 
         // START depends on CREATE
-        startBuilder.addDependency(createServiceName, BasicComponent.class, startService.getComponentInjector());
-        Services.addServerExecutorDependency(startBuilder, startService.getExecutorInjector());
+        startService.setComponentSupplier(startBuilder.requires(createServiceName));
+        startService.setExecutorSupplier(Services.requireServerExecutor(startBuilder));
 
         //don't start components until all bindings are up
         startBuilder.requires(bindingDependencyService);
-        final ServiceName contextServiceName;
         //set up the naming context if necessary
         if (configuration.getComponentDescription().getNamingMode() == ComponentNamingMode.CREATE) {
             final NamingStoreService contextService = new NamingStoreService(true);
