@@ -25,6 +25,7 @@ package org.jboss.as.ee.component.deployers;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Supplier;
 
 import org.jboss.as.ee.logging.EeLogger;
 import org.jboss.as.ee.component.Attachments;
@@ -36,7 +37,6 @@ import org.jboss.as.ee.component.ComponentConfiguration;
 import org.jboss.as.ee.component.ComponentNamingMode;
 import org.jboss.as.ee.component.ComponentRegistry;
 import org.jboss.as.ee.component.ComponentStartService;
-import org.jboss.as.ee.component.ComponentView;
 import org.jboss.as.ee.component.DependencyConfigurator;
 import org.jboss.as.ee.component.EEApplicationClasses;
 import org.jboss.as.ee.component.EEModuleClassDescription;
@@ -171,13 +171,13 @@ public final class ComponentInstallProcessor implements DeploymentUnitProcessor 
         // Iterate through each view, creating the services for each
         for (ViewConfiguration viewConfiguration : configuration.getViews()) {
             final ServiceName serviceName = viewConfiguration.getViewServiceName();
-            final ViewService viewService = new ViewService(viewConfiguration);
-            final ServiceBuilder<ComponentView> componentViewServiceBuilder = serviceTarget.addService(serviceName, viewService);
-            componentViewServiceBuilder
-                    .addDependency(createServiceName, Component.class, viewService.getComponentInjector());
+            final ServiceBuilder<?> componentViewServiceBuilder = serviceTarget.addService(serviceName);
+            final Supplier<Component> componentSupplier = componentViewServiceBuilder.requires(createServiceName);
+            final ViewService viewService = new ViewService(viewConfiguration, componentSupplier);
             for(final DependencyConfigurator<ViewService> depConfig : viewConfiguration.getDependencies()) {
                 depConfig.configureDependency(componentViewServiceBuilder, viewService);
             }
+            componentViewServiceBuilder.setInstance(viewService);
             componentViewServiceBuilder.install();
             startBuilder.requires(serviceName);
             // The bindings for the view
