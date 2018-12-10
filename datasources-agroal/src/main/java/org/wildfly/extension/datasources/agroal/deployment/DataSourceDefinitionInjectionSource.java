@@ -34,7 +34,6 @@ import org.jboss.as.naming.deployment.ContextNames;
 import org.jboss.as.naming.service.BinderService;
 import org.jboss.as.server.deployment.DeploymentPhaseContext;
 import org.jboss.as.server.deployment.DeploymentUnitProcessingException;
-import org.jboss.msc.inject.Injector;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceName;
 import org.wildfly.extension.datasources.agroal.AgroalExtension;
@@ -44,6 +43,7 @@ import javax.sql.DataSource;
 import java.sql.Driver;
 import java.time.Duration;
 import java.util.Map;
+import java.util.function.Supplier;
 
 import static org.jboss.as.server.deployment.Attachments.MODULE;
 
@@ -51,6 +51,7 @@ import static org.jboss.as.server.deployment.Attachments.MODULE;
  * Injection source for a DataSource
  *
  * @author <a href="lbarreiro@redhat.com">Luis Barreiro</a>
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 class DataSourceDefinitionInjectionSource extends ResourceDefinitionInjectionSource {
 
@@ -153,7 +154,7 @@ class DataSourceDefinitionInjectionSource extends ResourceDefinitionInjectionSou
     // --- //
 
     @Override
-    public void getResourceValue(ResolutionContext context, ServiceBuilder<?> serviceBuilder, DeploymentPhaseContext phaseContext, Injector<ManagedReferenceFactory> injector) throws DeploymentUnitProcessingException {
+    public Supplier<ManagedReferenceFactory> getResourceValue(ResolutionContext context, ServiceBuilder<?> serviceBuilder, DeploymentPhaseContext phaseContext) throws DeploymentUnitProcessingException {
 
         AgroalConnectionFactoryConfigurationSupplier connectionFactoryConfiguration = new AgroalConnectionFactoryConfigurationSupplier();
 
@@ -232,6 +233,6 @@ class DataSourceDefinitionInjectionSource extends ResourceDefinitionInjectionSou
         phaseContext.getServiceTarget().addService(dataSourceServiceName).setInstance(dataSourceService).install();
 
         serviceBuilder.requires(bindInfo.getBinderServiceName());
-        serviceBuilder.addDependency(dataSourceServiceName, ManagedReferenceFactory.class, injector);
+        return serviceBuilder.requires(dataSourceServiceName);
     }
 }
