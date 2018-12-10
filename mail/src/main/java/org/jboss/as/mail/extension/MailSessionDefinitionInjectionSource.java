@@ -24,6 +24,7 @@
 
 package org.jboss.as.mail.extension;
 
+import java.util.function.Supplier;
 
 import org.jboss.as.ee.component.Attachments;
 import org.jboss.as.ee.component.EEModuleDescription;
@@ -35,7 +36,6 @@ import org.jboss.as.naming.service.BinderService;
 import org.jboss.as.server.deployment.DeploymentPhaseContext;
 import org.jboss.as.server.deployment.DeploymentUnit;
 import org.jboss.as.server.deployment.DeploymentUnitProcessingException;
-import org.jboss.msc.inject.Injector;
 import org.jboss.msc.service.LifecycleEvent;
 import org.jboss.msc.service.LifecycleListener;
 import org.jboss.msc.service.ServiceBuilder;
@@ -51,6 +51,7 @@ import org.jboss.msc.service.ServiceTarget;
  *
  * @author Tomaz Cerar
  * @author Eduardo Martins
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 class MailSessionDefinitionInjectionSource extends ResourceDefinitionInjectionSource {
 
@@ -61,25 +62,25 @@ class MailSessionDefinitionInjectionSource extends ResourceDefinitionInjectionSo
         this.provider = provider;
     }
 
-    public void getResourceValue(final ResolutionContext context, final ServiceBuilder<?> serviceBuilder, final DeploymentPhaseContext phaseContext, final Injector<ManagedReferenceFactory> injector) throws DeploymentUnitProcessingException {
+    public Supplier<ManagedReferenceFactory> getResourceValue(final ResolutionContext context, final ServiceBuilder<?> serviceBuilder, final DeploymentPhaseContext phaseContext) throws DeploymentUnitProcessingException {
         final DeploymentUnit deploymentUnit = phaseContext.getDeploymentUnit();
         final EEModuleDescription eeModuleDescription = deploymentUnit.getAttachment(Attachments.EE_MODULE_DESCRIPTION);
 
         try {
             MailSessionService mailSessionService = new DirectMailSessionService(provider);
-            startMailSession(mailSessionService, jndiName, eeModuleDescription, context, phaseContext.getServiceTarget(), serviceBuilder, injector);
-
+            startMailSession(mailSessionService, jndiName, eeModuleDescription, context, phaseContext.getServiceTarget(), serviceBuilder);
+            return null;
         } catch (Exception e) {
             throw new DeploymentUnitProcessingException(e);
         }
     }
 
     private void startMailSession(final MailSessionService mailSessionService,
-                                  final String jndiName,
-                                  final EEModuleDescription moduleDescription,
-                                  final ResolutionContext context,
-                                  final ServiceTarget serviceTarget,
-                                  final ServiceBuilder<?> valueSourceServiceBuilder, final Injector<ManagedReferenceFactory> injector) {
+                                                               final String jndiName,
+                                                               final EEModuleDescription moduleDescription,
+                                                               final ResolutionContext context,
+                                                               final ServiceTarget serviceTarget,
+                                                               final ServiceBuilder<?> valueSourceServiceBuilder) {
 
 
         final ServiceName mailSessionServiceName = MailSessionDefinition.SESSION_CAPABILITY.getCapabilityServiceName().append("MailSessionDefinition", moduleDescription.getApplicationName(), moduleDescription.getModuleName(), jndiName);
@@ -113,8 +114,6 @@ class MailSessionDefinitionInjectionSource extends ResourceDefinitionInjectionSo
 
         mailSessionServiceBuilder.setInitialMode(ServiceController.Mode.ACTIVE).install();
         binderBuilder.setInitialMode(ServiceController.Mode.ACTIVE).install();
-
-        valueSourceServiceBuilder.addDependency(bindInfo.getBinderServiceName(), ManagedReferenceFactory.class, injector);
     }
 
     @Override
