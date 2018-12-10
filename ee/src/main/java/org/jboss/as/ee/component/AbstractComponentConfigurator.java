@@ -18,12 +18,12 @@ import org.jboss.invocation.Interceptor;
 import org.jboss.invocation.InterceptorFactory;
 import org.jboss.invocation.InterceptorFactoryContext;
 import org.jboss.invocation.Interceptors;
-import org.jboss.msc.value.InjectedValue;
 
 import static org.jboss.as.ee.logging.EeLogger.ROOT_LOGGER;
 
 /**
  * @author Stuart Douglas
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public class AbstractComponentConfigurator {
 
@@ -91,9 +91,9 @@ public class AbstractComponentConfigurator {
             }
 
             final Object valueContextKey = new Object();
-            final InjectedValue<ManagedReferenceFactory> managedReferenceFactoryValue = new InjectedValue<ManagedReferenceFactory>();
-            configuration.getStartDependencies().add(new ComponentDescription.InjectedConfigurator(injectionConfiguration, configuration, context, managedReferenceFactoryValue));
-            injectors.addFirst(injectionConfiguration.getTarget().createInjectionInterceptorFactory(instanceKey, valueContextKey, managedReferenceFactoryValue, context.getDeploymentUnit(), injectionConfiguration.isOptional()));
+            final DelegatingSupplier<ManagedReferenceFactory> managedReferenceFactorySupplier = new DelegatingSupplier<>();
+            configuration.getStartDependencies().add(new ComponentDescription.InjectedConfigurator(injectionConfiguration, configuration, context, managedReferenceFactorySupplier));
+            injectors.addFirst(injectionConfiguration.getTarget().createInjectionInterceptorFactory(instanceKey, valueContextKey, managedReferenceFactorySupplier, context.getDeploymentUnit(), injectionConfiguration.isOptional()));
             uninjectors.addLast(new ImmediateInterceptorFactory(new ManagedReferenceReleaseInterceptor(valueContextKey)));
         }
     }

@@ -43,7 +43,6 @@ import org.jboss.invocation.proxy.MethodIdentifier;
 import org.jboss.modules.ModuleLoader;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceName;
-import org.jboss.msc.value.InjectedValue;
 
 /**
  * A description of a generic Java EE component.  The description is pre-classloading so it references everything by name.
@@ -528,23 +527,23 @@ public class ComponentDescription implements ResourceInjectionTarget {
         private final ResourceInjectionConfiguration injectionConfiguration;
         private final ComponentConfiguration configuration;
         private final DeploymentPhaseContext context;
-        private final InjectedValue<ManagedReferenceFactory> managedReferenceFactoryValue;
+        private final DelegatingSupplier<ManagedReferenceFactory> managedReferenceFactorySupplier;
 
-        InjectedConfigurator(final ResourceInjectionConfiguration injectionConfiguration, final ComponentConfiguration configuration, final DeploymentPhaseContext context, final InjectedValue<ManagedReferenceFactory> managedReferenceFactoryValue) {
+        InjectedConfigurator(final ResourceInjectionConfiguration injectionConfiguration, final ComponentConfiguration configuration, final DeploymentPhaseContext context, final DelegatingSupplier<ManagedReferenceFactory> managedReferenceFactorySupplier) {
             this.injectionConfiguration = injectionConfiguration;
             this.configuration = configuration;
             this.context = context;
-            this.managedReferenceFactoryValue = managedReferenceFactoryValue;
+            this.managedReferenceFactorySupplier = managedReferenceFactorySupplier;
         }
 
-        public void configureDependency(final ServiceBuilder<?> serviceBuilder, ComponentStartService service) throws DeploymentUnitProcessingException {
+        public void configureDependency(final ServiceBuilder<?> serviceBuilder, final ComponentStartService service) throws DeploymentUnitProcessingException {
             InjectionSource.ResolutionContext resolutionContext = new InjectionSource.ResolutionContext(
                     configuration.getComponentDescription().getNamingMode() == ComponentNamingMode.USE_MODULE,
                     configuration.getComponentName(),
                     configuration.getModuleName(),
                     configuration.getApplicationName()
             );
-            injectionConfiguration.getSource().getResourceValue(resolutionContext, serviceBuilder, context, managedReferenceFactoryValue);
+            managedReferenceFactorySupplier.set(injectionConfiguration.getSource().getResourceValue(resolutionContext, serviceBuilder, context));
         }
 
     }

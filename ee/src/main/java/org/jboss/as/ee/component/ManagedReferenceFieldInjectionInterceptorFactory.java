@@ -24,6 +24,7 @@ package org.jboss.as.ee.component;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.util.function.Supplier;
 
 import org.jboss.as.ee.logging.EeLogger;
 import org.jboss.as.naming.ManagedReference;
@@ -32,29 +33,29 @@ import org.jboss.invocation.Interceptor;
 import org.jboss.invocation.InterceptorContext;
 import org.jboss.invocation.InterceptorFactory;
 import org.jboss.invocation.InterceptorFactoryContext;
-import org.jboss.msc.value.Value;
 
 /**
  * @author <a href="mailto:david.lloyd@redhat.com">David M. Lloyd</a>
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 final class ManagedReferenceFieldInjectionInterceptorFactory implements InterceptorFactory {
 
     private final Object targetContextKey;
     private final Object valueContextKey;
-    private final Value<ManagedReferenceFactory> factoryValue;
+    private final Supplier<ManagedReferenceFactory> factorySupplier;
     private final Field field;
     private final boolean optional;
 
-    ManagedReferenceFieldInjectionInterceptorFactory(final Object targetContextKey, final Object valueContextKey, final Value<ManagedReferenceFactory> factoryValue, final Field field, final boolean optional) {
+    ManagedReferenceFieldInjectionInterceptorFactory(final Object targetContextKey, final Object valueContextKey, final Supplier<ManagedReferenceFactory> factorySupplier, final Field field, final boolean optional) {
         this.targetContextKey = targetContextKey;
         this.valueContextKey = valueContextKey;
-        this.factoryValue = factoryValue;
+        this.factorySupplier = factorySupplier;
         this.field = field;
         this.optional = optional;
     }
 
     public Interceptor create(final InterceptorFactoryContext context) {
-        return new ManagedReferenceFieldInjectionInterceptor(targetContextKey, valueContextKey, factoryValue.getValue(), field, optional);
+        return new ManagedReferenceFieldInjectionInterceptor(targetContextKey, valueContextKey, factorySupplier.get(), field, optional);
     }
 
     /**

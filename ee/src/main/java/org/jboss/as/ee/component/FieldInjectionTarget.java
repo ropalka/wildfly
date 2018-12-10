@@ -27,6 +27,7 @@ import static org.jboss.as.server.deployment.Attachments.REFLECTION_INDEX;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.util.function.Supplier;
 
 import org.jboss.as.ee.logging.EeLogger;
 import org.jboss.as.naming.ManagedReferenceFactory;
@@ -37,11 +38,11 @@ import org.jboss.as.server.deployment.reflect.DeploymentReflectionIndex;
 import org.jboss.invocation.InterceptorFactory;
 import org.jboss.modules.Module;
 import org.jboss.modules.ModuleClassLoader;
-import org.jboss.msc.value.Value;
 
 /**
  * @author <a href="mailto:david.lloyd@redhat.com">David M. Lloyd</a>
  * @author Eduardo Martins
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public final class FieldInjectionTarget extends InjectionTarget {
 
@@ -61,8 +62,8 @@ public final class FieldInjectionTarget extends InjectionTarget {
         return Modifier.isStatic(getField(deploymentUnit).getModifiers());
     }
 
-    public InterceptorFactory createInjectionInterceptorFactory(final Object targetContextKey, final Object valueContextKey, final Value<ManagedReferenceFactory> factoryValue, final DeploymentUnit deploymentUnit, final boolean optional) throws DeploymentUnitProcessingException {
-        return new ManagedReferenceFieldInjectionInterceptorFactory(targetContextKey, valueContextKey, factoryValue, getField(deploymentUnit), optional);
+    public InterceptorFactory createInjectionInterceptorFactory(final Object targetContextKey, final Object valueContextKey, final Supplier<ManagedReferenceFactory> factorySupplier, final DeploymentUnit deploymentUnit, final boolean optional) throws DeploymentUnitProcessingException {
+        return new ManagedReferenceFieldInjectionInterceptorFactory(targetContextKey, valueContextKey, factorySupplier, getField(deploymentUnit), optional);
     }
 
     private Field getField(final DeploymentUnit deploymentUnit) throws DeploymentUnitProcessingException {

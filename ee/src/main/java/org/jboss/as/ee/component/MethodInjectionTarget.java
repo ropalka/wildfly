@@ -26,6 +26,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.function.Supplier;
 
 import org.jboss.as.ee.logging.EeLogger;
 import org.jboss.as.ee.utils.ClassLoadingUtils;
@@ -37,11 +38,11 @@ import org.jboss.as.server.deployment.reflect.ClassReflectionIndex;
 import org.jboss.as.server.deployment.reflect.ClassReflectionIndexUtil;
 import org.jboss.as.server.deployment.reflect.DeploymentReflectionIndex;
 import org.jboss.invocation.InterceptorFactory;
-import org.jboss.msc.value.Value;
 
 /**
  * @author <a href="mailto:david.lloyd@redhat.com">David M. Lloyd</a>
  * @author Eduardo Martins
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public final class MethodInjectionTarget extends InjectionTarget {
 
@@ -54,8 +55,8 @@ public final class MethodInjectionTarget extends InjectionTarget {
         return Modifier.isStatic(getMethod(deploymentUnit).getModifiers());
     }
 
-    public InterceptorFactory createInjectionInterceptorFactory(final Object targetContextKey, final Object valueContextKey, final Value<ManagedReferenceFactory> factoryValue, final DeploymentUnit deploymentUnit, final boolean optional) throws DeploymentUnitProcessingException {
-        return new ManagedReferenceMethodInjectionInterceptorFactory(targetContextKey, valueContextKey, factoryValue, getMethod(deploymentUnit), optional);
+    public InterceptorFactory createInjectionInterceptorFactory(final Object targetContextKey, final Object valueContextKey, final Supplier<ManagedReferenceFactory> factorySupplier, final DeploymentUnit deploymentUnit, final boolean optional) throws DeploymentUnitProcessingException {
+        return new ManagedReferenceMethodInjectionInterceptorFactory(targetContextKey, valueContextKey, factorySupplier, getMethod(deploymentUnit), optional);
     }
 
     public Method getMethod(final DeploymentUnit deploymentUnit) throws DeploymentUnitProcessingException {

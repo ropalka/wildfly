@@ -26,13 +26,15 @@ import org.jboss.as.naming.ManagedReferenceFactory;
 import org.jboss.as.server.deployment.DeploymentUnit;
 import org.jboss.as.server.deployment.DeploymentUnitProcessingException;
 import org.jboss.invocation.InterceptorFactory;
-import org.jboss.msc.value.Value;
+
+import java.util.function.Supplier;
 
 /**
  * An injection target field or method in a class.
  *
  * @author <a href="mailto:david.lloyd@redhat.com">David M. Lloyd</a>
  * @author Eduardo Martins
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public abstract class InjectionTarget {
     private final String className;
@@ -91,7 +93,7 @@ public abstract class InjectionTarget {
      * @throws DeploymentUnitProcessingException
      *          if an error occurs
      */
-    public abstract InterceptorFactory createInjectionInterceptorFactory(final Object targetContextKey, final Object valueContextKey, final Value<ManagedReferenceFactory> factoryValue, final DeploymentUnit deploymentUnit, final boolean optional) throws DeploymentUnitProcessingException;
+    public abstract InterceptorFactory createInjectionInterceptorFactory(final Object targetContextKey, final Object valueContextKey, final Supplier<ManagedReferenceFactory> factoryValue, final DeploymentUnit deploymentUnit, final boolean optional) throws DeploymentUnitProcessingException;
 
     /**
      * Indicates if the target has the staic modifier.

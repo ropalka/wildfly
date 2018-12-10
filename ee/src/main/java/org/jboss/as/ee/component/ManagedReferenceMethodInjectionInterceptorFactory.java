@@ -24,6 +24,7 @@ package org.jboss.as.ee.component;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.util.function.Supplier;
 
 import org.jboss.as.ee.logging.EeLogger;
 import org.jboss.as.ee.component.interceptors.InvocationType;
@@ -33,29 +34,29 @@ import org.jboss.invocation.Interceptor;
 import org.jboss.invocation.InterceptorContext;
 import org.jboss.invocation.InterceptorFactory;
 import org.jboss.invocation.InterceptorFactoryContext;
-import org.jboss.msc.value.Value;
 
 /**
  * @author <a href="mailto:david.lloyd@redhat.com">David M. Lloyd</a>
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 final class ManagedReferenceMethodInjectionInterceptorFactory implements InterceptorFactory {
 
     private final Object targetContextKey;
     private final Object valueContextKey;
-    private final Value<ManagedReferenceFactory> factoryValue;
+    private final Supplier<ManagedReferenceFactory> factorySupplier;
     private final Method method;
     private final boolean optional;
 
-    ManagedReferenceMethodInjectionInterceptorFactory(final Object targetContextKey, final Object valueContextKey, final Value<ManagedReferenceFactory> factoryValue, final Method method, final boolean optional) {
+    ManagedReferenceMethodInjectionInterceptorFactory(final Object targetContextKey, final Object valueContextKey, final Supplier<ManagedReferenceFactory> factorySupplier, final Method method, final boolean optional) {
         this.targetContextKey = targetContextKey;
         this.valueContextKey = valueContextKey;
-        this.factoryValue = factoryValue;
+        this.factorySupplier = factorySupplier;
         this.method = method;
         this.optional = optional;
     }
 
     public Interceptor create(final InterceptorFactoryContext context) {
-        return new ManagedReferenceMethodInjectionInterceptor(targetContextKey, valueContextKey, factoryValue.getValue(), method, optional);
+        return new ManagedReferenceMethodInjectionInterceptor(targetContextKey, valueContextKey, factorySupplier.get(), method, optional);
     }
 
     /**
