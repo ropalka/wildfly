@@ -22,16 +22,17 @@
 
 package org.jboss.as.ee.beanvalidation;
 
+import java.util.function.Supplier;
+
 import javax.validation.ValidatorFactory;
 
 import org.jboss.as.ee.component.InjectionSource;
 import org.jboss.as.ee.component.deployers.EEResourceReferenceProcessor;
 import org.jboss.as.naming.ManagedReferenceFactory;
 import org.jboss.as.naming.ValueManagedReferenceFactory;
+import org.jboss.as.naming.service.ManagedReferenceFactorySupplier;
 import org.jboss.as.server.deployment.Attachments;
 import org.jboss.as.server.deployment.DeploymentPhaseContext;
-import org.jboss.as.server.deployment.DeploymentUnitProcessingException;
-import org.jboss.msc.inject.Injector;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.value.ImmediateValue;
 
@@ -39,6 +40,7 @@ import org.jboss.msc.value.ImmediateValue;
  * Handled resource injections for the Validator Factory
  *
  * @author Stuart Douglas
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public class BeanValidationFactoryResourceReferenceProcessor implements EEResourceReferenceProcessor {
 
@@ -50,7 +52,7 @@ public class BeanValidationFactoryResourceReferenceProcessor implements EEResour
     }
 
     @Override
-    public InjectionSource getResourceReferenceBindingSource() throws DeploymentUnitProcessingException {
+    public InjectionSource getResourceReferenceBindingSource() {
         return ValidatorFactoryInjectionSource.INSTANCE;
     }
 
@@ -59,9 +61,9 @@ public class BeanValidationFactoryResourceReferenceProcessor implements EEResour
         public static final ValidatorFactoryInjectionSource INSTANCE = new ValidatorFactoryInjectionSource();
 
         @Override
-        public void getResourceValue(final ResolutionContext resolutionContext, final ServiceBuilder<?> serviceBuilder, final DeploymentPhaseContext phaseContext, final Injector<ManagedReferenceFactory> injector) throws DeploymentUnitProcessingException {
+        public Supplier<ManagedReferenceFactory> getResourceValue(final ResolutionContext resolutionContext, final ServiceBuilder<?> serviceBuilder, final DeploymentPhaseContext phaseContext) {
             final ClassLoader classLoader = phaseContext.getDeploymentUnit().getAttachment(Attachments.MODULE).getClassLoader();
-            injector.inject(new ValueManagedReferenceFactory(new ImmediateValue<Object>(new LazyValidatorFactory(classLoader))));
+            return new ManagedReferenceFactorySupplier(new ValueManagedReferenceFactory(new ImmediateValue<Object>(new LazyValidatorFactory(classLoader))));
         }
     }
 }

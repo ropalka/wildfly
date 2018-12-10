@@ -22,21 +22,23 @@
 
 package org.jboss.as.ee.beanvalidation;
 
+import java.util.function.Supplier;
+
 import javax.validation.Validator;
 
 import org.jboss.as.ee.component.InjectionSource;
 import org.jboss.as.ee.component.deployers.EEResourceReferenceProcessor;
 import org.jboss.as.naming.ManagedReferenceFactory;
+import org.jboss.as.naming.service.ManagedReferenceFactorySupplier;
 import org.jboss.as.server.deployment.Attachments;
 import org.jboss.as.server.deployment.DeploymentPhaseContext;
-import org.jboss.as.server.deployment.DeploymentUnitProcessingException;
-import org.jboss.msc.inject.Injector;
 import org.jboss.msc.service.ServiceBuilder;
 
 /**
  * Handled resource injections for the Validator
  *
  * @author Stuart Douglas
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public class BeanValidationResourceReferenceProcessor implements EEResourceReferenceProcessor {
 
@@ -48,7 +50,7 @@ public class BeanValidationResourceReferenceProcessor implements EEResourceRefer
     }
 
     @Override
-    public InjectionSource getResourceReferenceBindingSource() throws DeploymentUnitProcessingException {
+    public InjectionSource getResourceReferenceBindingSource() {
         return ValidatorInjectionSource.INSTANCE;
     }
 
@@ -57,9 +59,9 @@ public class BeanValidationResourceReferenceProcessor implements EEResourceRefer
         public static final ValidatorInjectionSource INSTANCE = new ValidatorInjectionSource();
 
         @Override
-        public void getResourceValue(final ResolutionContext resolutionContext, final ServiceBuilder<?> serviceBuilder, final DeploymentPhaseContext phaseContext, final Injector<ManagedReferenceFactory> injector) throws DeploymentUnitProcessingException {
+        public Supplier<ManagedReferenceFactory> getResourceValue(final ResolutionContext resolutionContext, final ServiceBuilder<?> serviceBuilder, final DeploymentPhaseContext phaseContext) {
             final ClassLoader classLoader = phaseContext.getDeploymentUnit().getAttachment(Attachments.MODULE).getClassLoader();
-            injector.inject(new ValidatorJndiInjectable(new LazyValidatorFactory(classLoader)));
+            return new ManagedReferenceFactorySupplier(new ValidatorJndiInjectable(new LazyValidatorFactory(classLoader)));
         }
     }
 }
