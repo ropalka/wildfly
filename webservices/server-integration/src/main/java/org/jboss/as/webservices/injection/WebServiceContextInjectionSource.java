@@ -22,12 +22,13 @@
 
 package org.jboss.as.webservices.injection;
 
+import java.util.function.Supplier;
+
 import org.jboss.as.ee.component.InjectionSource;
 import org.jboss.as.naming.ManagedReference;
 import org.jboss.as.naming.ManagedReferenceFactory;
+import org.jboss.as.naming.service.ManagedReferenceFactorySupplier;
 import org.jboss.as.server.deployment.DeploymentPhaseContext;
-import org.jboss.as.server.deployment.DeploymentUnitProcessingException;
-import org.jboss.msc.inject.Injector;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.ws.common.injection.ThreadLocalAwareWebServiceContext;
 
@@ -35,11 +36,12 @@ import org.jboss.ws.common.injection.ThreadLocalAwareWebServiceContext;
  * {@link InjectionSource} for {@link javax.xml.ws.WebServiceContext} resource.
  *
  * User: Jaikiran Pai
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public class WebServiceContextInjectionSource extends InjectionSource {
     @Override
-    public void getResourceValue(ResolutionContext resolutionContext, ServiceBuilder<?> serviceBuilder, DeploymentPhaseContext phaseContext, Injector<ManagedReferenceFactory> injector) throws DeploymentUnitProcessingException {
-        injector.inject(new WebServiceContextManagedReferenceFactory());
+    public Supplier<ManagedReferenceFactory> getResourceValue(ResolutionContext resolutionContext, ServiceBuilder<?> serviceBuilder, DeploymentPhaseContext phaseContext) {
+        return new ManagedReferenceFactorySupplier(new WebServiceContextManagedReferenceFactory());
     }
 
     private class WebServiceContextManagedReferenceFactory implements ManagedReferenceFactory {
