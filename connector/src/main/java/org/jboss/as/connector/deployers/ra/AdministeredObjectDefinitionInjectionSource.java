@@ -31,14 +31,14 @@ import org.jboss.as.naming.ManagedReferenceFactory;
 import org.jboss.as.naming.deployment.ContextNames;
 import org.jboss.as.server.deployment.DeploymentPhaseContext;
 import org.jboss.as.server.deployment.DeploymentUnit;
-import org.jboss.as.server.deployment.DeploymentUnitProcessingException;
 import org.jboss.modules.Module;
-import org.jboss.msc.inject.Injector;
 import org.jboss.msc.service.LifecycleEvent;
 import org.jboss.msc.service.LifecycleListener;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceName;
+
+import java.util.function.Supplier;
 
 import static org.jboss.as.connector.logging.ConnectorLogger.DEPLOYMENT_CONNECTOR_LOGGER;
 import static org.jboss.as.connector.logging.ConnectorLogger.SUBSYSTEM_RA_LOGGER;
@@ -50,6 +50,7 @@ import static org.jboss.as.connector.logging.ConnectorLogger.SUBSYSTEM_RA_LOGGER
  * component declaring the annotation.
  *
  * @author Jesper Pedersen
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public class AdministeredObjectDefinitionInjectionSource extends ResourceDefinitionInjectionSource {
 
@@ -73,7 +74,7 @@ public class AdministeredObjectDefinitionInjectionSource extends ResourceDefinit
         properties.put(key, value);
     }
 
-    public void getResourceValue(final ResolutionContext context, final ServiceBuilder<?> serviceBuilder, final DeploymentPhaseContext phaseContext, final Injector<ManagedReferenceFactory> injector) throws DeploymentUnitProcessingException {
+    public Supplier<ManagedReferenceFactory> getResourceValue(final ResolutionContext context, final ServiceBuilder<?> serviceBuilder, final DeploymentPhaseContext phaseContext) {
         final DeploymentUnit deploymentUnit = phaseContext.getDeploymentUnit();
         final Module module = deploymentUnit.getAttachment(org.jboss.as.server.deployment.Attachments.MODULE);
         String raId = resourceAdapter;
@@ -98,7 +99,6 @@ public class AdministeredObjectDefinitionInjectionSource extends ResourceDefinit
         sb.requires(ConnectorServices.RESOURCE_ADAPTER_DEPLOYER_SERVICE_PREFIX.append(deployerServiceName));
         sb.setInitialMode(ServiceController.Mode.ACTIVE).install();
 
-        serviceBuilder.addDependency(AdminObjectReferenceFactoryService.SERVICE_NAME_BASE.append(bindInfo.getBinderServiceName()), ManagedReferenceFactory.class, injector);
         serviceBuilder.addListener(new LifecycleListener() {
             public void handleEvent(final ServiceController<?> controller, final LifecycleEvent event) {
                 switch (event) {
@@ -116,7 +116,7 @@ public class AdministeredObjectDefinitionInjectionSource extends ResourceDefinit
                 }
             }
         });
-
+        return serviceBuilder.requires(AdminObjectReferenceFactoryService.SERVICE_NAME_BASE.append(bindInfo.getBinderServiceName()));
     }
 
 

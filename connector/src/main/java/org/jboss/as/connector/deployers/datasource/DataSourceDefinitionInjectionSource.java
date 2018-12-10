@@ -29,6 +29,7 @@ import java.lang.reflect.Method;
 import java.sql.Connection;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.function.Supplier;
 
 import javax.sql.XADataSource;
 
@@ -67,7 +68,6 @@ import org.jboss.jca.core.spi.mdr.MetadataRepository;
 import org.jboss.jca.core.spi.rar.ResourceAdapterRepository;
 import org.jboss.jca.core.spi.transaction.TransactionIntegration;
 import org.jboss.modules.Module;
-import org.jboss.msc.inject.Injector;
 import org.jboss.msc.service.LifecycleEvent;
 import org.jboss.msc.service.LifecycleListener;
 import org.jboss.msc.service.ServiceBuilder;
@@ -82,6 +82,7 @@ import org.jboss.msc.service.ServiceTarget;
  * component declaring the annotation.
  *
  * @author Jason T. Greene
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public class DataSourceDefinitionInjectionSource extends ResourceDefinitionInjectionSource {
 
@@ -128,7 +129,7 @@ public class DataSourceDefinitionInjectionSource extends ResourceDefinitionInjec
         super(jndiName);
     }
 
-    public void getResourceValue(final ResolutionContext context, final ServiceBuilder<?> serviceBuilder, final DeploymentPhaseContext phaseContext, final Injector<ManagedReferenceFactory> injector) throws DeploymentUnitProcessingException {
+    public Supplier<ManagedReferenceFactory> getResourceValue(final ResolutionContext context, final ServiceBuilder<?> serviceBuilder, final DeploymentPhaseContext phaseContext) throws DeploymentUnitProcessingException {
         final DeploymentUnit deploymentUnit = phaseContext.getDeploymentUnit();
         final Module module = deploymentUnit.getAttachment(org.jboss.as.server.deployment.Attachments.MODULE);
         final EEModuleDescription eeModuleDescription = deploymentUnit.getAttachment(Attachments.EE_MODULE_DESCRIPTION);
@@ -157,7 +158,7 @@ public class DataSourceDefinitionInjectionSource extends ResourceDefinitionInjec
                         xaPool, null);
                 final XaDataSourceService xds = new XaDataSourceService(bindInfo.getBinderServiceName().getCanonicalName(), bindInfo, module.getClassLoader());
                 xds.getDataSourceConfigInjector().inject(dataSource);
-                startDataSource(xds, bindInfo, eeModuleDescription, context, phaseContext.getServiceTarget(), serviceBuilder, injector);
+                startDataSource(xds, bindInfo, phaseContext.getServiceTarget());
             } else {
                 final DsPoolImpl commonPool = new DsPoolImpl(minPoolSize < 0 ? Defaults.MIN_POOL_SIZE : Integer.valueOf(minPoolSize),
                                                              initialPoolSize < 0 ? Defaults.INITIAL_POOL_SIZE : Integer.valueOf(initialPoolSize),
@@ -168,12 +169,14 @@ public class DataSourceDefinitionInjectionSource extends ResourceDefinitionInjec
                         transactional, Defaults.CONNECTABLE, Defaults.TRACKING, Defaults.MCP, Defaults.ENLISTMENT_TRACE, commonPool);
                 final LocalDataSourceService ds = new LocalDataSourceService(bindInfo.getBinderServiceName().getCanonicalName(), bindInfo, module.getClassLoader());
                 ds.getDataSourceConfigInjector().inject(dataSource);
-                startDataSource(ds, bindInfo, eeModuleDescription, context, phaseContext.getServiceTarget(), serviceBuilder, injector);
+                startDataSource(ds, bindInfo, phaseContext.getServiceTarget());
             }
 
         } catch (Exception e) {
             throw new DeploymentUnitProcessingException(e);
         }
+
+        return null;
     }
 
     private void clearUnknownProperties(final DeploymentReflectionIndex reflectionIndex, final Class<?> dataSourceClass, final Map<String, String> props) {
@@ -212,11 +215,7 @@ public class DataSourceDefinitionInjectionSource extends ResourceDefinitionInjec
 
     private void startDataSource(final AbstractDataSourceService dataSourceService,
                                  final ContextNames.BindInfo bindInfo,
-                                 final EEModuleDescription moduleDescription,
-                                 final ResolutionContext context,
-                                 final ServiceTarget serviceTarget,
-                                 final ServiceBuilder valueSourceServiceBuilder, final Injector<ManagedReferenceFactory> injector) {
-
+                                 final ServiceTarget serviceTarget) {
         final ServiceName dataSourceServiceName = AbstractDataSourceService.getServiceName(bindInfo);
         final ServiceBuilder<?> dataSourceServiceBuilder =
                 Services.addServerExecutorDependency(
@@ -285,8 +284,6 @@ public class DataSourceDefinitionInjectionSource extends ResourceDefinitionInjec
         dataSourceServiceBuilder.setInitialMode(ServiceController.Mode.ACTIVE).install();
         referenceBuilder.setInitialMode(ServiceController.Mode.ACTIVE).install();
         binderBuilder.setInitialMode(ServiceController.Mode.ACTIVE).install();
-
-        valueSourceServiceBuilder.addDependency(bindInfo.getBinderServiceName(), ManagedReferenceFactory.class, injector);
     }
 
     private TransactionIsolation transactionIsolation() {
