@@ -41,12 +41,12 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Supplier;
 
 import javax.resource.spi.TransactionSupport;
 
 import org.jboss.as.connector.deployers.ra.ConnectionFactoryDefinitionInjectionSource;
 import org.jboss.as.connector.services.resourceadapters.ConnectionFactoryReferenceFactoryService;
-import org.jboss.as.controller.OperationFailedException;
 import org.jboss.as.controller.PathAddress;
 import org.jboss.as.controller.PathElement;
 import org.jboss.as.ee.component.InjectionSource;
@@ -57,10 +57,8 @@ import org.jboss.as.server.deployment.Attachments;
 import org.jboss.as.server.deployment.DeploymentPhaseContext;
 import org.jboss.as.server.deployment.DeploymentResourceSupport;
 import org.jboss.as.server.deployment.DeploymentUnit;
-import org.jboss.as.server.deployment.DeploymentUnitProcessingException;
 import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.Property;
-import org.jboss.msc.inject.Injector;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceRegistry;
@@ -80,6 +78,7 @@ import org.wildfly.extension.messaging.activemq.logging.MessagingLogger;
 /**
  * @author <a href="http://jmesnil.net/">Jeff Mesnil</a> (c) 2013 Red Hat inc.
  * @author Eduardo Martins
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public class JMSConnectionFactoryDefinitionInjectionSource extends ResourceDefinitionInjectionSource {
 
@@ -151,15 +150,11 @@ public class JMSConnectionFactoryDefinitionInjectionSource extends ResourceDefin
     }
 
     @Override
-    public void getResourceValue(ResolutionContext context, ServiceBuilder<?> serviceBuilder, DeploymentPhaseContext phaseContext, Injector<ManagedReferenceFactory> injector) throws DeploymentUnitProcessingException {
+    public Supplier<ManagedReferenceFactory> getResourceValue(ResolutionContext context, ServiceBuilder<?> serviceBuilder, DeploymentPhaseContext phaseContext) {
         final DeploymentUnit deploymentUnit = phaseContext.getDeploymentUnit();
 
         if (targetsPooledConnectionFactory(getActiveMQServerName(properties), resourceAdapter, phaseContext.getServiceRegistry())) {
-            try {
-                startedPooledConnectionFactory(context, jndiName, serviceBuilder, phaseContext.getServiceTarget(), deploymentUnit, injector);
-            } catch (OperationFailedException e) {
-                throw new DeploymentUnitProcessingException(e);
-            }
+            return startedPooledConnectionFactory(context, jndiName, serviceBuilder, phaseContext.getServiceTarget(), deploymentUnit);
         } else {
             // delegate to the resource-adapter subsystem to create a generic JCA connection factory.
             ConnectionFactoryDefinitionInjectionSource cfdis = new ConnectionFactoryDefinitionInjectionSource(jndiName, interfaceName, resourceAdapter);
@@ -179,11 +174,11 @@ public class JMSConnectionFactoryDefinitionInjectionSource extends ResourceDefin
             if (!clientId.isEmpty()) {
                 cfdis.addProperty("clientId", clientId);
             }
-            cfdis.getResourceValue(context, serviceBuilder, phaseContext, injector);
+            return cfdis.getResourceValue(context, serviceBuilder, phaseContext);
         }
     }
 
-    private void startedPooledConnectionFactory(ResolutionContext context, String name, ServiceBuilder<?> serviceBuilder, ServiceTarget serviceTarget, DeploymentUnit deploymentUnit, Injector<ManagedReferenceFactory> injector) throws DeploymentUnitProcessingException, OperationFailedException {
+    private Supplier<ManagedReferenceFactory> startedPooledConnectionFactory(ResolutionContext context, String name, ServiceBuilder<?> serviceBuilder, ServiceTarget serviceTarget, DeploymentUnit deploymentUnit) {
         Map<String, String> props = new HashMap<>(properties);
         List<String> connectors = getConnectors(props);
         clearUnknownProperties(properties);
@@ -235,7 +230,6 @@ public class JMSConnectionFactoryDefinitionInjectionSource extends ResourceDefin
 
         final ServiceName referenceFactoryServiceName = ConnectionFactoryReferenceFactoryService.SERVICE_NAME_BASE
                 .append(bindInfo.getBinderServiceName());
-        serviceBuilder.addDependency(referenceFactoryServiceName, ManagedReferenceFactory.class, injector);
 
         //create the management registration
         String managementName = managementName(context, name);
@@ -246,6 +240,8 @@ public class JMSConnectionFactoryDefinitionInjectionSource extends ResourceDefin
         PathAddress registration = PathAddress.pathAddress(serverElement, pcfPath);
         MessagingXmlInstallDeploymentUnitProcessor.createDeploymentSubModel(registration, deploymentUnit);
         PooledConnectionFactoryConfigurationRuntimeHandler.INSTANCE.registerResource(serverName, managementName, model);
+
+        return serviceBuilder.requires(referenceFactoryServiceName);
     }
 
     private List<String> getConnectors(Map<String, String> props) {

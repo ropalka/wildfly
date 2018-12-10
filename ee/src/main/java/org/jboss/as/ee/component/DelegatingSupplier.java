@@ -27,7 +27,7 @@ import java.util.function.Supplier;
 /**
  * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
-final class DelegatingSupplier<T> implements Supplier<T> {
+public final class DelegatingSupplier<T> implements Supplier<T> {
 
     private volatile Supplier<T> delegate;
 
@@ -37,7 +37,7 @@ final class DelegatingSupplier<T> implements Supplier<T> {
         return delegate != null ? delegate.get() : null;
     }
 
-    void set(final Supplier<T> delegate) {
+    public void set(final Supplier<T> delegate) {
         this.delegate = delegate;
     }
 

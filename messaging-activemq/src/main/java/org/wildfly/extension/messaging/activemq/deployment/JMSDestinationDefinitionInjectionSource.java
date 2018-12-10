@@ -34,6 +34,7 @@ import static org.wildfly.extension.messaging.activemq.deployment.JMSConnectionF
 import static org.wildfly.extension.messaging.activemq.logging.MessagingLogger.ROOT_LOGGER;
 
 import java.util.Map;
+import java.util.function.Supplier;
 
 import javax.jms.Destination;
 import javax.jms.Queue;
@@ -42,17 +43,18 @@ import javax.jms.Topic;
 import org.jboss.as.connector.deployers.ra.AdministeredObjectDefinitionInjectionSource;
 import org.jboss.as.controller.PathAddress;
 import org.jboss.as.controller.PathElement;
+import org.jboss.as.ee.component.DelegatingSupplier;
 import org.jboss.as.ee.component.InjectionSource;
 import org.jboss.as.ee.resource.definition.ResourceDefinitionInjectionSource;
 import org.jboss.as.naming.ContextListAndJndiViewManagedReferenceFactory;
 import org.jboss.as.naming.ManagedReferenceFactory;
+import org.jboss.as.naming.service.ManagedReferenceFactorySupplier;
 import org.jboss.as.server.deployment.Attachments;
 import org.jboss.as.server.deployment.DeploymentPhaseContext;
 import org.jboss.as.server.deployment.DeploymentResourceSupport;
 import org.jboss.as.server.deployment.DeploymentUnit;
 import org.jboss.as.server.deployment.DeploymentUnitProcessingException;
 import org.jboss.dmr.ModelNode;
-import org.jboss.msc.inject.Injector;
 import org.jboss.msc.service.LifecycleEvent;
 import org.jboss.msc.service.LifecycleListener;
 import org.jboss.msc.service.Service;
@@ -76,6 +78,7 @@ import org.wildfly.extension.messaging.activemq.jms.WildFlyBindingRegistry;
 
  * @author <a href="http://jmesnil.net/">Jeff Mesnil</a> (c) 2013 Red Hat inc.
  * @author Eduardo Martins
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public class JMSDestinationDefinitionInjectionSource extends ResourceDefinitionInjectionSource {
 
@@ -123,9 +126,9 @@ public class JMSDestinationDefinitionInjectionSource extends ResourceDefinitionI
         return uniqueName.toString();
     }
 
-    public void getResourceValue(final InjectionSource.ResolutionContext context, final ServiceBuilder<?> serviceBuilder, final DeploymentPhaseContext phaseContext, final Injector<ManagedReferenceFactory> injector) throws DeploymentUnitProcessingException {
+    public Supplier<ManagedReferenceFactory> getResourceValue(final InjectionSource.ResolutionContext context, final ServiceBuilder<?> serviceBuilder, final DeploymentPhaseContext phaseContext) throws DeploymentUnitProcessingException {
         if (targetsPooledConnectionFactory(getActiveMQServerName(properties), resourceAdapter, phaseContext.getServiceRegistry())) {
-            startActiveMQDestination(context, serviceBuilder, phaseContext, injector);
+            return startActiveMQDestination(context, serviceBuilder, phaseContext);
         } else {
             // delegate to the resource-adapter subsystem to create a generic JCA admin object.
             AdministeredObjectDefinitionInjectionSource aodis = new AdministeredObjectDefinitionInjectionSource(jndiName, className, resourceAdapter);
@@ -135,21 +138,20 @@ public class JMSDestinationDefinitionInjectionSource extends ResourceDefinitionI
             for (Map.Entry<String, String> property : properties.entrySet()) {
                 aodis.addProperty(property.getKey(), property.getValue());
             }
-            aodis.getResourceValue(context, serviceBuilder, phaseContext, injector);
-
+            return aodis.getResourceValue(context, serviceBuilder, phaseContext);
         }
     }
 
-    private void startActiveMQDestination(ResolutionContext context, ServiceBuilder<?> serviceBuilder, DeploymentPhaseContext phaseContext, Injector<ManagedReferenceFactory> injector) throws DeploymentUnitProcessingException {
+    private Supplier<ManagedReferenceFactory> startActiveMQDestination(ResolutionContext context, ServiceBuilder<?> serviceBuilder, DeploymentPhaseContext phaseContext) throws DeploymentUnitProcessingException {
         final DeploymentUnit deploymentUnit = phaseContext.getDeploymentUnit();
         final String uniqueName = uniqueName(context);
         try {
             ServiceName serviceName = MessagingServices.getActiveMQServiceName(getActiveMQServerName(properties));
 
             if (interfaceName.equals(Queue.class.getName())) {
-                startQueue(uniqueName, phaseContext.getServiceTarget(), serviceName, serviceBuilder, deploymentUnit, injector);
+                return startQueue(uniqueName, phaseContext.getServiceTarget(), serviceName, serviceBuilder, deploymentUnit);
             } else {
-                startTopic(uniqueName, phaseContext.getServiceTarget(), serviceName, serviceBuilder, deploymentUnit, injector);
+                return startTopic(uniqueName, phaseContext.getServiceTarget(), serviceName, serviceBuilder, deploymentUnit);
             }
         } catch (Exception e) {
             throw new DeploymentUnitProcessingException(e);
@@ -161,12 +163,11 @@ public class JMSDestinationDefinitionInjectionSource extends ResourceDefinitionI
      * that does not allow to build a BindingInfo with the ResolutionContext info, the JMS queue is created *without* any
      * JNDI bindings and handle the JNDI bindings directly by getting the service's JMS queue.
     */
-    private void startQueue(final String queueName,
-                            final ServiceTarget serviceTarget,
-                            final ServiceName serverServiceName,
-                            final ServiceBuilder<?> serviceBuilder,
-                            final DeploymentUnit deploymentUnit,
-                            final Injector<ManagedReferenceFactory>  injector) {
+    private Supplier<ManagedReferenceFactory> startQueue(final String queueName,
+                                                         final ServiceTarget serviceTarget,
+                                                         final ServiceName serverServiceName,
+                                                         final ServiceBuilder<?> serviceBuilder,
+                                                         final DeploymentUnit deploymentUnit) {
 
         final String selector = properties.containsKey(SELECTOR.getName()) ? properties.get(SELECTOR.getName()) : null;
         final boolean durable = properties.containsKey(DURABLE.getName()) ? Boolean.valueOf(properties.get(DURABLE.getName())) : DURABLE.getDefaultValue().asBoolean();
@@ -180,7 +181,8 @@ public class JMSDestinationDefinitionInjectionSource extends ResourceDefinitionI
         destination.get(ENTRIES).add(jndiName);
 
         Service<Queue> queueService = JMSQueueService.installService(queueName, serviceTarget, serverServiceName, selector, durable);
-        inject(serviceBuilder, injector, queueService);
+        final DelegatingSupplier<ManagedReferenceFactory> retVal = new DelegatingSupplier<>();
+        inject(serviceBuilder, retVal, queueService);
 
         //create the management registration
         String serverName = getActiveMQServerName(properties);
@@ -191,20 +193,21 @@ public class JMSDestinationDefinitionInjectionSource extends ResourceDefinitionI
         PathAddress registration = PathAddress.pathAddress(serverElement, dest);
         MessagingXmlInstallDeploymentUnitProcessor.createDeploymentSubModel(registration, deploymentUnit);
         JMSQueueConfigurationRuntimeHandler.INSTANCE.registerResource(serverName, queueName, destination);
+        return retVal;
     }
 
-    private void startTopic(String topicName,
-                            ServiceTarget serviceTarget,
-                            ServiceName serverServiceName,
-                            ServiceBuilder<?> serviceBuilder,
-                            DeploymentUnit deploymentUnit,
-                            Injector<ManagedReferenceFactory> injector) {
+    private Supplier<ManagedReferenceFactory> startTopic(String topicName,
+                                                         ServiceTarget serviceTarget,
+                                                         ServiceName serverServiceName,
+                                                         ServiceBuilder<?> serviceBuilder,
+                                                         DeploymentUnit deploymentUnit) {
         ModelNode destination = new ModelNode();
         destination.get(NAME).set(topicName);
         destination.get(ENTRIES).add(jndiName);
 
         Service<Topic> topicService = JMSTopicService.installService(topicName, serverServiceName, serviceTarget);
-        inject(serviceBuilder, injector, topicService);
+        final DelegatingSupplier<ManagedReferenceFactory> retVal = new DelegatingSupplier<>();
+        inject(serviceBuilder, retVal, topicService);
 
         //create the management registration
         String serverName = getActiveMQServerName(properties);
@@ -215,11 +218,12 @@ public class JMSDestinationDefinitionInjectionSource extends ResourceDefinitionI
         PathAddress registration = PathAddress.pathAddress(serverElement, dest);
         MessagingXmlInstallDeploymentUnitProcessor.createDeploymentSubModel(registration, deploymentUnit);
         JMSTopicConfigurationRuntimeHandler.INSTANCE.registerResource(serverName, topicName, destination);
+        return retVal;
     }
 
-    private <D extends Destination> void inject(ServiceBuilder<?> serviceBuilder, Injector<ManagedReferenceFactory> injector, Service<D> destinationService) {
+    private <D extends Destination> void inject(ServiceBuilder<?> serviceBuilder, DelegatingSupplier<ManagedReferenceFactory> mrfSupplier, Service<D> destinationService) {
         final ContextListAndJndiViewManagedReferenceFactory referenceFactoryService = new MessagingJMSDestinationManagedReferenceFactory(destinationService);
-        injector.inject(referenceFactoryService);
+        mrfSupplier.set(new ManagedReferenceFactorySupplier(referenceFactoryService));
         serviceBuilder.addListener(new LifecycleListener() {
                     public void handleEvent(final ServiceController<?> controller, final LifecycleEvent event) {
                         switch (event) {
