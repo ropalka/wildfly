@@ -22,9 +22,9 @@
 
 package org.jboss.as.jpa.injectors;
 
-
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.function.Supplier;
 
 import javax.persistence.EntityManagerFactory;
 
@@ -34,9 +34,8 @@ import org.jboss.as.jpa.service.PersistenceUnitServiceImpl;
 import org.jboss.as.naming.ManagedReference;
 import org.jboss.as.naming.ManagedReferenceFactory;
 import org.jboss.as.naming.ValueManagedReference;
+import org.jboss.as.naming.service.ManagedReferenceFactorySupplier;
 import org.jboss.as.server.deployment.DeploymentPhaseContext;
-import org.jboss.as.server.deployment.DeploymentUnitProcessingException;
-import org.jboss.msc.inject.Injector;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceRegistry;
@@ -49,6 +48,7 @@ import org.jipijapa.plugin.spi.PersistenceUnitMetadata;
  * for HibernateSessionFactory.  If/when JPA supports unwrap on the EMF, switch to that.
  *
  * @author Scott Marlow
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public class PersistenceUnitInjectionSource extends InjectionSource {
 
@@ -61,10 +61,9 @@ public class PersistenceUnitInjectionSource extends InjectionSource {
         this.puServiceName = puServiceName;
     }
 
-    public void getResourceValue(final ResolutionContext resolutionContext, final ServiceBuilder<?> serviceBuilder, final DeploymentPhaseContext phaseContext, final Injector<ManagedReferenceFactory> injector) throws
-        DeploymentUnitProcessingException {
+    public Supplier<ManagedReferenceFactory> getResourceValue(final ResolutionContext resolutionContext, final ServiceBuilder<?> serviceBuilder, final DeploymentPhaseContext phaseContext) {
         serviceBuilder.requires(puServiceName);
-        injector.inject(injectable);
+        return new ManagedReferenceFactorySupplier(injectable);
     }
 
     public boolean equals(final Object other) {

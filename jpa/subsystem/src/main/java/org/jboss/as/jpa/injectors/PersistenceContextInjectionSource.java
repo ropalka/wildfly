@@ -26,6 +26,7 @@ import static org.jboss.as.jpa.messages.JpaLogger.ROOT_LOGGER;
 
 import java.lang.reflect.Proxy;
 import java.util.Map;
+import java.util.function.Supplier;
 
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
@@ -50,9 +51,8 @@ import org.jboss.as.jpa.util.JPAServiceNames;
 import org.jboss.as.naming.ManagedReference;
 import org.jboss.as.naming.ManagedReferenceFactory;
 import org.jboss.as.naming.ValueManagedReference;
+import org.jboss.as.naming.service.ManagedReferenceFactorySupplier;
 import org.jboss.as.server.deployment.DeploymentPhaseContext;
-import org.jboss.as.server.deployment.DeploymentUnitProcessingException;
-import org.jboss.msc.inject.Injector;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceRegistry;
@@ -64,6 +64,7 @@ import org.wildfly.transaction.client.ContextTransactionManager;
  * Represents the PersistenceContext injected into a component.
  *
  * @author Scott Marlow
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public class PersistenceContextInjectionSource extends InjectionSource {
 
@@ -93,10 +94,9 @@ public class PersistenceContextInjectionSource extends InjectionSource {
         this.puServiceName = puServiceName;
     }
 
-    public void getResourceValue(final ResolutionContext resolutionContext, final ServiceBuilder<?> serviceBuilder, final DeploymentPhaseContext phaseContext, final Injector<ManagedReferenceFactory> injector) throws
-        DeploymentUnitProcessingException {
+    public Supplier<ManagedReferenceFactory> getResourceValue(final ResolutionContext resolutionContext, final ServiceBuilder<?> serviceBuilder, final DeploymentPhaseContext phaseContext) {
         serviceBuilder.requires(puServiceName);
-        injector.inject(injectable);
+        return new ManagedReferenceFactorySupplier(injectable);
     }
 
     public boolean equals(Object other) {
