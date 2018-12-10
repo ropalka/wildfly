@@ -23,6 +23,7 @@
 package org.jboss.as.ejb3.deployment.processors;
 
 import java.util.Collection;
+import java.util.function.Supplier;
 
 import org.jboss.as.ee.component.Attachments;
 import org.jboss.as.ee.component.BindingConfiguration;
@@ -40,12 +41,12 @@ import org.jboss.as.ejb3.component.session.SessionBeanComponentDescription;
 import org.jboss.as.ejb3.remote.RemoteViewInjectionSource;
 import org.jboss.as.naming.ManagedReference;
 import org.jboss.as.naming.ManagedReferenceFactory;
+import org.jboss.as.naming.service.ManagedReferenceFactorySupplier;
 import org.jboss.as.server.deployment.DeploymentPhaseContext;
 import org.jboss.as.server.deployment.DeploymentUnit;
 import org.jboss.as.server.deployment.DeploymentUnitProcessingException;
 import org.jboss.as.server.deployment.DeploymentUnitProcessor;
 import org.jboss.as.server.deployment.EjbDeploymentMarker;
-import org.jboss.msc.inject.Injector;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.value.InjectedValue;
@@ -230,12 +231,10 @@ public class EjbJndiBindingsDeploymentUnitProcessor implements DeploymentUnitPro
         //exported bindings
         //the other option would be to reject it at the remote naming service level, however then we loose the per-deployment granularity
         final InjectionSource is = new InjectionSource() {
-
             @Override
-            public void getResourceValue(ResolutionContext resolutionContext, ServiceBuilder<?> serviceBuilder, DeploymentPhaseContext phaseContext, Injector<ManagedReferenceFactory> injector) throws DeploymentUnitProcessingException {
-                final InjectedValue<ManagedReferenceFactory> delegateInjection = new InjectedValue<>();
-                delegate.getResourceValue(resolutionContext, serviceBuilder, phaseContext, delegateInjection);
-                injector.inject(new ManagedReferenceFactory() {
+            public Supplier<ManagedReferenceFactory> getResourceValue(ResolutionContext resolutionContext, ServiceBuilder<?> serviceBuilder, DeploymentPhaseContext phaseContext) {
+                final Supplier<ManagedReferenceFactory> mrfSupplier = delegate.getResourceValue(resolutionContext, serviceBuilder, phaseContext);
+                return new ManagedReferenceFactorySupplier(new ManagedReferenceFactory() {
                     @Override
                     public ManagedReference getReference() {
                         ControlPoint cp = controlPointInjectedValue.getValue();
@@ -245,7 +244,7 @@ public class EjbJndiBindingsDeploymentUnitProcessor implements DeploymentUnitPro
                                 throw EjbLogger.ROOT_LOGGER.containerSuspended();
                             }
                             try {
-                                return delegateInjection.getValue().getReference();
+                                return mrfSupplier.get().getReference();
                             } finally {
                                 cp.requestComplete();
                             }

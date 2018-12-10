@@ -21,10 +21,12 @@
  */
 package org.jboss.as.ejb3.remote;
 
+import java.util.function.Supplier;
+
 import org.jboss.as.ee.component.InjectionSource;
 import org.jboss.as.naming.ManagedReferenceFactory;
+import org.jboss.as.naming.service.ManagedReferenceFactorySupplier;
 import org.jboss.as.server.deployment.DeploymentPhaseContext;
-import org.jboss.msc.inject.Injector;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.value.Value;
@@ -33,6 +35,7 @@ import org.jboss.msc.value.Value;
  * Injection source for EJB remote views.
  *
  * @author Stuart Douglas
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public class RemoteViewInjectionSource extends InjectionSource {
 
@@ -61,12 +64,12 @@ public class RemoteViewInjectionSource extends InjectionSource {
     /**
      * {@inheritDoc}
      */
-    public void getResourceValue(final ResolutionContext resolutionContext, final ServiceBuilder<?> serviceBuilder, final DeploymentPhaseContext phaseContext, final Injector<ManagedReferenceFactory> injector) {
+    public Supplier<ManagedReferenceFactory> getResourceValue(final ResolutionContext resolutionContext, final ServiceBuilder<?> serviceBuilder, final DeploymentPhaseContext phaseContext) {
         if(serviceName != null) {
             serviceBuilder.requires(serviceName);
         }
         final RemoteViewManagedReferenceFactory factory = new RemoteViewManagedReferenceFactory(appName, moduleName, distinctName, beanName, viewClass, stateful, viewClassLoader, appclient);
-        injector.inject(factory);
+        return new ManagedReferenceFactorySupplier(factory);
     }
 
     @Override

@@ -22,21 +22,24 @@
 
 package org.jboss.as.ejb3.context;
 
+import java.util.function.Supplier;
+
 import javax.ejb.EJBContext;
 
 import org.jboss.as.ee.component.InjectionSource;
 import org.jboss.as.ee.component.deployers.EEResourceReferenceProcessor;
 import org.jboss.as.naming.ManagedReference;
 import org.jboss.as.naming.ManagedReferenceFactory;
+import org.jboss.as.naming.service.ManagedReferenceFactorySupplier;
 import org.jboss.as.server.deployment.DeploymentPhaseContext;
 import org.jboss.as.server.deployment.DeploymentUnitProcessingException;
-import org.jboss.msc.inject.Injector;
 import org.jboss.msc.service.ServiceBuilder;
 
 /**
  * Handler for EjbContext JNDI bindings
  *
  * @author Stuart Douglas
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public class EjbContextResourceReferenceProcessor implements EEResourceReferenceProcessor {
 
@@ -74,8 +77,8 @@ public class EjbContextResourceReferenceProcessor implements EEResourceReference
     private static class EjbContextInjectionSource extends InjectionSource {
 
         @Override
-        public void getResourceValue(final ResolutionContext resolutionContext, final ServiceBuilder<?> serviceBuilder, final DeploymentPhaseContext phaseContext, final Injector<ManagedReferenceFactory> injector) throws DeploymentUnitProcessingException {
-            injector.inject(ejbContextManagedReferenceFactory);
+        public Supplier<ManagedReferenceFactory> getResourceValue(final ResolutionContext resolutionContext, final ServiceBuilder<?> serviceBuilder, final DeploymentPhaseContext phaseContext) {
+            return new ManagedReferenceFactorySupplier(ejbContextManagedReferenceFactory);
         }
 
         public boolean equals(Object other) {

@@ -22,6 +22,8 @@
 
 package org.jboss.as.ejb3.timerservice;
 
+import java.util.function.Supplier;
+
 import org.jboss.as.ee.component.Component;
 import org.jboss.as.ee.component.InjectionSource;
 import org.jboss.as.ejb3.logging.EjbLogger;
@@ -30,24 +32,24 @@ import org.jboss.as.ejb3.context.CurrentInvocationContext;
 import org.jboss.as.naming.ContextListManagedReferenceFactory;
 import org.jboss.as.naming.ManagedReference;
 import org.jboss.as.naming.ManagedReferenceFactory;
+import org.jboss.as.naming.service.ManagedReferenceFactorySupplier;
 import org.jboss.as.server.deployment.DeploymentPhaseContext;
-import org.jboss.as.server.deployment.DeploymentUnitProcessingException;
 import org.jboss.invocation.InterceptorContext;
-import org.jboss.msc.inject.Injector;
 import org.jboss.msc.service.ServiceBuilder;
 
 /**
  * An {@link InjectionSource} which returns a {@link ManagedReference reference} to a {@link javax.ejb.TimerService}
  * <p/>
  * @author Jaikiran Pai
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public class TimerServiceBindingSource extends InjectionSource {
 
     private static final TimerServiceManagedReferenceFactory TIMER_SERVICE_MANAGED_REFERENCE_FACTORY_INSTANCE = new TimerServiceManagedReferenceFactory();
 
     @Override
-    public void getResourceValue(ResolutionContext resolutionContext, ServiceBuilder<?> serviceBuilder, DeploymentPhaseContext phaseContext, Injector<ManagedReferenceFactory> injector) throws DeploymentUnitProcessingException {
-        injector.inject(TIMER_SERVICE_MANAGED_REFERENCE_FACTORY_INSTANCE);
+    public Supplier<ManagedReferenceFactory> getResourceValue(ResolutionContext resolutionContext, ServiceBuilder<?> serviceBuilder, DeploymentPhaseContext phaseContext) {
+        return new ManagedReferenceFactorySupplier(TIMER_SERVICE_MANAGED_REFERENCE_FACTORY_INSTANCE);
     }
 
     /**

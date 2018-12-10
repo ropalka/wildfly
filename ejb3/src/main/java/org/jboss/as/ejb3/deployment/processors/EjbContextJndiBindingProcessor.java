@@ -23,6 +23,7 @@
 package org.jboss.as.ejb3.deployment.processors;
 
 import java.util.Collection;
+import java.util.function.Supplier;
 
 import javax.ejb.EJBContext;
 import javax.ejb.EntityContext;
@@ -42,12 +43,12 @@ import org.jboss.as.ejb3.context.EjbContextResourceReferenceProcessor;
 import org.jboss.as.naming.ContextListManagedReferenceFactory;
 import org.jboss.as.naming.ManagedReference;
 import org.jboss.as.naming.ManagedReferenceFactory;
+import org.jboss.as.naming.service.ManagedReferenceFactorySupplier;
 import org.jboss.as.server.deployment.DeploymentPhaseContext;
 import org.jboss.as.server.deployment.DeploymentUnit;
 import org.jboss.as.server.deployment.DeploymentUnitProcessingException;
 import org.jboss.as.server.deployment.DeploymentUnitProcessor;
 import org.jboss.as.server.deployment.annotation.CompositeIndex;
-import org.jboss.msc.inject.Injector;
 import org.jboss.msc.service.ServiceBuilder;
 
 /**
@@ -55,6 +56,7 @@ import org.jboss.msc.service.ServiceBuilder;
  * java:comp/EJBContext entry.
  *
  * @author John Bailey
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public class EjbContextJndiBindingProcessor implements DeploymentUnitProcessor {
 
@@ -135,8 +137,8 @@ public class EjbContextJndiBindingProcessor implements DeploymentUnitProcessor {
     };
 
     private static final InjectionSource directEjbContextReferenceSource = new InjectionSource() {
-        public void getResourceValue(final ResolutionContext resolutionContext, final ServiceBuilder<?> serviceBuilder, final DeploymentPhaseContext phaseContext, final Injector<ManagedReferenceFactory> injector) throws DeploymentUnitProcessingException {
-            injector.inject(ejbContextManagedReferenceFactory);
+        public Supplier<ManagedReferenceFactory> getResourceValue(final ResolutionContext resolutionContext, final ServiceBuilder<?> serviceBuilder, final DeploymentPhaseContext phaseContext) {
+            return new ManagedReferenceFactorySupplier(ejbContextManagedReferenceFactory);
         }
 
         public boolean equals(Object o) {

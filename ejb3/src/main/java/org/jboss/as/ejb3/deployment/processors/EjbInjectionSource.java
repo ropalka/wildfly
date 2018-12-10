@@ -26,8 +26,8 @@ import static org.jboss.as.ee.component.Attachments.EE_APPLICATION_DESCRIPTION;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.Supplier;
 
-import org.jboss.as.ee.component.ComponentView;
 import org.jboss.as.ee.component.EEApplicationDescription;
 import org.jboss.as.ee.component.EEModuleDescription;
 import org.jboss.as.ee.component.InjectionSource;
@@ -39,13 +39,13 @@ import org.jboss.as.ejb3.component.EJBViewDescription;
 import org.jboss.as.ejb3.component.MethodIntf;
 import org.jboss.as.ejb3.remote.RemoteViewManagedReferenceFactory;
 import org.jboss.as.naming.ManagedReferenceFactory;
+import org.jboss.as.naming.service.ManagedReferenceFactorySupplier;
 import org.jboss.as.server.deployment.Attachments;
 import org.jboss.as.server.deployment.DeploymentPhaseContext;
 import org.jboss.as.server.deployment.DeploymentUnit;
 import org.jboss.as.server.deployment.DeploymentUnitProcessingException;
 import org.jboss.as.server.deployment.module.ResourceRoot;
 import org.jboss.modules.Module;
-import org.jboss.msc.inject.Injector;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.value.Value;
@@ -55,6 +55,7 @@ import org.jboss.msc.value.Value;
  *
  * @author John Bailey
  * @author Stuart Douglas
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public class EjbInjectionSource extends InjectionSource {
     private final String beanName;
@@ -83,7 +84,7 @@ public class EjbInjectionSource extends InjectionSource {
         this.typeName = typeName;
     }
 
-    public void getResourceValue(final ResolutionContext resolutionContext, final ServiceBuilder<?> serviceBuilder, final DeploymentPhaseContext phaseContext, final Injector<ManagedReferenceFactory> injector) throws DeploymentUnitProcessingException {
+    public Supplier<ManagedReferenceFactory> getResourceValue(final ResolutionContext resolutionContext, final ServiceBuilder<?> serviceBuilder, final DeploymentPhaseContext phaseContext) throws DeploymentUnitProcessingException {
         resolve();
 
         if (error != null) {
@@ -92,12 +93,13 @@ public class EjbInjectionSource extends InjectionSource {
 
         if (remoteFactory != null) {
             //because we are using the ejb: lookup namespace we do not need a dependency
-            injector.inject(remoteFactory);
+            return new ManagedReferenceFactorySupplier(remoteFactory);
         } else if (!appclient) {
             //we do not add a dependency if this is the appclient
             //as local injections are simply ignored
-            serviceBuilder.addDependency(resolvedViewName, ComponentView.class, new ViewManagedReferenceFactory.Injector(injector));
+            return new ViewManagedReferenceFactory.Supplier(serviceBuilder.requires(resolvedViewName));
         }
+        return null;
     }
 
     /**

@@ -21,6 +21,8 @@
  */
 package org.jboss.as.ejb3.deployment.processors;
 
+import java.util.function.Supplier;
+
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 import javax.rmi.PortableRemoteObject;
@@ -29,9 +31,8 @@ import org.jboss.as.ee.component.InjectionSource;
 import org.jboss.as.ee.utils.ClassLoadingUtils;
 import org.jboss.as.naming.ManagedReference;
 import org.jboss.as.naming.ManagedReferenceFactory;
+import org.jboss.as.naming.service.ManagedReferenceFactorySupplier;
 import org.jboss.as.server.deployment.DeploymentPhaseContext;
-import org.jboss.as.server.deployment.DeploymentUnitProcessingException;
-import org.jboss.msc.inject.Injector;
 import org.jboss.msc.service.ServiceBuilder;
 
 /**
@@ -39,6 +40,7 @@ import org.jboss.msc.service.ServiceBuilder;
  * then the bean will be narrowed to that type
  *
  * @author Stuart Douglas
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public class EjbLookupInjectionSource extends InjectionSource {
 
@@ -60,7 +62,7 @@ public class EjbLookupInjectionSource extends InjectionSource {
 
 
     @Override
-    public void getResourceValue(final ResolutionContext resolutionContext, final ServiceBuilder<?> serviceBuilder, final DeploymentPhaseContext phaseContext, final Injector<ManagedReferenceFactory> injector) throws DeploymentUnitProcessingException {
+    public Supplier<ManagedReferenceFactory> getResourceValue(final ResolutionContext resolutionContext, final ServiceBuilder<?> serviceBuilder, final DeploymentPhaseContext phaseContext) {
         final Class<?> type;
         if (targetType != null) {
             type = targetType;
@@ -73,8 +75,7 @@ public class EjbLookupInjectionSource extends InjectionSource {
         } else {
             type = null;
         }
-
-        injector.inject(new ManagedReferenceFactory() {
+        return new ManagedReferenceFactorySupplier(new ManagedReferenceFactory() {
             @Override
             public ManagedReference getReference() {
                 try {
