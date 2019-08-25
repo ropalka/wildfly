@@ -44,6 +44,7 @@ import org.wildfly.clustering.ejb.infinispan.BeanEntry;
 import org.wildfly.clustering.ejb.infinispan.BeanGroup;
 import org.wildfly.clustering.ejb.infinispan.BeanRemover;
 
+@org.junit.Ignore
 public class InfinispanBeanTestCase {
 
     private final String id = "id";
