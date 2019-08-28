@@ -24,6 +24,7 @@ package org.wildfly.extension.undertow;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.util.function.Consumer;
 
 import io.undertow.UndertowOptions;
 import io.undertow.server.OpenListener;
@@ -41,20 +42,21 @@ import org.xnio.channels.AcceptingChannel;
 
 /**
  * @author <a href="mailto:tomaz.cerar@redhat.com">Tomaz Cerar</a> (c) 2013 Red Hat Inc.
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public class AjpListenerService extends ListenerService {
 
     private volatile AcceptingChannel<StreamConnection> server;
     private final String scheme;
 
-    public AjpListenerService(String name, final String scheme, OptionMap listenerOptions, OptionMap socketOptions) {
-        super(name, listenerOptions, socketOptions, false);
+    public AjpListenerService(Consumer<ListenerService> serviceConsumer, String name, final String scheme, OptionMap listenerOptions, OptionMap socketOptions) {
+        super(serviceConsumer, name, listenerOptions, socketOptions, false);
         this.scheme = scheme;
     }
 
     @Override
     protected OpenListener createOpenListener() {
-        AjpOpenListener ajpOpenListener = new AjpOpenListener(getBufferPool().getValue(), OptionMap.builder().addAll(commonOptions).addAll(listenerOptions).set(UndertowOptions.ENABLE_CONNECTOR_STATISTICS, getUndertowService().isStatisticsEnabled()).getMap());
+        AjpOpenListener ajpOpenListener = new AjpOpenListener(getBufferPool().get(), OptionMap.builder().addAll(commonOptions).addAll(listenerOptions).set(UndertowOptions.ENABLE_CONNECTOR_STATISTICS, getUndertowService().isStatisticsEnabled()).getMap());
         ajpOpenListener.setScheme(scheme);
         return ajpOpenListener;
     }

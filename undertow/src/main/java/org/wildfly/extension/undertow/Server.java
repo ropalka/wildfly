@@ -48,6 +48,7 @@ import io.undertow.util.Headers;
 
 /**
  * @author <a href="mailto:tomaz.cerar@redhat.com">Tomaz Cerar</a> (c) 2013 Red Hat Inc.
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public class Server implements Service<Server> {
     private final String defaultHost;
@@ -80,8 +81,8 @@ public class Server implements Service<Server> {
     protected void registerListener(ListenerService listener) {
            listeners.add(listener);
            if (!listener.isSecure()) {
-               SocketBinding binding = listener.getBinding().getValue();
-               SocketBinding redirectBinding = listener.getRedirectSocket().getOptionalValue();
+               SocketBinding binding = listener.getBinding().get();
+               SocketBinding redirectBinding = listener.getRedirectSocket() != null ? listener.getRedirectSocket().get() : null;
                if (redirectBinding!=null) {
                    securePortMappings.put(binding.getAbsolutePort(), redirectBinding.getAbsolutePort());
                }else{
@@ -93,7 +94,7 @@ public class Server implements Service<Server> {
        protected void unregisterListener(ListenerService listener) {
            listeners.remove(listener);
            if (!listener.isSecure()) {
-               SocketBinding binding = listener.getBinding().getValue();
+               SocketBinding binding = listener.getBinding().get();
                securePortMappings.remove(binding.getAbsolutePort());
            }
        }
