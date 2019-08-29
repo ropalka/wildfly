@@ -37,7 +37,9 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.regex.Pattern;
 
 import io.undertow.Handlers;
@@ -61,7 +63,6 @@ import org.jboss.msc.service.Service;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
-import org.jboss.msc.value.InjectedValue;
 import org.wildfly.extension.undertow.deployment.GateHandlerWrapper;
 import org.wildfly.extension.undertow.logging.UndertowLogger;
 import org.wildfly.security.manager.WildFlySecurityManager;
@@ -69,31 +70,30 @@ import org.wildfly.security.manager.WildFlySecurityManager;
 /**
  * @author <a href="mailto:tomaz.cerar@redhat.com">Tomaz Cerar</a> (c) 2013 Red Hat Inc.
  * @author Radoslav Husar
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public class Host implements Service<Host>, FilterLocation {
+    private final Consumer<Host> serviceConsumer;
+    private final Supplier<Server> server;
+    private final Supplier<UndertowService> undertowService;
+    private final Supplier<ControlledProcessStateService> controlledProcessStateService;
+    private final Supplier<SuspendController> suspendController;
     private final PathHandler pathHandler = new PathHandler();
-    private volatile HttpHandler rootHandler = null;
     private final Set<String> allAliases;
     private final String name;
     private final String defaultWebModule;
-    private final InjectedValue<Server> server = new InjectedValue<>();
-    private final InjectedValue<UndertowService> undertowService = new InjectedValue<>();
-    private volatile AccessLogService  accessLogService;
     private final List<UndertowFilter> filters = new CopyOnWriteArrayList<>();
     private final Set<Deployment> deployments = new CopyOnWriteArraySet<>();
     private final Map<String, LocationService> locations = new CopyOnWriteMap<>();
     private final Map<String, AuthenticationMechanism> additionalAuthenticationMechanisms = new ConcurrentHashMap<>();
     private final HostRootHandler hostRootHandler = new HostRootHandler();
-    private final InjectedValue<ControlledProcessStateService> controlledProcessStateServiceInjectedValue = new InjectedValue<>();
-    private volatile GateHandlerWrapper gateHandlerWrapper;
     private final DefaultResponseCodeHandler defaultHandler;
     private final boolean queueRequestsOnStart;
     private final int defaultResponseCode;
-
+    private volatile HttpHandler rootHandler = null;
+    private volatile AccessLogService  accessLogService;
+    private volatile GateHandlerWrapper gateHandlerWrapper;
     private volatile Function<HttpHandler, HttpHandler> accessLogHttpHandler;
-
-    private final InjectedValue<SuspendController> suspendControllerInjectedValue = new InjectedValue<>();
-
 
     ServerActivity suspendListener = new ServerActivity() {
         @Override
@@ -113,7 +113,14 @@ public class Host implements Service<Host>, FilterLocation {
         }
     };
 
-    public Host(final String name, final List<String> aliases, final String defaultWebModule, final int defaultResponseCode, final boolean queueRequestsOnStart ) {
+    public Host(final Consumer<Host> serviceConsumer, final Supplier<Server> server, final Supplier<UndertowService> undertowService,
+            final Supplier<ControlledProcessStateService> controlledProcessStateService, final Supplier<SuspendController> suspendController,
+            final String name, final List<String> aliases, final String defaultWebModule, final int defaultResponseCode, final boolean queueRequestsOnStart ) {
+        this.serviceConsumer = serviceConsumer;
+        this.server = server;
+        this.undertowService = undertowService;
+        this.controlledProcessStateService = controlledProcessStateService;
+        this.suspendController = suspendController;
         this.name = name;
         this.defaultWebModule = defaultWebModule;
         Set<String> hosts = new HashSet<>(aliases.size() + 1);
@@ -132,13 +139,13 @@ public class Host implements Service<Host>, FilterLocation {
 
     @Override
     public void start(StartContext context) throws StartException {
-        suspendControllerInjectedValue.getValue().registerActivity(suspendListener);
-        if(suspendControllerInjectedValue.getValue().getState() == SuspendController.State.RUNNING) {
+        suspendController.get().registerActivity(suspendListener);
+        if(suspendController.get().getState() == SuspendController.State.RUNNING) {
             defaultHandler.setSuspended(false);
         } else {
             defaultHandler.setSuspended(true);
         }
-        ControlledProcessStateService controlledProcessStateService = controlledProcessStateServiceInjectedValue.getValue();
+        ControlledProcessStateService controlledProcessStateService = this.controlledProcessStateService.get();
         //may be null for tests
         if(controlledProcessStateService != null && controlledProcessStateService.getCurrentState() == ControlledProcessState.State.STARTING) {
             gateHandlerWrapper = new GateHandlerWrapper(queueRequestsOnStart ? -1 : defaultResponseCode);
@@ -154,8 +161,9 @@ public class Host implements Service<Host>, FilterLocation {
                 }
             });
         }
-        server.getValue().registerHost(this);
+        server.get().registerHost(this);
         UndertowLogger.ROOT_LOGGER.hostStarting(name);
+        serviceConsumer.accept(this);
     }
 
     private HttpHandler configureRootHandler() {
@@ -200,24 +208,21 @@ public class Host implements Service<Host>, FilterLocation {
     }
 
     @Override
-    public void stop(StopContext context) {
-        server.getValue().unregisterHost(this);
+    public void stop(final StopContext context) {
+        serviceConsumer.accept(null);
+        server.get().unregisterHost(this);
         pathHandler.clearPaths();
         if(gateHandlerWrapper != null) {
             gateHandlerWrapper.open();
             gateHandlerWrapper = null;
         }
         UndertowLogger.ROOT_LOGGER.hostStopping(name);
-        suspendControllerInjectedValue.getValue().unRegisterActivity(suspendListener);
+        suspendController.get().unRegisterActivity(suspendListener);
     }
 
     @Override
     public Host getValue() throws IllegalStateException, IllegalArgumentException {
         return this;
-    }
-
-    protected InjectedValue<Server> getServerInjection() {
-        return server;
     }
 
     void setAccessLogService(AccessLogService service) {
@@ -231,11 +236,7 @@ public class Host implements Service<Host>, FilterLocation {
     }
 
     public Server getServer() {
-        return server.getValue();
-    }
-
-    protected InjectedValue<UndertowService> getUndertowService() {
-        return undertowService;
+        return server.get();
     }
 
     public Set<String> getAllAliases() {
@@ -277,13 +278,13 @@ public class Host implements Service<Host>, FilterLocation {
         registerHandler(path, handler);
         deployments.add(deployment);
         UndertowLogger.ROOT_LOGGER.registerWebapp(path, getServer().getName());
-        undertowService.getValue().fireEvent(listener -> listener.onDeploymentStart(deployment, Host.this));
+        undertowService.get().fireEvent(listener -> listener.onDeploymentStart(deployment, Host.this));
     }
 
     public void unregisterDeployment(final Deployment deployment) {
         DeploymentInfo deploymentInfo = deployment.getDeploymentInfo();
         String path = getDeployedContextPath(deploymentInfo);
-        undertowService.getValue().fireEvent(listener -> listener.onDeploymentStop(deployment, Host.this));
+        undertowService.get().fireEvent(listener -> listener.onDeploymentStop(deployment, Host.this));
         unregisterHandler(path);
         deployments.remove(deployment);
         UndertowLogger.ROOT_LOGGER.unregisterWebapp(path, getServer().getName());
@@ -292,13 +293,13 @@ public class Host implements Service<Host>, FilterLocation {
     void registerLocation(String path) {
         String realPath = path.startsWith("/") ? path : "/" + path;
         locations.put(realPath, null);
-        undertowService.getValue().fireEvent(listener -> listener.onDeploymentStart(realPath, Host.this));
+        undertowService.get().fireEvent(listener -> listener.onDeploymentStart(realPath, Host.this));
     }
 
     void unregisterLocation(String path) {
         String realPath = path.startsWith("/") ? path : "/" + path;
         locations.remove(realPath);
-        undertowService.getValue().fireEvent(listener -> listener.onDeploymentStop(realPath, Host.this));
+        undertowService.get().fireEvent(listener -> listener.onDeploymentStop(realPath, Host.this));
     }
 
     public void registerHandler(String path, HttpHandler handler) {
@@ -321,13 +322,13 @@ public class Host implements Service<Host>, FilterLocation {
     void registerLocation(LocationService location) {
         locations.put(location.getLocationPath(), location);
         registerHandler(location.getLocationPath(), location.getLocationHandler());
-        undertowService.getValue().fireEvent(listener -> listener.onDeploymentStart(location.getLocationPath(), Host.this));
+        undertowService.get().fireEvent(listener -> listener.onDeploymentStart(location.getLocationPath(), Host.this));
     }
 
     void unregisterLocation(LocationService location) {
         locations.remove(location.getLocationPath());
         unregisterHandler(location.getLocationPath());
-        undertowService.getValue().fireEvent(listener -> listener.onDeploymentStop(location.getLocationPath(), Host.this));
+        undertowService.get().fireEvent(listener -> listener.onDeploymentStop(location.getLocationPath(), Host.this));
     }
 
     public Set<String> getLocations() {
@@ -353,10 +354,6 @@ public class Host implements Service<Host>, FilterLocation {
         return new LinkedHashMap<>(additionalAuthenticationMechanisms);
     }
 
-    public InjectedValue<SuspendController> getSuspendControllerInjectedValue() {
-        return suspendControllerInjectedValue;
-    }
-
     @Override
     public void addFilter(UndertowFilter filterRef) {
         filters.add(filterRef);
@@ -373,10 +370,6 @@ public class Host implements Service<Host>, FilterLocation {
         if(this.defaultHandler != null){
             this.registerHandler("/", this.defaultHandler);
         }
-    }
-
-    InjectedValue<ControlledProcessStateService> getControlledProcessStateServiceInjectedValue() {
-        return controlledProcessStateServiceInjectedValue;
     }
 
     private static final class OptionsHandler implements HttpHandler {
@@ -424,7 +417,6 @@ public class Host implements Service<Host>, FilterLocation {
     }
 
     private class HostRootHandler implements HttpHandler {
-
         @Override
         public void handleRequest(HttpServerExchange exchange) throws Exception {
             getOrCreateRootHandler().handleRequest(exchange);
