@@ -51,8 +51,8 @@ public class UndertowEngineTestCase {
     private final String serverName = "default-server";
     private final String hostName = "default-host";
     private final String route = "route";
-    private final Host host = new Host(this.hostName, Collections.emptyList(), "ROOT.war", StatusCodes.NOT_FOUND, false);
-    private final HttpsListenerService listener = new HttpsListenerService(null, PathAddress.pathAddress(Constants.HTTPS_LISTENER, "default"), "https", OptionMap.EMPTY, null, OptionMap.EMPTY, false);
+    private final Host host = new Host(null, null, null, null, null, this.hostName, Collections.emptyList(), "ROOT.war", StatusCodes.NOT_FOUND, false);
+    private final HttpsListenerService listener = new HttpsListenerService(null, "default", "https", OptionMap.EMPTY, null, OptionMap.EMPTY, false);
 
     private final UndertowService service = new TestUndertowService("default-container", this.serverName, this.hostName, this.route, this.server);
     private final Server server = new TestServer(this.serverName, this.hostName, this.service, this.host, this.listener);
