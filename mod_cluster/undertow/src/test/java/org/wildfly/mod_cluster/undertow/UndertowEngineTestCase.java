@@ -52,7 +52,7 @@ public class UndertowEngineTestCase {
     private final Host host = new Host(null, null, null, null, null, this.hostName, Collections.emptyList(), "ROOT.war", StatusCodes.NOT_FOUND, false);
     private final HttpsListenerService listener = new HttpsListenerService(null, "default", "https", OptionMap.EMPTY, null, OptionMap.EMPTY, false);
 
-    private final UndertowService service = new TestUndertowService("default-container", this.serverName, this.hostName, this.route, this.server);
+    private final UndertowService service = new TestUndertowService(null, "default-container", this.serverName, this.hostName, this.route, this.server);
     private final Server server = new TestServer(this.serverName, this.hostName, this.service, this.host, this.listener);
     private final Connector connector = mock(Connector.class);
     private final Engine engine = new UndertowEngine(this.serverName, this.server, this.service, this.connector);
