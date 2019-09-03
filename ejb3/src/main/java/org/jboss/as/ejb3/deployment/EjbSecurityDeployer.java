@@ -29,6 +29,10 @@ import org.jboss.as.security.service.JaccService;
 import org.jboss.as.server.deployment.AttachmentKey;
 import org.jboss.as.server.deployment.AttachmentList;
 
+import javax.security.jacc.PolicyConfiguration;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
+
 /**
  * Handles ejb jar deployments
  *
@@ -48,7 +52,9 @@ public class EjbSecurityDeployer extends AbstractSecurityDeployer<AttachmentList
      * {@inheritDoc}
      */
     @Override
-    protected JaccService<AttachmentList<EjbJaccConfig>> createService(String contextId, AttachmentList<EjbJaccConfig> metaData, Boolean standalone) {
-        return new EjbJaccService(contextId, metaData, standalone);
+    protected JaccService<AttachmentList<EjbJaccConfig>> createService(final Consumer<PolicyConfiguration> policyConfigConsumer,
+                                                                       final Supplier<PolicyConfiguration> parentPolicy,
+                                                                       final String contextId, final AttachmentList<EjbJaccConfig> metaData, final Boolean standalone) {
+        return new EjbJaccService(policyConfigConsumer, parentPolicy, contextId, metaData, standalone);
     }
 }

@@ -33,6 +33,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 import javax.security.jacc.PolicyConfiguration;
 import javax.security.jacc.PolicyContextException;
 import javax.security.jacc.WebResourcePermission;
@@ -60,6 +62,7 @@ import org.jboss.metadata.web.spec.WebResourceCollectionsMetaData;
  * @author Scott.Stark@jboss.org
  * @author Anil.Saldhana@jboss.org
  * @author <a href="mailto:mmoyses@redhat.com">Marcus Moyses</a>
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public class WarJACCService extends JaccService<WarMetaData> {
 
@@ -77,8 +80,10 @@ public class WarJACCService extends JaccService<WarMetaData> {
 
     private static final String ANY_AUTHENTICATED_USER_ROLE = "**";
 
-    public WarJACCService(String contextId, WarMetaData metaData, Boolean standalone) {
-        super(contextId, metaData, standalone);
+    public WarJACCService(final Consumer<PolicyConfiguration> policyConfigConsumer,
+                          final Supplier<PolicyConfiguration> parentPolicy,
+                          final String contextId, final WarMetaData metaData, final Boolean standalone) {
+        super(policyConfigConsumer, parentPolicy, contextId, metaData, standalone);
     }
 
     /** {@inheritDoc} */

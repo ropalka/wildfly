@@ -32,14 +32,17 @@ import org.jboss.as.server.deployment.DeploymentUnit;
 import org.jboss.as.server.deployment.DeploymentUnitProcessingException;
 import org.jboss.as.server.deployment.DeploymentUnitProcessor;
 import org.jboss.msc.service.ServiceBuilder;
-import org.jboss.msc.service.ServiceController.Mode;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.ServiceTarget;
+
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 /**
  * A {@code DeploymentUnitProcessor} for JACC policies.
  *
  * @author <a href="mailto:mmoyses@redhat.com">Marcus Moyses</a>
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public class JaccEarDeploymentProcessor implements DeploymentUnitProcessor {
 
@@ -49,22 +52,17 @@ public class JaccEarDeploymentProcessor implements DeploymentUnitProcessor {
     @Override
     public void deploy(DeploymentPhaseContext phaseContext) throws DeploymentUnitProcessingException {
         final DeploymentUnit deploymentUnit = phaseContext.getDeploymentUnit();
-        AbstractSecurityDeployer<?> deployer = null;
         if (DeploymentTypeMarker.isType(DeploymentType.EAR, deploymentUnit)) {
-            deployer = new EarSecurityDeployer();
-            JaccService<?> service = deployer.deploy(deploymentUnit);
-            if (service != null) {
-                final ServiceName jaccServiceName = deploymentUnit.getServiceName().append(JaccService.SERVICE_NAME);
-                final ServiceTarget serviceTarget = phaseContext.getServiceTarget();
-                ServiceBuilder<?> builder = serviceTarget.addService(jaccServiceName, service);
-                if (deploymentUnit.getParent() != null) {
-                    // add dependency to parent policy
-                    final DeploymentUnit parentDU = deploymentUnit.getParent();
-                    builder.addDependency(parentDU.getServiceName().append(JaccService.SERVICE_NAME), PolicyConfiguration.class,
-                            service.getParentPolicyInjector());
-                }
-                builder.setInitialMode(Mode.ACTIVE).install();
-            }
+            final AbstractSecurityDeployer<?> deployer = new EarSecurityDeployer();
+            final ServiceName jaccServiceName = deploymentUnit.getServiceName().append(JaccService.SERVICE_NAME);
+            final ServiceName parentJaccSN = deploymentUnit.getParent() != null ? deploymentUnit.getParent().getServiceName().append(JaccService.SERVICE_NAME) : null;
+            final ServiceTarget serviceTarget = phaseContext.getServiceTarget();
+            final ServiceBuilder<?> sb = serviceTarget.addService(jaccServiceName);
+            final Consumer<PolicyConfiguration> pcConsumer = sb.provides(jaccServiceName);
+            final Supplier<PolicyConfiguration> parentpcSupplier = parentJaccSN != null ? sb.requires(parentJaccSN) : null;
+            final JaccService<?> service = deployer.deploy(pcConsumer, parentpcSupplier, deploymentUnit);
+            sb.setInstance(service);
+            sb.install();
         }
     }
 
@@ -73,9 +71,8 @@ public class JaccEarDeploymentProcessor implements DeploymentUnitProcessor {
      */
     @Override
     public void undeploy(DeploymentUnit context) {
-        AbstractSecurityDeployer<?> deployer = null;
         if (DeploymentTypeMarker.isType(DeploymentType.EAR, context)) {
-            deployer = new EarSecurityDeployer();
+            AbstractSecurityDeployer<?> deployer = new EarSecurityDeployer();
             deployer.undeploy(context);
         }
     }

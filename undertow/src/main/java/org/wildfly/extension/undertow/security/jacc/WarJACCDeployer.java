@@ -27,10 +27,15 @@ import org.jboss.as.security.service.JaccService;
 import org.jboss.as.server.deployment.AttachmentKey;
 import org.jboss.as.web.common.WarMetaData;
 
+import javax.security.jacc.PolicyConfiguration;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
+
 /**
  * Handles war deployments
  *
  * @author <a href="mailto:mmoyses@redhat.com">Marcus Moyses</a>
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public class WarJACCDeployer extends AbstractSecurityDeployer<WarMetaData> {
 
@@ -46,8 +51,10 @@ public class WarJACCDeployer extends AbstractSecurityDeployer<WarMetaData> {
      * {@inheritDoc}
      */
     @Override
-    protected JaccService<WarMetaData> createService(String contextId, WarMetaData metaData, Boolean standalone) {
-        return new WarJACCService(contextId, metaData, standalone);
+    protected JaccService<WarMetaData> createService(final Consumer<PolicyConfiguration> policyConfigConsumer,
+                                                     final Supplier<PolicyConfiguration> parentPolicy,
+                                                     final String contextId, final WarMetaData metaData, final Boolean standalone) {
+        return new WarJACCService(policyConfigConsumer, parentPolicy, contextId, metaData, standalone);
     }
 
 }

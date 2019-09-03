@@ -26,31 +26,40 @@ import org.jboss.as.security.service.JaccService;
 import org.jboss.as.server.deployment.AttachmentKey;
 import org.jboss.as.server.deployment.DeploymentUnit;
 
+import javax.security.jacc.PolicyConfiguration;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
+
 /**
  * A helper class for security deployment processors
  *
  * @author Marcus Moyses
  * @author Anil Saldhana
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public abstract class AbstractSecurityDeployer<T> {
 
-    public JaccService<T> deploy(DeploymentUnit deploymentUnit) {
+    public JaccService<T> deploy(final Consumer<PolicyConfiguration> policyConfigConsumer,
+                                 final Supplier<PolicyConfiguration> parentPolicy,
+                                 final DeploymentUnit deploymentUnit) {
         // build the jacc context id.
         String contextId = deploymentUnit.getName();
         if (deploymentUnit.getParent() != null) {
             contextId = deploymentUnit.getParent().getName() + "!" + contextId;
         }
-        return deploy(deploymentUnit, contextId);
+        return deploy(policyConfigConsumer, parentPolicy, deploymentUnit, contextId);
     }
 
-    public JaccService<T> deploy(DeploymentUnit deploymentUnit, String jaccContextId) {
+    public JaccService<T> deploy(final Consumer<PolicyConfiguration> policyConfigConsumer,
+                                 final Supplier<PolicyConfiguration> parentPolicy,
+                                 final DeploymentUnit deploymentUnit, final String jaccContextId) {
         T metaData = deploymentUnit.getAttachment(getMetaDataType());
         Boolean standalone = Boolean.FALSE;
         // check if it is top level
         if (deploymentUnit.getParent() == null) {
             standalone = Boolean.TRUE;
         }
-        return createService(jaccContextId, metaData, standalone);
+        return createService(policyConfigConsumer, parentPolicy, jaccContextId, metaData, standalone);
     }
 
     public void undeploy(DeploymentUnit deploymentUnit) {
@@ -64,7 +73,9 @@ public abstract class AbstractSecurityDeployer<T> {
      * @param standalone
      * @return
      */
-    protected abstract JaccService<T> createService(String contextId, T metaData, Boolean standalone);
+    protected abstract JaccService<T> createService(final Consumer<PolicyConfiguration> policyConfigConsumer,
+                                                    final Supplier<PolicyConfiguration> parentPolicy,
+                                                    final String contextId, final T metaData, final Boolean standalone);
 
     /**
      * Return the type of metadata

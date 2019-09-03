@@ -25,6 +25,8 @@ package org.jboss.as.security.service;
 import static org.jboss.as.security.service.SecurityBootstrapService.JACC_MODULE;
 
 import java.security.Policy;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import javax.security.jacc.PolicyConfiguration;
 import javax.security.jacc.PolicyConfigurationFactory;
@@ -33,21 +35,20 @@ import javax.security.jacc.PolicyContextException;
 import org.jboss.as.security.SecurityExtension;
 import org.jboss.as.security.logging.SecurityLogger;
 import org.jboss.modules.ModuleLoadException;
-import org.jboss.msc.inject.Injector;
-import org.jboss.msc.service.Service;
+import org.jboss.msc.Service;
 import org.jboss.msc.service.ServiceName;
 import org.jboss.msc.service.StartContext;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.service.StopContext;
-import org.jboss.msc.value.InjectedValue;
 import org.wildfly.security.manager.WildFlySecurityManager;
 
 /**
  * A service for JACC policies
  *
  * @author <a href="mailto:mmoyses@redhat.com">Marcus Moyses</a>
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
-public abstract class JaccService<T> implements Service<PolicyConfiguration> {
+public abstract class JaccService<T> implements Service {
 
     public static final ServiceName SERVICE_NAME = SecurityExtension.JBOSS_SECURITY.append("jacc");
 
@@ -59,9 +60,14 @@ public abstract class JaccService<T> implements Service<PolicyConfiguration> {
 
     private volatile PolicyConfiguration policyConfiguration;
 
-    private final InjectedValue<PolicyConfiguration> parentPolicy = new InjectedValue<PolicyConfiguration>();
+    private final Consumer<PolicyConfiguration> policyConfigConsumer;
+    private final Supplier<PolicyConfiguration> parentPolicy;
 
-    public JaccService(final String contextId, T metaData, Boolean standalone) {
+    public JaccService(final Consumer<PolicyConfiguration> policyConfigConsumer,
+                       final Supplier<PolicyConfiguration> parentPolicy,
+                       final String contextId, final T metaData, final Boolean standalone) {
+        this.policyConfigConsumer = policyConfigConsumer;
+        this.parentPolicy = parentPolicy;
         if (contextId == null)
             throw SecurityLogger.ROOT_LOGGER.nullArgument("JACC Context Id");
         this.contextId = contextId;
@@ -71,13 +77,7 @@ public abstract class JaccService<T> implements Service<PolicyConfiguration> {
 
     /** {@inheritDoc} */
     @Override
-    public PolicyConfiguration getValue() throws IllegalStateException, IllegalArgumentException {
-        return policyConfiguration;
-    }
-
-    /** {@inheritDoc} */
-    @Override
-    public void start(StartContext context) throws StartException {
+    public void start(final StartContext context) throws StartException {
         try {
             PolicyConfigurationFactory pcf = getPolicyConfigurationFactory();
             synchronized (pcf) { // synchronize on the factory
@@ -88,7 +88,7 @@ public abstract class JaccService<T> implements Service<PolicyConfiguration> {
                     SecurityLogger.ROOT_LOGGER.debugf("Cannot create permissions with 'null' metaData for id=%s", contextId);
                 }
                 if (!standalone) {
-                    PolicyConfiguration parent = parentPolicy.getValue();
+                    PolicyConfiguration parent = parentPolicy.get();
                     if (parent != null) {
                         parent = pcf.getPolicyConfiguration(parent.getContextID(), false);
                         parent.linkConfiguration(policyConfiguration);
@@ -102,6 +102,7 @@ public abstract class JaccService<T> implements Service<PolicyConfiguration> {
                 }
                 // Allow the policy to incorporate the policy configs
                 Policy.getPolicy().refresh();
+                policyConfigConsumer.accept(policyConfiguration);
             }
         } catch (Exception e) {
             throw SecurityLogger.ROOT_LOGGER.unableToStartException("JaccService", e);
@@ -131,7 +132,8 @@ public abstract class JaccService<T> implements Service<PolicyConfiguration> {
 
     /** {@inheritDoc} */
     @Override
-    public void stop(StopContext context) {
+    public void stop(final StopContext context) {
+        policyConfigConsumer.accept(null);
         try {
             PolicyConfigurationFactory pcf = PolicyConfigurationFactory.getPolicyConfigurationFactory();
             synchronized (pcf) { // synchronize on the factory
@@ -142,15 +144,6 @@ public abstract class JaccService<T> implements Service<PolicyConfiguration> {
             SecurityLogger.ROOT_LOGGER.errorDeletingJACCPolicy(e);
         }
         policyConfiguration = null;
-    }
-
-    /**
-     * Target {@code Injector}
-     *
-     * @return target
-     */
-    public Injector<PolicyConfiguration> getParentPolicyInjector() {
-        return parentPolicy;
     }
 
     /**

@@ -24,6 +24,8 @@ package org.jboss.as.ejb3.security;
 
 import java.security.Permission;
 import java.util.Map.Entry;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import javax.security.jacc.PolicyConfiguration;
 import javax.security.jacc.PolicyContextException;
@@ -38,11 +40,14 @@ import org.jboss.as.server.deployment.AttachmentList;
  * @author Scott.Stark@jboss.org
  * @author Anil.Saldhana@jboss.org
  * @author Stuart Douglas
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public class EjbJaccService extends JaccService<AttachmentList<EjbJaccConfig>> {
 
-    public EjbJaccService(String contextId, AttachmentList<EjbJaccConfig> metaData, Boolean standalone) {
-        super(contextId, metaData, standalone);
+    public EjbJaccService(final Consumer<PolicyConfiguration> policyConfigConsumer,
+                          final Supplier<PolicyConfiguration> parentPolicy,
+                          final String contextId, final AttachmentList<EjbJaccConfig> metaData, final Boolean standalone) {
+        super(policyConfigConsumer, parentPolicy, contextId, metaData, standalone);
     }
 
     @Override

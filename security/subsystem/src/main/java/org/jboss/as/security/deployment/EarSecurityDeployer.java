@@ -28,10 +28,15 @@ import org.jboss.as.security.service.JaccService;
 import org.jboss.as.server.deployment.AttachmentKey;
 import org.jboss.metadata.ear.spec.EarMetaData;
 
+import javax.security.jacc.PolicyConfiguration;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
+
 /**
  * Handles ear deployments
  *
  * @author <a href="mailto:mmoyses@redhat.com">Marcus Moyses</a>
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public class EarSecurityDeployer extends AbstractSecurityDeployer<EarMetaData> {
 
@@ -39,8 +44,10 @@ public class EarSecurityDeployer extends AbstractSecurityDeployer<EarMetaData> {
      * {@inheritDoc}
      */
     @Override
-    protected JaccService<EarMetaData> createService(String contextId, EarMetaData metaData, Boolean standalone) {
-        return new EarJaccService(contextId, metaData, standalone);
+    protected JaccService<EarMetaData> createService(final Consumer<PolicyConfiguration> policyConfigConsumer,
+                                                     final Supplier<PolicyConfiguration> parentPolicy,
+                                                     final String contextId, final EarMetaData metaData, final Boolean standalone) {
+        return new EarJaccService(policyConfigConsumer, parentPolicy, contextId, metaData, standalone);
     }
 
     /**

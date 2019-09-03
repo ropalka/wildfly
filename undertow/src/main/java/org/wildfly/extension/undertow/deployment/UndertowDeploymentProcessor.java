@@ -469,22 +469,18 @@ public class UndertowDeploymentProcessor implements DeploymentUnitProcessor, Fun
         deploymentUnit.addToAttachmentList(Attachments.DEPLOYMENT_COMPLETE_SERVICES, deploymentServiceName);
 
         // adding JACC service
-        if(securityEnabled) {
-            WarJACCDeployer deployer = new WarJACCDeployer();
-            JaccService<WarMetaData> jaccService = deployer.deploy(deploymentUnit, jaccContextId);
-            if (jaccService != null) {
-                final ServiceName jaccServiceName = deploymentUnit.getServiceName().append(JaccService.SERVICE_NAME);
-                ServiceBuilder<?> jaccBuilder = serviceTarget.addService(jaccServiceName, jaccService);
-                if (deploymentUnit.getParent() != null) {
-                    // add dependency to parent policy
-                    final DeploymentUnit parentDU = deploymentUnit.getParent();
-                    jaccBuilder.addDependency(parentDU.getServiceName().append(JaccService.SERVICE_NAME), PolicyConfiguration.class,
-                            jaccService.getParentPolicyInjector());
-                }
-                // add dependency to web deployment service
-                jaccBuilder.requires(deploymentServiceName);
-                jaccBuilder.setInitialMode(Mode.PASSIVE).install();
-            }
+        if (securityEnabled) {
+            final WarJACCDeployer deployer = new WarJACCDeployer();
+            final ServiceName jaccServiceName = deploymentUnit.getServiceName().append(JaccService.SERVICE_NAME);
+            final ServiceName parentJaccServiceName = deploymentUnit.getParent() != null ? deploymentUnit.getParent().getServiceName().append(JaccService.SERVICE_NAME) : null;
+            final ServiceBuilder<?> jaccBuilder = serviceTarget.addService(jaccServiceName);
+            final Consumer<PolicyConfiguration> pcConsumer = jaccBuilder.provides(jaccServiceName);
+            final Supplier<PolicyConfiguration> parentpcSupplier = parentJaccServiceName != null ? jaccBuilder.requires(parentJaccServiceName) : null;
+            JaccService<WarMetaData> jaccService = deployer.deploy(pcConsumer, parentpcSupplier, deploymentUnit, jaccContextId);
+            jaccBuilder.setInstance(jaccService);
+            // add dependency to web deployment service
+            jaccBuilder.requires(deploymentServiceName);
+            jaccBuilder.setInitialMode(Mode.PASSIVE).install();
         }
 
         // Process the web related mgmt information

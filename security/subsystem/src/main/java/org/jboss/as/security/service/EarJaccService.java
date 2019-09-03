@@ -27,17 +27,23 @@ import javax.security.jacc.PolicyContextException;
 
 import org.jboss.metadata.ear.spec.EarMetaData;
 
+import java.util.function.Consumer;
+import java.util.function.Supplier;
+
 /**
  * A service that creates JACC permissions for an ear deployment
  *
  * @author <a href="mailto:mmoyses@redhat.com">Marcus Moyses</a>
  * @author Scott.Stark@jboss.org
  * @author Anil.Saldhana@jboss.org
+ * @author <a href="mailto:ropalka@redhat.com">Richard Opalka</a>
  */
 public class EarJaccService extends JaccService<EarMetaData> {
 
-    public EarJaccService(String contextId, EarMetaData metaData, Boolean standalone) {
-        super(contextId, metaData, standalone);
+    public EarJaccService(final Consumer<PolicyConfiguration> policyConfigConsumer,
+                          final Supplier<PolicyConfiguration> parentPolicy,
+                          final String contextId, final EarMetaData metaData, final Boolean standalone) {
+        super(policyConfigConsumer, parentPolicy, contextId, metaData, standalone);
     }
 
     /** {@inheritDoc} */
