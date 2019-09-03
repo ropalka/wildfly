@@ -25,9 +25,11 @@ package org.wildfly.extension.undertow;
 import static org.wildfly.extension.undertow.UndertowRootDefinition.HTTP_INVOKER_RUNTIME_CAPABILITY;
 
 import java.util.EnumSet;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 
 import org.jboss.as.controller.AbstractBoottimeAddStepHandler;
+import org.jboss.as.controller.CapabilityServiceBuilder;
 import org.jboss.as.controller.OperationContext;
 import org.jboss.as.controller.OperationFailedException;
 import org.jboss.as.controller.registry.Resource;
@@ -38,7 +40,6 @@ import org.jboss.as.server.deployment.jbossallxml.JBossAllXmlParserRegisteringPr
 import org.jboss.as.web.common.SharedTldsMetaDataBuilder;
 import org.jboss.as.web.session.SharedSessionManagerConfig;
 import org.jboss.dmr.ModelNode;
-import org.jboss.msc.service.ServiceController;
 import org.wildfly.extension.undertow.deployment.DefaultDeploymentMappingProvider;
 import org.wildfly.extension.undertow.deployment.DefaultSecurityDomainProcessor;
 import org.wildfly.extension.undertow.deployment.DeploymentRootExplodedMountProcessor;
@@ -107,11 +108,10 @@ class UndertowSubsystemAdd extends AbstractBoottimeAddStepHandler {
 
         DefaultDeploymentMappingProvider.instance().clear();//we clear provider on system boot, as on reload it could cause issues.
 
-        context.getCapabilityServiceTarget().addCapability(UndertowRootDefinition.UNDERTOW_CAPABILITY)
-                .setInstance(new UndertowService(defaultContainer, defaultServer, defaultVirtualHost, instanceId, stats))
-                .setInitialMode(ServiceController.Mode.ACTIVE)
-                .addAliases(UndertowService.UNDERTOW)
-                .install();
+        final CapabilityServiceBuilder<?> csb = context.getCapabilityServiceTarget().addCapability(UndertowRootDefinition.UNDERTOW_CAPABILITY);
+        final Consumer<UndertowService> usConsumer = csb.provides(UndertowRootDefinition.UNDERTOW_CAPABILITY, UndertowService.UNDERTOW);
+        csb.setInstance(new UndertowService(usConsumer, defaultContainer, defaultServer, defaultVirtualHost, instanceId, stats));
+        csb.install();
 
         context.addStep(new AbstractDeploymentChainStep() {
             @Override
