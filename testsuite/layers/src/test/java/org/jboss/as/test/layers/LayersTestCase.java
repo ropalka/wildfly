@@ -47,6 +47,8 @@ public class LayersTestCase {
         "javax.validation.api",
         // Un-used
         "javax.activation.api",
+        // Un-used
+        "org.apache.xerces",
         // No patching modules in layers
         "org.jboss.as.patching",
         "org.jboss.as.patching.cli",
