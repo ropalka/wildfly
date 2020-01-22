@@ -39,7 +39,7 @@
     <module name="org.jboss.weld.spi"/>
     <module name="org.joda.time"/>
     <module name="org.jsoup"/>
-    <module name="org.apache.xerces" services="import"/>
+    <module name="java.xml" services="import"/>
     <module name="sun.jdk" services="import"/>
   </dependencies>
 </module>

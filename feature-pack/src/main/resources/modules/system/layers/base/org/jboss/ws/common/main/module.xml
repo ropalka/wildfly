@@ -43,7 +43,7 @@
         <module name="org.jboss.ws.api"/>
         <module name="org.jboss.ws.spi"/>
         <module name="org.jboss.logging"/>
-        <module name="org.apache.xerces" services="import"/>
+        <module name="java.xml" services="import"/>
         <module name="org.jboss.jaxbintros"/>
         <module name="javax.xml.rpc.api"/>
     </dependencies>
