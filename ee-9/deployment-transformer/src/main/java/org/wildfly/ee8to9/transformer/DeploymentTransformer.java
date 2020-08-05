@@ -36,7 +36,7 @@ public final class DeploymentTransformer implements org.jboss.as.server.deployme
     public InputStream transform(InputStream in, String name) throws IOException {
         final boolean verbose = logger.isTraceEnabled();
         // The name captures the type of file.
-        return JakartaTransformer.transform(in, name, verbose, new JakartaTransformer.LogHandler() {
+        return JakartaTransformer.transform(null, in, name, verbose, new JakartaTransformer.LogHandler() {
             @Override
             public void print(String format, Object... args) {
                 logger.tracef(format, args);
