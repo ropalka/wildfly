@@ -482,6 +482,7 @@
                     <systemPropertyVariables>
                         <jboss.install.dir>${basedir}/target/wildfly</jboss.install.dir>
                     </systemPropertyVariables>
+                    <argLine>${modular.jdk.props}</argLine>
                 </configuration>
                 <executions>
                     <execution>
