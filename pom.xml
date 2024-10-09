@@ -372,7 +372,7 @@
         <version.org.javassist>3.29.2-GA</version.org.javassist>
         <version.org.jboss.arquillian.core>1.9.1.Final</version.org.jboss.arquillian.core>
         <version.org.jboss.arquillian.jakarta>10.0.0.Final</version.org.jboss.arquillian.jakarta>
-        <version.org.jboss.byteman>4.0.23</version.org.jboss.byteman>
+        <version.org.jboss.byteman>4.0.24-SNAPSHOT</version.org.jboss.byteman>
         <version.org.jboss.logmanager.commons-logging-jboss-logmanager>1.0.3.Final</version.org.jboss.logmanager.commons-logging-jboss-logmanager>
         <!-- only needed here until wildfly-arquillian has this version properly synced with arquillian itself  -->
         <version.org.jboss.shrinkwrap.descriptors>2.0.0</version.org.jboss.shrinkwrap.descriptors>
@@ -502,7 +502,7 @@
         <version.org.apache.wss4j>3.0.3</version.org.apache.wss4j>
         <version.org.apache.ws.xmlschema>2.3.0</version.org.apache.ws.xmlschema>
         <version.org.bitbucket.jose4j>0.9.6</version.org.bitbucket.jose4j>
-        <version.org.bytebuddy>1.14.18</version.org.bytebuddy>
+        <version.org.bytebuddy>1.15.3</version.org.bytebuddy>
         <version.org.codehaus.woodstox.stax2-api>4.2.2</version.org.codehaus.woodstox.stax2-api>
         <version.org.codehaus.woodstox.woodstox-core>7.0.0</version.org.codehaus.woodstox.woodstox-core>
         <version.org.cryptacular>1.2.5</version.org.cryptacular>
@@ -582,7 +582,7 @@
         <version.org.ow2.asm>9.7.1</version.org.ow2.asm>
         <version.org.reactivestreams>1.0.4</version.org.reactivestreams>
         <version.org.wildfly.clustering>1.1.3.Final</version.org.wildfly.clustering>
-        <version.org.wildfly.core>27.0.0.Beta3</version.org.wildfly.core>
+        <version.org.wildfly.core>27.0.0.Beta4-SNAPSHOT</version.org.wildfly.core>
         <version.org.wildfly.http-client>2.0.7.Final</version.org.wildfly.http-client>
         <version.org.wildfly.launcher>1.0.0.Beta1</version.org.wildfly.launcher>
         <version.org.wildfly.mvc.krazo>1.0.0.Final</version.org.wildfly.mvc.krazo>
