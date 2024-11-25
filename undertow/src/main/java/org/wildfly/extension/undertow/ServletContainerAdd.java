@@ -75,7 +75,7 @@ final class ServletContainerAdd extends AbstractBoottimeAddStepHandler {
 
         Boolean directoryListingEnabled = ServletContainerDefinition.DIRECTORY_LISTING.resolveModelAttribute(resolver, model).asBooleanOrNull();
         Integer maxSessions = ServletContainerDefinition.MAX_SESSIONS.resolveModelAttribute(resolver, model).asIntOrNull();
-
+        final long defaultAsyncContextTimeout = ServletContainerDefinition.DEFAULT_ASYNC_CONTEXT_TIMEOUT.resolveModelAttribute(resolver, model).asLong();
         final int sessionTimeout = ServletContainerDefinition.DEFAULT_SESSION_TIMEOUT.resolveModelAttribute(resolver, model).asInt();
 
         WebsocketsDefinition.WebSocketInfo webSocketInfo = WebsocketsDefinition.getConfig(resolver, model.get(WebsocketsDefinition.PATH_ELEMENT.getKeyValuePair()));
@@ -191,6 +191,11 @@ final class ServletContainerAdd extends AbstractBoottimeAddStepHandler {
             @Override
             public boolean isEagerFilterInit() {
                 return eagerFilterInit;
+            }
+
+            @Override
+            public long getDefaultAsyncContextTimeout() {
+                return defaultAsyncContextTimeout;
             }
 
             @Override

@@ -259,6 +259,7 @@
         <xs:attribute name="use-listener-encoding" type="xs:boolean" use="optional" default="false"/>
         <xs:attribute name="ignore-flush" type="xs:boolean" use="optional" default="false"/>
         <xs:attribute name="eager-filter-initialization" type="xs:boolean" use="optional" default="false"/>
+        <xs:attribute name="default-async-context-timeout" type="xs:long" use="optional" default="30000"/>
         <xs:attribute name="default-session-timeout" type="xs:integer" use="optional" default="30"/>
         <xs:attribute name="disable-caching-for-secured-pages" type="xs:boolean" use="optional" default="true"/>
         <xs:attribute name="directory-listing" type="xs:boolean" use="optional" />

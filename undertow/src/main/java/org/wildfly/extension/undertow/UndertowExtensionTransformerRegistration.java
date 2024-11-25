@@ -55,6 +55,7 @@ public class UndertowExtensionTransformerRegistration implements ExtensionTransf
                 final ResourceTransformationDescriptionBuilder reverseProxy = handlers.addChildResource(ReverseProxyHandlerDefinition.PATH_ELEMENT);
                 final AttributeTransformationDescriptionBuilder reverseProxyAttributeTransformationDescriptionBuilder = reverseProxy.getAttributeBuilder();
                 final ResourceTransformationDescriptionBuilder ajpListener = server.addChildResource(AjpListenerResourceDefinition.PATH_ELEMENT);
+                final ResourceTransformationDescriptionBuilder servletContainer = subsystem.addChildResource(ServletContainerDefinition.PATH_ELEMENT);
 
                 reverseProxyAttributeTransformationDescriptionBuilder.setDiscard(DiscardAttributeChecker.UNDEFINED, ReverseProxyHandlerDefinition.REUSE_X_FORWARDED_HEADER)
                 .addRejectCheck(RejectAttributeChecker.DEFINED, ReverseProxyHandlerDefinition.REUSE_X_FORWARDED_HEADER)
@@ -67,9 +68,14 @@ public class UndertowExtensionTransformerRegistration implements ExtensionTransf
                 .addRejectCheck(RejectAttributeChecker.DEFINED, AjpListenerResourceDefinition.ALLOWED_REQUEST_ATTRIBUTES_PATTERN)
                 .end();
 
+                final AttributeTransformationDescriptionBuilder servletContainerAttributeTransformationDescriptionBuilder = servletContainer.getAttributeBuilder();
+                servletContainerAttributeTransformationDescriptionBuilder
+                .setDiscard(DiscardAttributeChecker.UNDEFINED, ServletContainerDefinition.DEFAULT_ASYNC_CONTEXT_TIMEOUT)
+                .addRejectCheck(RejectAttributeChecker.DEFINED, ServletContainerDefinition.DEFAULT_ASYNC_CONTEXT_TIMEOUT)
+                .end();
+
                 if (UndertowSubsystemModel.VERSION_13_0_0.requiresTransformation(version)) {
-                    final ResourceTransformationDescriptionBuilder servletContainer = subsystem.addChildResource(ServletContainerDefinition.PATH_ELEMENT);
-                    servletContainer.getAttributeBuilder()
+                    servletContainerAttributeTransformationDescriptionBuilder
                         .setDiscard(DiscardAttributeChecker.UNDEFINED, ServletContainerDefinition.ORPHAN_SESSION_ALLOWED)
                         .addRejectCheck(RejectAttributeChecker.DEFINED, ServletContainerDefinition.ORPHAN_SESSION_ALLOWED)
                         .end();

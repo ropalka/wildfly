@@ -191,6 +191,7 @@ public interface Constants {
     String ENABLE_NODES = "enable-nodes";
     String DISABLE_NODES = "disable-nodes";
     String STOP_NODES = "stop-nodes";
+    String DEFAULT_ASYNC_CONTEXT_TIMEOUT = "default-async-context-timeout";
     String DEFAULT_SESSION_TIMEOUT = "default-session-timeout";
     String PREDICATE = "predicate";
     String SSL_SESSION_CACHE_SIZE = "ssl-session-cache-size";

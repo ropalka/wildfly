@@ -21,6 +21,7 @@ import org.jboss.as.controller.client.helpers.MeasurementUnit;
 import org.jboss.as.controller.operations.validation.EnumValidator;
 import org.jboss.as.controller.operations.validation.IntRangeValidator;
 import org.jboss.as.controller.registry.AttributeAccess;
+import org.jboss.as.version.Stability;
 import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.ModelType;
 
@@ -83,6 +84,16 @@ class ServletContainerDefinition extends PersistentResourceDefinition {
                     .setAllowExpression(true)
                     .setDefaultValue(ModelNode.FALSE)
                     .build();
+
+    protected static final AttributeDefinition DEFAULT_ASYNC_CONTEXT_TIMEOUT =
+            new SimpleAttributeDefinitionBuilder(Constants.DEFAULT_ASYNC_CONTEXT_TIMEOUT, ModelType.LONG, true)
+                    .setFlags(AttributeAccess.Flag.RESTART_ALL_SERVICES)
+                    .setAllowExpression(true)
+                    .setMeasurementUnit(MeasurementUnit.MILLISECONDS)
+                    .setDefaultValue(new ModelNode(30000))
+                    .setStability(Stability.PREVIEW)
+                    .build(); //30 seconds
+
 
     protected static final AttributeDefinition DEFAULT_SESSION_TIMEOUT =
             new SimpleAttributeDefinitionBuilder(Constants.DEFAULT_SESSION_TIMEOUT, ModelType.INT, true)
@@ -195,6 +206,7 @@ class ServletContainerDefinition extends PersistentResourceDefinition {
             USE_LISTENER_ENCODING,
             IGNORE_FLUSH,
             EAGER_FILTER_INIT,
+            DEFAULT_ASYNC_CONTEXT_TIMEOUT,
             DEFAULT_SESSION_TIMEOUT,
             DISABLE_CACHING_FOR_SECURED_PAGES,
             DIRECTORY_LISTING,

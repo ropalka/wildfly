@@ -65,6 +65,8 @@ public interface ServletContainerService {
 
     boolean isEagerFilterInit();
 
+    long getDefaultAsyncContextTimeout();
+
     int getDefaultSessionTimeout();
 
     Map<String, String> getMimeMappings();

@@ -518,6 +518,7 @@ public class UndertowDeploymentInfoService implements Service<DeploymentInfo> {
                 d.setMinorVersion(1);
             }
 
+            d.setDefaultAsyncContextTimeout(servletContainer.getDefaultAsyncContextTimeout());
             d.setDefaultCookieVersion(servletContainer.getDefaultCookieVersion());
 
             //in most cases flush just hurts performance for no good reason
