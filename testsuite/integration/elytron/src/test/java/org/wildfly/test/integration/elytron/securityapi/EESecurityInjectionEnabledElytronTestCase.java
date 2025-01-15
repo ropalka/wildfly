@@ -78,6 +78,7 @@ public class EESecurityInjectionEnabledElytronTestCase extends EESecurityInjecti
 
     @Override
     @Test @InSequence(2)
+    @org.junit.Ignore // see WFLY-20285
     public void testCustomPrincipalWithInject(@ArquillianResource URL webAppURL) throws IOException, URISyntaxException {
         super.testCustomPrincipalWithInject(webAppURL);
     }
