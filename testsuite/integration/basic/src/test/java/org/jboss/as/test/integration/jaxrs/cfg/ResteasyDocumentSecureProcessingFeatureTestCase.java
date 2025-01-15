@@ -87,6 +87,7 @@ public class ResteasyDocumentSecureProcessingFeatureTestCase extends AbstractRes
 
     @Test
     @InSequence(2)
+    @org.junit.Ignore // see WFLY-20280
     public void checkFalse() throws Exception {
         AssumeTestGroupUtil.assumeSecurityManagerDisabled();
         writeAttribute(ModelNode.FALSE);
