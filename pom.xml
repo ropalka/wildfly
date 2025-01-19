@@ -300,7 +300,7 @@
         <version.org.jboss.arquillian.core>1.9.4.Final</version.org.jboss.arquillian.core>
         <version.org.jboss.arquillian.jakarta>10.0.0.Final</version.org.jboss.arquillian.jakarta>
         <version.org.jboss.arquillian.testcontainers>1.0.0.Alpha3</version.org.jboss.arquillian.testcontainers>
-        <version.org.jboss.byteman>4.0.24</version.org.jboss.byteman>
+        <version.org.jboss.byteman>4.0.25</version.org.jboss.byteman>
         <version.org.jboss.logmanager.commons-logging-jboss-logmanager>1.0.3.Final</version.org.jboss.logmanager.commons-logging-jboss-logmanager>
         <!-- only needed here until wildfly-arquillian has this version properly synced with arquillian itself  -->
         <version.org.jboss.shrinkwrap.descriptors>2.0.0</version.org.jboss.shrinkwrap.descriptors>
@@ -520,7 +520,7 @@
         <version.org.ow2.asm>9.7.1</version.org.ow2.asm>
         <version.org.reactivestreams>1.0.4</version.org.reactivestreams>
         <version.org.wildfly.clustering>6.0.1.Final</version.org.wildfly.clustering>
-        <version.org.wildfly.core>29.0.0.Beta1</version.org.wildfly.core>
+        <version.org.wildfly.core>29.0.0.Beta2-SNAPSHOT</version.org.wildfly.core>
         <version.org.wildfly.http-client>2.1.0.Final</version.org.wildfly.http-client>
         <version.org.wildfly.launcher>1.0.2.Final</version.org.wildfly.launcher>
         <version.org.wildfly.mvc.krazo>1.0.1.Final</version.org.wildfly.mvc.krazo>
