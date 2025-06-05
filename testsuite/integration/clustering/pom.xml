@@ -770,7 +770,7 @@
                                     <goal>wget</goal>
                                 </goals>
                                 <configuration>
-                                    <url>https://github.com/infinispan/infinispan/releases/download/${version.org.infinispan.server}/infinispan-server-${version.org.infinispan.server}.zip</url>
+                                    <url>file:///home/ropalka/git/redhat/PUBLIC/infinispan/distribution/target/distribution/infinispan-server-15.2.3-SNAPSHOT.zip</url>
                                     <unpack>true</unpack>
                                 </configuration>
                             </execution>
